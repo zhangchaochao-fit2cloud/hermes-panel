@@ -12,7 +12,7 @@
     "@hermes-panel/shared": "workspace:*"
   },
   "devDependencies": {
-    "tsx": "4.19.0",
+    "tsx": "4.22.3",
     "@types/node": "20.14.10",
     "typescript": "5.4.5"
   }
