@@ -53,6 +53,7 @@ export default {
     delete: '删除',
     retry: '重试',
     loading: '加载中…',
+    menu: '菜单',
   },
   chat: {
     empty: {

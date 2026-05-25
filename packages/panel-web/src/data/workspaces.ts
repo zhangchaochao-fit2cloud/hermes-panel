@@ -8,6 +8,18 @@
  * localStorage; profile switching is a separate, real action.
  */
 
+export interface RoleDef {
+  /** Short id used in @-mentions (no spaces). */
+  id: string;
+  /** Display name (zh-CN). */
+  name: string;
+  icon: string;
+  /** One-line job description shown under the name. */
+  description: string;
+  /** System prompt prefix that gets prepended when @-summoned. */
+  promptPrefix: string;
+}
+
 export interface WorkspaceTemplate {
   id: string;
   name: string;
@@ -18,6 +30,8 @@ export interface WorkspaceTemplate {
   roles: number;
   suggestedTools: string[];
   suggestedSkills: string[];
+  /** Concrete role definitions (matches `roles` count). */
+  team?: RoleDef[];
 }
 
 export const BUILT_IN_WORKSPACES: readonly WorkspaceTemplate[] = [

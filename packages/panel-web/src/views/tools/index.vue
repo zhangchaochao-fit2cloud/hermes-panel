@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useToolsStore } from '@/stores/tools';
 import ToolCard from '@/components/tools/ToolCard.vue';
 import SkillTable from '@/components/tools/SkillTable.vue';
+import SkillMarketplace from '@/components/tools/SkillMarketplace.vue';
 import McpPanel from '@/components/tools/McpPanel.vue';
 
 const { t } = useI18n();
@@ -14,6 +15,7 @@ const message = useMessage();
 const { tools, loadingTools, enabledCount, totalCount } = storeToRefs(store);
 
 const tab = ref<'tools' | 'mcp' | 'skills'>('tools');
+const skillsSubTab = ref<'installed' | 'marketplace'>('installed');
 const search = ref('');
 
 const filteredTools = computed(() => {
@@ -34,6 +36,13 @@ async function onTabChange(name: string): Promise<void> {
   tab.value = name as 'tools' | 'mcp' | 'skills';
   if (name === 'skills' && store.skills.length === 0) await store.loadSkills();
   if (name === 'mcp' && store.mcpServers.length === 0) await store.loadMcp();
+}
+
+async function onSkillsSubTabChange(name: string): Promise<void> {
+  skillsSubTab.value = name as 'installed' | 'marketplace';
+  if (name === 'marketplace' && store.availableSkills.length === 0) {
+    await store.browseSkills();
+  }
 }
 
 async function onToggle(name: string, enabled: boolean): Promise<void> {
@@ -95,7 +104,21 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
 
         <!-- 技能 -->
         <NTabPane name="skills" :tab="t('tools.tabs.skills')">
-          <SkillTable />
+          <NTabs
+            :value="skillsSubTab"
+            type="segment"
+            size="small"
+            animated
+            class="mb-4"
+            @update:value="onSkillsSubTabChange"
+          >
+            <NTabPane name="installed" :tab="t('tools.skills.tabs.installed')">
+              <SkillTable />
+            </NTabPane>
+            <NTabPane name="marketplace" :tab="t('tools.skills.tabs.marketplace')">
+              <SkillMarketplace />
+            </NTabPane>
+          </NTabs>
         </NTabPane>
       </NTabs>
     </div>

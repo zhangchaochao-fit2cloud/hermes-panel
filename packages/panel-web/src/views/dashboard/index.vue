@@ -120,11 +120,11 @@ const todayUsdLabel = computed(() => {
 
 <template>
   <div class="h-full overflow-y-auto bg-[var(--bg-page)]">
-    <div class="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
+    <div class="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
       <WelcomeHeader :health="healthTyped" :loading="healthLoading" />
 
-      <!-- Stat cards -->
-      <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Stat cards: 2x2 on mobile (avoid 4 ultra-thin columns), 4x1 from md up. -->
+      <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           :label="t('dashboard.stats.totalSessions')"
           :value="overall.total_sessions"

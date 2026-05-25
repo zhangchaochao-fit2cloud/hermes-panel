@@ -2,6 +2,7 @@ import Router from '@koa/router';
 import { PassThrough } from 'node:stream';
 import { logger } from '../lib/logger.js';
 import { PORTS } from '@hermes-panel/shared';
+import { getHermesApiKey } from '../services/hermes-api-key.js';
 
 /**
  * Proxy /api/hermes/* to the configured hermes API server.
@@ -16,10 +17,6 @@ export const hermesProxyRouter = new Router();
 
 function getHermesBase(): string {
   return process.env.HERMES_API_BASE ?? `http://127.0.0.1:${PORTS.HERMES_API}`;
-}
-
-function getHermesKey(): string | null {
-  return process.env.HERMES_API_KEY ?? null;
 }
 
 hermesProxyRouter.all('/hermes/(.*)', async ctx => {
@@ -39,7 +36,7 @@ hermesProxyRouter.all('/hermes/(.*)', async ctx => {
          'x-panel-token', 'referer'].includes(lower)) continue;
     headers[k] = v;
   }
-  const key = getHermesKey();
+  const key = await getHermesApiKey();
   if (key) headers['authorization'] = `Bearer ${key}`;
 
   // Body for POST/PUT/PATCH

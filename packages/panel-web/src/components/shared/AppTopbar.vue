@@ -5,13 +5,19 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useSystemStore } from '@/stores/system';
 import { setLocale } from '@/locales';
+import { useBreakpoint } from '@/composables/use-breakpoint';
 import StatusBadge from './StatusBadge.vue';
 import NotificationBell from './NotificationBell.vue';
+
+const emit = defineEmits<{
+  (e: 'toggle-sidebar'): void;
+}>();
 
 const system = useSystemStore();
 const { health, loading } = storeToRefs(system);
 const { t, locale } = useI18n();
 const route = useRoute();
+const { isMobile } = useBreakpoint();
 
 let pollHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -54,8 +60,17 @@ function toggleLocale(): void {
 </script>
 
 <template>
-  <header class="h-16 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-6 gap-4">
-    <h1 class="text-base font-medium">{{ pageTitle }}</h1>
+  <header class="h-16 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-4 sm:px-6 gap-2 sm:gap-4">
+    <!-- Hamburger: mobile only. 44x44 touch target. -->
+    <button
+      v-if="isMobile"
+      class="-ml-1 w-11 h-11 rounded-md flex items-center justify-center text-xl hover:bg-[var(--bg-elevate)] opacity-80 hover:opacity-100"
+      :aria-label="t('common.menu')"
+      @click="emit('toggle-sidebar')"
+    >
+      ☰
+    </button>
+    <h1 v-if="pageTitle" class="text-base font-medium truncate">{{ pageTitle }}</h1>
     <div class="flex-1" />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />

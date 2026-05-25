@@ -16,6 +16,7 @@ import SessionFilters from '@/components/sessions/SessionFilters.vue';
 import SessionTable from '@/components/sessions/SessionTable.vue';
 import SessionGrid from '@/components/sessions/SessionGrid.vue';
 import { useSessionsStore, type SourceFilter, type ViewMode } from '@/stores/sessions';
+import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -24,6 +25,12 @@ const dialog = useDialog();
 
 const store = useSessionsStore();
 const { items, loading, refreshing, error, initialized, search, source, view, total } = storeToRefs(store);
+const { isMobile } = useBreakpoint();
+
+// Force grid view on phones — the table layout horizontally scrolls and is
+// painful to use with a thumb. We do not persist this override, so the
+// desktop preference survives when the viewport widens again.
+const effectiveView = computed<ViewMode>(() => (isMobile.value ? 'grid' : view.value));
 
 // Debounced search
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -182,7 +189,10 @@ const sourceValue = computed({
   set: v => store.setSource(v as SourceFilter),
 });
 const viewValue = computed({
-  get: () => view.value,
+  // Reflect the effective view in the toolbar so the toggle highlights "grid"
+  // when forced by mobile. Writes still update the underlying preference for
+  // when the user is back on desktop.
+  get: () => effectiveView.value,
   set: v => store.setView(v as ViewMode),
 });
 
@@ -245,7 +255,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
       <!-- content -->
       <template v-else-if="initialized">
         <SessionTable
-          v-if="view === 'table'"
+          v-if="effectiveView === 'table'"
           :items="items"
           @open="onOpen"
           @rename="onRename"

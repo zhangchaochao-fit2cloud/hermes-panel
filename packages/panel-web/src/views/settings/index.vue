@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { NTabs, NTab } from 'naive-ui';
 import SectionAppearance from '@/components/settings/SectionAppearance.vue';
 import SectionLanguage from '@/components/settings/SectionLanguage.vue';
 import SectionHotkeys from '@/components/settings/SectionHotkeys.vue';
 import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
 import SectionAbout from '@/components/settings/SectionAbout.vue';
+import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
+const { isMobile } = useBreakpoint();
 
 interface AnchorItem { key: string; label: string }
 
@@ -67,9 +70,34 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-[var(--bg-page)]">
-    <!-- Left anchor nav -->
+  <div
+    class="flex h-full w-full bg-[var(--bg-page)]"
+    :class="isMobile ? 'flex-col' : 'flex-row'"
+  >
+    <!-- Mobile: horizontal scrollable tab bar at top. NTabs handles overflow. -->
+    <div
+      v-if="isMobile"
+      class="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-2"
+    >
+      <NTabs
+        :value="activeKey"
+        type="line"
+        size="medium"
+        animated
+        @update:value="(k: string) => goTo(k)"
+      >
+        <NTab
+          v-for="a in anchors"
+          :key="a.key"
+          :name="a.key"
+          :tab="t(a.label)"
+        />
+      </NTabs>
+    </div>
+
+    <!-- Desktop: left anchor nav -->
     <aside
+      v-else
       class="w-[220px] flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-card)] py-6 px-3 overflow-y-auto"
     >
       <h2 class="px-3 pb-3 text-xs uppercase tracking-wide opacity-60">
@@ -92,12 +120,15 @@ onBeforeUnmount(() => {
       </nav>
     </aside>
 
-    <!-- Right scrollable content -->
+    <!-- Scrollable content -->
     <div
       ref="scrollerRef"
       class="flex-1 min-w-0 overflow-y-auto"
     >
-      <div class="max-w-[800px] mx-auto px-8 py-8 space-y-8">
+      <div
+        class="mx-auto space-y-8"
+        :class="isMobile ? 'max-w-full px-4 py-6' : 'max-w-[800px] px-8 py-8'"
+      >
         <section id="settings-section-appearance" class="scroll-mt-24">
           <SectionAppearance />
         </section>

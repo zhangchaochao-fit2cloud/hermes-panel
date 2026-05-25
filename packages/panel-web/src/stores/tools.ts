@@ -20,14 +20,26 @@ export interface SkillInfo {
 
 export interface McpServer { name: string; configured: boolean }
 
+export interface AvailableSkill {
+  name: string;
+  category?: string;
+  description?: string;
+  source?: string;
+  installed?: boolean;
+}
+
 export const useToolsStore = defineStore('tools', () => {
   const tools = ref<ToolInfo[]>([]);
   const skills = ref<SkillInfo[]>([]);
   const mcpServers = ref<McpServer[]>([]);
+  const availableSkills = ref<AvailableSkill[]>([]);
+  const availableTotal = ref(0);
 
   const loadingTools = ref(false);
   const loadingSkills = ref(false);
   const loadingMcp = ref(false);
+  const loadingBrowse = ref(false);
+  const installingSkills = ref<Set<string>>(new Set());
 
   const error = ref<string | null>(null);
 
@@ -80,6 +92,66 @@ export const useToolsStore = defineStore('tools', () => {
     }
   }
 
+  async function browseSkills(search?: string, page = 1, pageSize = 30): Promise<void> {
+    loadingBrowse.value = true;
+    try {
+      const params = new URLSearchParams();
+      if (search?.trim()) params.set('search', search.trim());
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      const r = await bffFetch<{ skills: AvailableSkill[]; total: number; error?: string }>(
+        `/api/skills/browse?${params.toString()}`,
+      );
+      availableSkills.value = r.skills;
+      availableTotal.value = r.total;
+      if (r.error) error.value = r.error;
+    } catch (err) {
+      error.value = (err as Error).message;
+      availableSkills.value = [];
+      availableTotal.value = 0;
+    } finally {
+      loadingBrowse.value = false;
+    }
+  }
+
+  async function installSkill(name: string): Promise<boolean> {
+    installingSkills.value = new Set(installingSkills.value).add(name);
+    try {
+      await bffFetch(`/api/skills/${encodeURIComponent(name)}/install`, { method: 'POST' });
+      // Reflect installed state in the cached browse list, if present
+      const found = availableSkills.value.find(s => s.name === name);
+      if (found) found.installed = true;
+      // Refresh installed list so the "已安装" tab is up to date
+      await loadSkills();
+      return true;
+    } catch (err) {
+      error.value = (err as Error).message;
+      return false;
+    } finally {
+      const next = new Set(installingSkills.value);
+      next.delete(name);
+      installingSkills.value = next;
+    }
+  }
+
+  async function uninstallSkill(name: string): Promise<boolean> {
+    installingSkills.value = new Set(installingSkills.value).add(name);
+    try {
+      await bffFetch(`/api/skills/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const found = availableSkills.value.find(s => s.name === name);
+      if (found) found.installed = false;
+      await loadSkills();
+      return true;
+    } catch (err) {
+      error.value = (err as Error).message;
+      return false;
+    } finally {
+      const next = new Set(installingSkills.value);
+      next.delete(name);
+      installingSkills.value = next;
+    }
+  }
+
   async function toggleTool(name: string, enabled: boolean): Promise<boolean> {
     // Optimistic update
     const tool = tools.value.find(t => t.name === name);
@@ -99,10 +171,11 @@ export const useToolsStore = defineStore('tools', () => {
   }
 
   return {
-    tools, skills, mcpServers,
-    loadingTools, loadingSkills, loadingMcp,
+    tools, skills, mcpServers, availableSkills, availableTotal,
+    loadingTools, loadingSkills, loadingMcp, loadingBrowse, installingSkills,
     error,
     enabledCount, totalCount, skillCategories,
     loadTools, loadSkills, loadMcp, toggleTool,
+    browseSkills, installSkill, uninstallSkill,
   };
 });

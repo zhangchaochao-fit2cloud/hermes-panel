@@ -33,6 +33,14 @@ function submit(): void {
   emit('send', text.value.trim());
   text.value = '';
 }
+
+/** Prepend an @role mention so the user can keep typing the request. */
+function prependMention(roleId: string): void {
+  const prefix = `@${roleId} `;
+  text.value = prefix + text.value.replace(/^@[\w-]+\s+/, '');
+}
+
+defineExpose({ prependMention });
 </script>
 
 <template>

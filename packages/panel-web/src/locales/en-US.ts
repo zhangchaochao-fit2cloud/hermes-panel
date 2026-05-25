@@ -53,6 +53,7 @@ export default {
     delete: 'Delete',
     retry: 'Retry',
     loading: 'Loading…',
+    menu: 'Menu',
   },
   chat: {
     empty: {

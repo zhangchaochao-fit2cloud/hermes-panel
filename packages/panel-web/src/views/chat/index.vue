@@ -11,6 +11,9 @@ import { bffFetch } from '@/api/bff';
 import MessageBubble from '@/components/chat/MessageBubble.vue';
 import Composer from '@/components/chat/Composer.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
+import { detectMention, type RoleDef } from '@/data/roles';
+import { useWorkspacesStore } from '@/stores/workspaces';
 
 const { t } = useI18n();
 const session = useSessionStore();
@@ -26,6 +29,15 @@ const model = ref('hermes-agent');
 const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>('auto');
 const sending = ref(false);
 const scroller = ref<HTMLElement | null>(null);
+const composerRef = ref<InstanceType<typeof Composer> | null>(null);
+
+const workspaces = useWorkspacesStore();
+function summon(role: RoleDef): void {
+  const c = composerRef.value as { prependMention?: (id: string) => void } | null;
+  if (c?.prependMention) {
+    c.prependMention(role.id);
+  }
+}
 
 interface SessionDetail {
   id: string;
@@ -121,7 +133,13 @@ async function onSend(text: string): Promise<void> {
     void system.refresh();
     return;
   }
-  await stream.send(text, model.value);
+  // Detect @mention and prepend role system-prompt fragment.
+  let finalText = text;
+  const mention = detectMention(text, workspaces.activeId);
+  if (mention) {
+    finalText = `${mention.role.promptPrefix}\n\n${mention.rest}`;
+  }
+  await stream.send(finalText, model.value);
 }
 
 function onStop(): void {
@@ -134,9 +152,14 @@ function trySample(q: string): void {
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-[var(--bg-page)]">
+  <!--
+    h-[100dvh] (dynamic viewport units) so the iOS Safari URL bar / soft keyboard
+    collapse doesn't push the composer off-screen. h-full is the fallback when
+    the parent already constrains height (web build inside DefaultLayout).
+  -->
+  <div class="flex h-full w-full bg-[var(--bg-page)] md:h-full" style="min-height: 100dvh;">
     <main class="flex-1 flex flex-col min-w-0">
-      <div ref="scroller" class="flex-1 overflow-y-auto px-6 py-4">
+      <div ref="scroller" class="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div class="max-w-3xl mx-auto">
           <EmptyState
             v-if="messages.length === 0"
@@ -155,12 +178,22 @@ function trySample(q: string): void {
               </button>
             </div>
           </EmptyState>
+          <!--
+            TODO(mobile): replace desktop hover toolbar with long-press context
+            menu (touchstart + 500ms timer → show copy/regenerate sheet).
+            Tracked separately; placeholder hooked here.
+          -->
           <MessageBubble v-for="m in messages" :key="m.id" :message="m" />
         </div>
       </div>
-      <div class="px-6 pb-4">
+      <div
+        class="px-4 pb-4 sm:px-6"
+        style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"
+      >
         <div class="max-w-3xl mx-auto">
+          <RoleTeamBar @mention="summon" />
           <Composer
+            ref="composerRef"
             v-model:model="model"
             v-model:thinking-speed="thinkingSpeed"
             :sending="sending"
