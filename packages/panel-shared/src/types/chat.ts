@@ -9,6 +9,10 @@ export interface ChatMessage {
   createdAt: number;
   completed: boolean;
   tokenUsage?: TokenUsage;
+  /** Local heuristic quality score 0-100; computed when message completes */
+  qualityScore?: number;
+  /** Local heuristic hallucination risk 0-1 */
+  hallucinationRisk?: number;
 }
 
 export interface ToolCall {

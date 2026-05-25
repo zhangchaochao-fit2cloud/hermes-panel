@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { ChatMessage, ToolCall, TokenUsage } from '@hermes-panel/shared';
+import { scoreResponse } from '@/utils/quality-score';
 
 /**
  * Hermes streams responses without a stable assistant message id per run,
@@ -103,6 +104,11 @@ export const useSessionStore = defineStore('session', () => {
     msg.completed = true;
     // If we never got deltas (rare), fall back to `output`
     if (!msg.content && output) msg.content = output;
+    // Score the response locally (cheap heuristic, no LLM call)
+    const lastUser = [...messages.value].reverse().find(m => m.role === 'user');
+    const score = scoreResponse(msg.content, lastUser?.content);
+    msg.qualityScore = score.quality;
+    msg.hallucinationRisk = score.hallucinationRisk;
     if (usage) {
       const u: TokenUsage = {
         input: usage.input ?? 0,
