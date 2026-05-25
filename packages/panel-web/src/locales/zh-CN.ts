@@ -7,7 +7,22 @@ export default {
     dashboard: '仪表盘',
     chat: '对话',
     sessions: '会话历史',
+    tools: '工具',
     settings: '设置',
+  },
+  tools: {
+    title: '工具与技能',
+    subtitle: '管理内置工具、MCP 服务和技能库',
+    searchPlaceholder: '搜索工具...',
+    empty: '未找到匹配的工具',
+    enabledOf: '已启用 {enabled}/{total}',
+    enabled: '已启用',
+    disabled: '已禁用',
+    tabs: {
+      builtin: '内置工具',
+      mcp: 'MCP 服务',
+      skills: '技能',
+    },
   },
   common: {
     cancel: '取消',

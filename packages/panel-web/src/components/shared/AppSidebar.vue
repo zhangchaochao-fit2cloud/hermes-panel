@@ -21,7 +21,7 @@ const items = computed<MenuItem[]>(() => [
   { key: 'chat', icon: '💬', label: t('nav.chat'), path: '/chat' },
   { key: 'sessions', icon: '📜', label: t('nav.sessions'), path: '/sessions' },
   { key: 'workspaces', icon: '🧩', label: 'Workspaces', path: '/workspaces', disabled: true },
-  { key: 'tools', icon: '🛠', label: 'Tools', path: '/tools', disabled: true },
+  { key: 'tools', icon: '🛠', label: t('nav.tools'), path: '/tools' },
   { key: 'settings', icon: '⚙️', label: t('nav.settings'), path: '/settings' },
 ]);
 

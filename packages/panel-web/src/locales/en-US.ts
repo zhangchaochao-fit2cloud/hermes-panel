@@ -7,7 +7,22 @@ export default {
     dashboard: 'Dashboard',
     chat: 'Chat',
     sessions: 'Sessions',
+    tools: 'Tools',
     settings: 'Settings',
+  },
+  tools: {
+    title: 'Tools & Skills',
+    subtitle: 'Manage built-in tools, MCP servers, and the skill library',
+    searchPlaceholder: 'Search tools...',
+    empty: 'No matching tools',
+    enabledOf: '{enabled} of {total} enabled',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    tabs: {
+      builtin: 'Built-in',
+      mcp: 'MCP servers',
+      skills: 'Skills',
+    },
   },
   common: {
     cancel: 'Cancel',
