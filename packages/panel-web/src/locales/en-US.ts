@@ -24,6 +24,11 @@ export default {
       skills: 'Skills',
     },
   },
+  notifications: {
+    title: 'Notifications',
+    empty: 'All quiet',
+    markAllRead: 'Mark all read',
+  },
   common: {
     cancel: 'Cancel',
     confirm: 'Confirm',

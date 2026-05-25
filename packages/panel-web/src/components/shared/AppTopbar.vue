@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router';
 import { useSystemStore } from '@/stores/system';
 import { setLocale } from '@/locales';
 import StatusBadge from './StatusBadge.vue';
+import NotificationBell from './NotificationBell.vue';
 
 const system = useSystemStore();
 const { health, loading } = storeToRefs(system);
@@ -57,6 +58,7 @@ function toggleLocale(): void {
     <h1 class="text-base font-medium">{{ pageTitle }}</h1>
     <div class="flex-1" />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
+    <NotificationBell />
     <button
       class="text-xs px-2 py-1 rounded hover:bg-[var(--bg-elevate)] opacity-70 hover:opacity-100"
       :title="locale === 'zh-CN' ? 'Switch to English' : '切换到中文'"

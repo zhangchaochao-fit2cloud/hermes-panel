@@ -24,6 +24,11 @@ export default {
       skills: '技能',
     },
   },
+  notifications: {
+    title: '通知',
+    empty: '一切平静',
+    markAllRead: '全部已读',
+  },
   common: {
     cancel: '取消',
     confirm: '确认',

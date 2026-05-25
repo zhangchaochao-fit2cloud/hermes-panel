@@ -13,6 +13,8 @@ import { sessionsRouter } from './routes/sessions.js';
 import { hermesProxyRouter } from './routes/hermes-proxy.js';
 import { statsRouter } from './routes/stats.js';
 import { toolsRouter } from './routes/tools.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { initWatermark } from './services/notification-feed.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -36,6 +38,7 @@ export function createApp(): Koa {
   router.use(sessionsRouter.routes(), sessionsRouter.allowedMethods());
   router.use(statsRouter.routes(), statsRouter.allowedMethods());
   router.use(toolsRouter.routes(), toolsRouter.allowedMethods());
+  router.use(notificationsRouter.routes(), notificationsRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
@@ -61,6 +64,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const port = Number(process.env.BFF_PORT ?? PORTS.PANEL_BFF);
   const token = getSessionToken();
   logger.info({ port, token: token.slice(0, 8) + '...' }, 'starting bff');
+  initWatermark();
   createApp().listen(port, '127.0.0.1', () => {
     logger.info(`bff listening on http://127.0.0.1:${port}`);
   });
