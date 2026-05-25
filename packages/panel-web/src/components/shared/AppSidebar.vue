@@ -17,12 +17,12 @@ interface MenuItem {
 }
 
 const items = computed<MenuItem[]>(() => [
+  { key: 'dashboard', icon: '📊', label: t('nav.dashboard'), path: '/dashboard' },
   { key: 'chat', icon: '💬', label: t('nav.chat'), path: '/chat' },
-  { key: 'dashboard', icon: '📊', label: 'Dashboard', path: '/dashboard', disabled: true },
-  { key: 'sessions', icon: '📜', label: 'Sessions', path: '/sessions', disabled: true },
+  { key: 'sessions', icon: '📜', label: t('nav.sessions'), path: '/sessions' },
   { key: 'workspaces', icon: '🧩', label: 'Workspaces', path: '/workspaces', disabled: true },
   { key: 'tools', icon: '🛠', label: 'Tools', path: '/tools', disabled: true },
-  { key: 'settings', icon: '⚙️', label: 'Settings', path: '/settings', disabled: true },
+  { key: 'settings', icon: '⚙️', label: t('nav.settings'), path: '/settings' },
 ]);
 
 function go(item: MenuItem): void {

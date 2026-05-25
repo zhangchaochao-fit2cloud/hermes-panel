@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme, useOsTheme } from 'naive-ui';
-import { computed } from 'vue';
+import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, darkTheme } from 'naive-ui';
+import { computed, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import { useAppearanceStore } from '@/stores/appearance';
 
-const osTheme = useOsTheme();
-const theme = computed(() => (osTheme.value === 'dark' ? darkTheme : null));
+const appearance = useAppearanceStore();
+const { effectiveDark } = storeToRefs(appearance);
+const theme = computed(() => (effectiveDark.value ? darkTheme : null));
+
+onMounted(() => appearance.init());
 </script>
 
 <template>
   <NConfigProvider :theme="theme">
     <NMessageProvider>
       <NDialogProvider>
-        <DefaultLayout>
-          <RouterView />
-        </DefaultLayout>
+        <NNotificationProvider>
+          <DefaultLayout>
+            <RouterView />
+          </DefaultLayout>
+        </NNotificationProvider>
       </NDialogProvider>
     </NMessageProvider>
   </NConfigProvider>
