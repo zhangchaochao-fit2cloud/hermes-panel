@@ -1,6 +1,29 @@
 <script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import AppSidebar from '@/components/shared/AppSidebar.vue';
 import AppTopbar from '@/components/shared/AppTopbar.vue';
+import EventStreamPanel from '@/components/shared/EventStreamPanel.vue';
+
+const route = useRoute();
+const showStream = ref(false);
+
+// Read initial value from localStorage; default ON for Dashboard, OFF elsewhere.
+onMounted(() => {
+  const stored = localStorage.getItem('panel.showEventStream');
+  if (stored === 'true' || stored === 'false') {
+    showStream.value = stored === 'true';
+  } else {
+    showStream.value = route.path === '/dashboard';
+  }
+});
+
+watch(showStream, (v) => {
+  localStorage.setItem('panel.showEventStream', String(v));
+});
+
+// Stream only renders when not in fullscreen-style routes (Chat takes full height for UX)
+const visibleHere = computed(() => route.path !== '/chat' && route.path !== '/memory');
 </script>
 
 <template>
@@ -11,6 +34,7 @@ import AppTopbar from '@/components/shared/AppTopbar.vue';
       <main class="flex-1 min-h-0 overflow-hidden">
         <slot />
       </main>
+      <EventStreamPanel v-if="showStream && visibleHere" />
     </div>
   </div>
 </template>
