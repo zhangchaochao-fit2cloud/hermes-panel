@@ -29,6 +29,19 @@ export default {
     empty: 'All quiet',
     markAllRead: 'Mark all read',
   },
+  controlCenter: {
+    placeholder: 'Search commands, pages or sessions...  press ⌘⇧P',
+    empty: 'No matches',
+    group: { nav: 'Navigate', action: 'Actions', theme: 'Theme', locale: 'Language', recent: 'Recent sessions' },
+    action: {
+      newChat: 'New chat',
+      refresh: 'Reload page',
+      themeLight: 'Switch to light',
+      themeDark: 'Switch to dark',
+      themeAuto: 'Follow system',
+    },
+    hint: { navigate: 'Navigate', execute: 'Execute', close: 'Close' },
+  },
   common: {
     cancel: 'Cancel',
     confirm: 'Confirm',

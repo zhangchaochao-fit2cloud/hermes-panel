@@ -3,6 +3,7 @@ import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvid
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import ControlCenter from '@/components/shared/ControlCenter.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 
 const appearance = useAppearanceStore();
@@ -20,6 +21,7 @@ onMounted(() => appearance.init());
           <DefaultLayout>
             <RouterView />
           </DefaultLayout>
+          <ControlCenter />
         </NNotificationProvider>
       </NDialogProvider>
     </NMessageProvider>

@@ -29,6 +29,19 @@ export default {
     empty: '一切平静',
     markAllRead: '全部已读',
   },
+  controlCenter: {
+    placeholder: '搜索命令、页面或会话...  按 ⌘⇧P 唤起',
+    empty: '没有匹配项',
+    group: { nav: '导航', action: '操作', theme: '主题', locale: '语言', recent: '最近会话' },
+    action: {
+      newChat: '新建对话',
+      refresh: '刷新页面',
+      themeLight: '切换到亮色',
+      themeDark: '切换到暗色',
+      themeAuto: '跟随系统配色',
+    },
+    hint: { navigate: '导航', execute: '执行', close: '关闭' },
+  },
   common: {
     cancel: '取消',
     confirm: '确认',
