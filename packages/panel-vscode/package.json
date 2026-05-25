@@ -1,0 +1,90 @@
+{
+  "name": "hermes-panel-vscode",
+  "displayName": "Hermes Panel",
+  "description": "Send code, selection, or git diff to Hermes Panel from VS Code",
+  "version": "0.1.0-alpha.0",
+  "publisher": "hermes-panel",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "keywords": [
+    "hermes",
+    "ai",
+    "agent",
+    "llm",
+    "chat"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      { "command": "hermesPanel.sendSelection", "title": "Hermes Panel: Send Selection" },
+      { "command": "hermesPanel.sendFile", "title": "Hermes Panel: Send Current File" },
+      { "command": "hermesPanel.sendDiff", "title": "Hermes Panel: Send Git Diff" },
+      { "command": "hermesPanel.openPanel", "title": "Hermes Panel: Open Panel" },
+      { "command": "hermesPanel.newChat", "title": "Hermes Panel: New Chat" }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "hermesPanel.sendSelection",
+          "when": "editorHasSelection",
+          "group": "hermes@1"
+        },
+        {
+          "command": "hermesPanel.sendFile",
+          "when": "!editorHasSelection",
+          "group": "hermes@1"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "hermesPanel.sendDiff",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Hermes Panel",
+      "properties": {
+        "hermesPanel.bffUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:5667",
+          "description": "BFF base URL (default matches local install)"
+        },
+        "hermesPanel.token": {
+          "type": "string",
+          "default": "",
+          "description": "Panel token (X-Panel-Token header). Leave empty to skip auth."
+        },
+        "hermesPanel.openOnSend": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the Panel after sending"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=dist/extension.js --format=cjs",
+    "watch": "pnpm build --watch",
+    "package": "vsce package --no-dependencies",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "3.2.1",
+    "esbuild": "0.24.0",
+    "typescript": "5.4.5"
+  }
+}

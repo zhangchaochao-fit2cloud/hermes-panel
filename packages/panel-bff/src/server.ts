@@ -18,6 +18,7 @@ import { initWatermark } from './services/notification-feed.js';
 import { profileCronRouter } from './routes/profile-cron.js';
 import { memoryRouter } from './routes/memory.js';
 import { capabilitiesRouter } from './routes/capabilities.js';
+import { draftRouter } from './routes/draft.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -45,6 +46,7 @@ export function createApp(): Koa {
   router.use(profileCronRouter.routes(), profileCronRouter.allowedMethods());
   router.use(memoryRouter.routes(), memoryRouter.allowedMethods());
   router.use(capabilitiesRouter.routes(), capabilitiesRouter.allowedMethods());
+  router.use(draftRouter.routes(), draftRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
