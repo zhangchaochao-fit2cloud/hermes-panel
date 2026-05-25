@@ -17,5 +17,7 @@ export function getBffBase(): string {
 }
 
 export function getHermesApiBase(): string {
-  return readMeta('hermes-api-base') || 'http://127.0.0.1:8642';
+  const meta = readMeta('hermes-api-base');
+  if (meta && meta !== '__HERMES_API_BASE__') return meta;
+  return (import.meta.env.VITE_HERMES_API_BASE as string) || 'http://127.0.0.1:8642';
 }

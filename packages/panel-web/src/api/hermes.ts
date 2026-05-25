@@ -14,16 +14,18 @@ export interface RunHandle {
 
 export async function startRun(
   apiKey: string,
-  payload: RunStartPayload
+  payload: RunStartPayload,
+  baseUrl?: string,
 ): Promise<RunHandle> {
+  const base = baseUrl ?? getHermesApiBase();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-  const res = await fetch(`${getHermesApiBase()}/v1/runs`, {
+  const res = await fetch(`${base}/v1/runs`, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`startRun failed: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`startRun failed: HTTP ${res.status} ${res.statusText}`);
   const data = (await res.json()) as { run_id: string };
   return { runId: data.run_id };
 }
@@ -39,12 +41,12 @@ export function consumeSSE(
     onEvent: (ev: SSEEvent) => void;
     onError: (err: Event) => void;
     onClose: () => void;
-  }
+  },
+  baseUrl?: string,
 ): SSEHandle {
-  // EventSource doesn't support custom headers, so the api key is
-  // tracked for a future fetch+ReadableStream implementation.
   void apiKey;
-  const url = new URL(`${getHermesApiBase()}/v1/runs/${runId}/events`);
+  const base = baseUrl ?? getHermesApiBase();
+  const url = new URL(`${base}/v1/runs/${runId}/events`);
   const es = new EventSource(url.toString());
 
   const eventTypes: SSEEvent['type'][] = [

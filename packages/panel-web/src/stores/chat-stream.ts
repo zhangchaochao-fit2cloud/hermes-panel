@@ -10,6 +10,7 @@ export type StreamState = 'idle' | 'creating' | 'streaming' | 'done' | 'error' |
 export const useChatStreamStore = defineStore('chat-stream', () => {
   const state = ref<StreamState>('idle');
   const lastError = ref<string | null>(null);
+  const lastErrorCode = ref<string | null>(null);
   const currentRunId = ref<string | null>(null);
   const reconnectAttempts = ref(0);
 
@@ -23,33 +24,50 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
 
     state.value = 'creating';
     lastError.value = null;
+    lastErrorCode.value = null;
     reconnectAttempts.value = 0;
 
+    const apiBase = system.hermesApiBase || 'http://127.0.0.1:8642';
+    const apiKey = system.hermesApiKey ?? '';
+
     try {
-      const run = await startRun(system.hermesApiKey ?? '', {
+      const run = await startRun(apiKey, {
         model,
         input,
         stream: true,
         session_id: session.sessionId ?? undefined,
-      });
+      }, apiBase);
       currentRunId.value = run.runId;
       state.value = 'streaming';
 
-      handle = consumeSSE(run.runId, system.hermesApiKey ?? '', {
+      handle = consumeSSE(run.runId, apiKey, {
         onEvent: (ev: SSEEvent) => dispatch(ev),
-        onError: (err) => {
-          lastError.value = `SSE error: ${(err as Event).type ?? 'unknown'}`;
-          state.value = 'error';
+        onError: () => {
+          // EventSource error usually triggers when the stream ends naturally,
+          // so don't surface unless we never received any events.
+          if (state.value === 'streaming') {
+            state.value = 'done';
+          }
         },
         onClose: () => {
           handle = null;
           if (state.value === 'streaming') state.value = 'done';
         },
-      });
+      }, apiBase);
     } catch (err) {
-      lastError.value = (err as Error).message;
+      const msg = (err as Error).message ?? 'unknown';
+      lastError.value = msg;
+      lastErrorCode.value = inferErrorCode(msg);
       state.value = 'error';
     }
+  }
+
+  function inferErrorCode(msg: string): string {
+    if (/Failed to fetch|NetworkError|ECONNREFUSED/i.test(msg)) return 'HERMES_API_UNREACHABLE';
+    if (/HTTP 401|HTTP 403/.test(msg)) return 'HERMES_API_UNAUTHORIZED';
+    if (/HTTP 5\d\d/.test(msg)) return 'HERMES_API_SERVER_ERROR';
+    if (/HTTP 4\d\d/.test(msg)) return 'HERMES_API_BAD_REQUEST';
+    return 'UNKNOWN';
   }
 
   function dispatch(ev: SSEEvent): void {
@@ -85,6 +103,7 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
         break;
       case 'run.error':
         lastError.value = ev.error;
+        lastErrorCode.value = 'HERMES_RUN_ERROR';
         state.value = 'error';
         break;
     }
@@ -96,5 +115,5 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     state.value = 'idle';
   }
 
-  return { state, lastError, currentRunId, reconnectAttempts, send, abort };
+  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, send, abort };
 });

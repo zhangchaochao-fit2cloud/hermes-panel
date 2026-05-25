@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "org.hermespanel.app",
   "build": {
-    "beforeDevCommand": "pnpm --filter @hermes-panel/web dev",
+    "beforeDevCommand": "bash ../../scripts/tauri-dev-prep.sh",
     "beforeBuildCommand": "pnpm --filter @hermes-panel/web build",
     "devUrl": "http://127.0.0.1:5666",
     "frontendDist": "../../panel-web/dist"
