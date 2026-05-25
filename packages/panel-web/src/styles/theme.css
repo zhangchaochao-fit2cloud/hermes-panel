@@ -49,3 +49,43 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Message bubble enter animation */
+.message-enter {
+  animation: message-fade-in 220ms var(--ease);
+}
+@keyframes message-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Streaming cursor */
+.cursor-blink {
+  animation: cursor-blink 1s steps(2, start) infinite;
+}
+@keyframes cursor-blink {
+  to { visibility: hidden; }
+}
+
+/* Pulsing edge on running tool cards */
+.tool-running {
+  animation: tool-pulse 1.6s var(--ease) infinite;
+}
+@keyframes tool-pulse {
+  0%, 100% { border-left-color: #facc15; }
+  50%      { border-left-color: #fde047; }
+}
+
+/* Sidebar item slide-in highlight */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-enter,
+  .cursor-blink,
+  .tool-running {
+    animation: none !important;
+  }
+}

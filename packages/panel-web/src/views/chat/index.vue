@@ -70,6 +70,11 @@ const sampleQuestions = [
 ];
 
 async function onSend(text: string): Promise<void> {
+  if (!system.health?.hermes.running) {
+    message.warning('Hermes 还没准备好，请稍等几秒...', { duration: 3000 });
+    void system.refresh();
+    return;
+  }
   await stream.send(text, model.value);
 }
 

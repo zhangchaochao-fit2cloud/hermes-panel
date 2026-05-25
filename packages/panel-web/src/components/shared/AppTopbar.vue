@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -12,8 +12,18 @@ const { health, loading } = storeToRefs(system);
 const { t, locale } = useI18n();
 const route = useRoute();
 
+let pollHandle: ReturnType<typeof setInterval> | null = null;
+
 onMounted(async () => {
   if (!health.value) await system.refresh();
+  // Poll health every 10s so the topbar reflects hermes going up/down
+  pollHandle = setInterval(() => {
+    void system.refresh();
+  }, 10_000);
+});
+
+onUnmounted(() => {
+  if (pollHandle) clearInterval(pollHandle);
 });
 
 const hermesState = computed<'connected' | 'connecting' | 'disconnected' | 'unknown'>(() => {
