@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+:root {
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px;
+
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .04);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, .06);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, .10);
+
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+
+  --bg-page: #f7f8fa;
+  --bg-card: #ffffff;
+  --bg-elevate: #fafbfc;
+  --border: #e5e7eb;
+  --text-1: #18181b;
+  --text-2: #52525b;
+  --text-3: #a1a1aa;
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+}
+
+:root[data-theme='dark'] {
+  --bg-page: #0a0a0b;
+  --bg-card: #141416;
+  --bg-elevate: #1c1c1f;
+  --border: #27272a;
+  --text-1: #fafafa;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--text-1);
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei UI", Roboto, "Noto Sans CJK SC", system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
