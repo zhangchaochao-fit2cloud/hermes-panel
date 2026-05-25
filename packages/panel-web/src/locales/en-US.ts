@@ -7,7 +7,11 @@ export default {
     dashboard: 'Dashboard',
     chat: 'Chat',
     sessions: 'Sessions',
+    workspaces: 'Workspaces',
+    cron: 'Cron',
+    memory: 'Memory',
     tools: 'Tools',
+    developer: 'Developer',
     settings: 'Settings',
   },
   tools: {

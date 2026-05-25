@@ -7,7 +7,11 @@ export default {
     dashboard: '仪表盘',
     chat: '对话',
     sessions: '会话历史',
+    workspaces: '工作环境',
+    cron: '定时任务',
+    memory: '记忆',
     tools: '工具',
+    developer: '开发者',
     settings: '设置',
   },
   tools: {

@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useCapabilitiesStore } from '@/stores/capabilities';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const collapsed = ref(false);
+const caps = useCapabilitiesStore();
+
+onMounted(() => { void caps.load(); });
 
 interface MenuItem {
   key: string;
@@ -14,20 +18,29 @@ interface MenuItem {
   label: string;
   path: string;
   disabled?: boolean;
+  disabledReason?: string;
 }
 
-const items = computed<MenuItem[]>(() => [
-  { key: 'dashboard', icon: '📊', label: t('nav.dashboard'), path: '/dashboard' },
-  { key: 'chat', icon: '💬', label: t('nav.chat'), path: '/chat' },
-  { key: 'sessions', icon: '📜', label: t('nav.sessions'), path: '/sessions' },
-  { key: 'workspaces', icon: '🧩', label: 'Workspaces', path: '/workspaces', disabled: true },
-  { key: 'tools', icon: '🛠', label: t('nav.tools'), path: '/tools' },
-  { key: 'settings', icon: '⚙️', label: t('nav.settings'), path: '/settings' },
-]);
+const items = computed<MenuItem[]>(() => {
+  return [
+    { key: 'dashboard', icon: '📊', label: t('nav.dashboard'), path: '/dashboard' },
+    { key: 'chat', icon: '💬', label: t('nav.chat'), path: '/chat' },
+    { key: 'sessions', icon: '📜', label: t('nav.sessions'), path: '/sessions' },
+    { key: 'workspaces', icon: '🧩', label: t('nav.workspaces'), path: '/workspaces',
+      disabled: !caps.has('profile'), disabledReason: 'Hermes profile not available' },
+    { key: 'cron', icon: '⏰', label: t('nav.cron'), path: '/cron',
+      disabled: !caps.has('cron'), disabledReason: 'Hermes cron not available' },
+    { key: 'memory', icon: '🧠', label: t('nav.memory'), path: '/memory',
+      disabled: !caps.has('memory'), disabledReason: 'No ~/.hermes/memories directory' },
+    { key: 'tools', icon: '🛠', label: t('nav.tools'), path: '/tools' },
+    { key: 'developer', icon: '🔧', label: t('nav.developer'), path: '/developer' },
+    { key: 'settings', icon: '⚙️', label: t('nav.settings'), path: '/settings' },
+  ];
+});
 
 function go(item: MenuItem): void {
   if (item.disabled) return;
-  router.push(item.path);
+  void router.push(item.path);
 }
 </script>
 
@@ -58,12 +71,12 @@ function go(item: MenuItem): void {
           item.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
         ]"
         :disabled="item.disabled"
-        :title="item.label + (item.disabled ? ' (coming in next plan)' : '')"
+        :title="item.disabled ? (item.disabledReason ?? item.label) : item.label"
         @click="go(item)"
       >
         <span class="text-base flex-shrink-0">{{ item.icon }}</span>
         <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
-        <span v-if="!collapsed && item.disabled" class="ml-auto text-[10px] opacity-60">soon</span>
+        <span v-if="!collapsed && item.disabled" class="ml-auto text-[10px] opacity-60">N/A</span>
       </button>
     </nav>
 
