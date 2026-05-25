@@ -1,0 +1,23 @@
+{
+  "name": "hermes-panel",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "fake-hermes": "pnpm --filter fake-hermes dev"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  },
+  "packageManager": "pnpm@10.19.0"
+}
