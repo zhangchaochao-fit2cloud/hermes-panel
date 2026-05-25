@@ -1,0 +1,28 @@
+{
+  "name": "hermes-panel",
+  "version": "0.1.0-alpha.0",
+  "description": "Beautiful Web UI for Hermes Agent",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "hermes-panel": "bin/hermes-panel.js"
+  },
+  "scripts": {
+    "prepack": "node scripts/copy-dist.js"
+  },
+  "files": [
+    "bin/",
+    "dist-web/",
+    "dist-bff/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@hermes-panel/bff": "workspace:*",
+    "@hermes-panel/web": "workspace:*",
+    "open": "10.1.0",
+    "sirv": "3.0.0"
+  }
+}
