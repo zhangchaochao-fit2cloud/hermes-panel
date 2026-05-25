@@ -6,15 +6,15 @@ import { logger } from './lib/logger.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
 import { getSessionToken } from './lib/token.js';
+import { systemRouter } from './routes/system.js';
+import { tokenRouter } from './routes/token.js';
 
 export function createApp(): Koa {
   const app = new Koa();
   const router = new Router({ prefix: '/api' });
 
-  // Routes registered in later tasks
-  // router.use(systemRouter.routes());
-  // router.use(sessionsRouter.routes());
-  // router.use(tokenRouter.routes());
+  router.use(systemRouter.routes(), systemRouter.allowedMethods());
+  router.use(tokenRouter.routes(), tokenRouter.allowedMethods());
 
   app.use(errorMiddleware);
   app.use(bodyParser());
