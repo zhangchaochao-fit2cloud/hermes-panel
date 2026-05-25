@@ -1,5 +1,11 @@
 import Router from '@koa/router';
-import { overallStats, dailyTokenUsage, modelDistribution } from '../services/sqlite-reader.js';
+import {
+  overallStats,
+  dailyTokenUsage,
+  modelDistribution,
+  cacheStats,
+  monthlyPace,
+} from '../services/sqlite-reader.js';
 
 export const statsRouter = new Router();
 
@@ -15,4 +21,13 @@ statsRouter.get('/stats/daily', ctx => {
 statsRouter.get('/stats/models', ctx => {
   const days = Math.min(Math.max(1, Number(ctx.query.days ?? 30)), 365);
   ctx.body = modelDistribution(days);
+});
+
+statsRouter.get('/stats/cache', ctx => {
+  const days = Math.min(Math.max(1, Number(ctx.query.days ?? 30)), 365);
+  ctx.body = cacheStats(days);
+});
+
+statsRouter.get('/stats/pace', ctx => {
+  ctx.body = monthlyPace();
 });

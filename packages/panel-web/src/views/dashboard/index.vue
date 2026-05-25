@@ -11,6 +11,8 @@ import StatCard from '@/components/dashboard/StatCard.vue';
 import UsageChart, { type DailyTokenPoint } from '@/components/dashboard/UsageChart.vue';
 import ModelPieChart, { type ModelStatPoint } from '@/components/dashboard/ModelPieChart.vue';
 import RecentSessions from '@/components/dashboard/RecentSessions.vue';
+import CacheCard from '@/components/dashboard/CacheCard.vue';
+import MonthlyPaceCard from '@/components/dashboard/MonthlyPaceCard.vue';
 
 interface OverallStats {
   total_sessions: number;
@@ -148,6 +150,12 @@ const todayUsdLabel = computed(() => {
           :loading="overallLoading"
           accent="#34d399"
         />
+      </section>
+
+      <!-- Token optimization row (spec §11) -->
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <CacheCard />
+        <MonthlyPaceCard />
       </section>
 
       <!-- Charts: 2:1 on lg, stacked on md -->

@@ -176,6 +176,24 @@ export interface OverallStats {
   today_cost_usd: number;
 }
 
+export interface CacheStats {
+  total_input_tokens: number;
+  total_cache_read_tokens: number;
+  total_cache_write_tokens: number;
+  cache_hit_ratio: number;          // cache_read / (input + cache_read)
+  estimated_saved_usd: number;       // cache_read tokens count at 90% discount
+}
+
+export interface MonthlyPace {
+  month_start: string;
+  days_elapsed: number;
+  days_in_month: number;
+  tokens_so_far: number;
+  cost_so_far_usd: number;
+  projected_tokens: number;
+  projected_cost_usd: number;
+}
+
 export function overallStats(): OverallStats {
   const db = getDb();
   if (!db) return { total_sessions: 0, total_messages: 0, total_tokens: 0, today_tokens: 0, today_cost_usd: 0 };
@@ -203,4 +221,67 @@ export function overallStats(): OverallStats {
   `).get(startOfToday) as { today_tokens: number; today_cost_usd: number };
 
   return { ...sessions, ...today };
+}
+
+export function cacheStats(days: number = 30): CacheStats {
+  const db = getDb();
+  if (!db) return { total_input_tokens: 0, total_cache_read_tokens: 0, total_cache_write_tokens: 0, cache_hit_ratio: 0, estimated_saved_usd: 0 };
+  const cutoff = (Date.now() / 1000) - days * 86400;
+  const row = db.prepare(`
+    SELECT
+      COALESCE(SUM(input_tokens), 0) AS input,
+      COALESCE(SUM(cache_read_tokens), 0) AS cache_read,
+      COALESCE(SUM(cache_write_tokens), 0) AS cache_write
+    FROM sessions WHERE started_at >= ?
+  `).get(cutoff) as { input: number; cache_read: number; cache_write: number };
+  const denom = row.input + row.cache_read;
+  const ratio = denom > 0 ? row.cache_read / denom : 0;
+  // Rough Anthropic-style pricing: cache reads at ~10% of input cost; assume $3/M base
+  const estimatedSavedUsd = (row.cache_read / 1_000_000) * 3 * 0.9;
+  return {
+    total_input_tokens: row.input,
+    total_cache_read_tokens: row.cache_read,
+    total_cache_write_tokens: row.cache_write,
+    cache_hit_ratio: ratio,
+    estimated_saved_usd: estimatedSavedUsd,
+  };
+}
+
+export function monthlyPace(): MonthlyPace {
+  const db = getDb();
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const daysInMonth = monthEnd.getDate();
+  const daysElapsed = Math.max(1, Math.floor((now.getTime() - monthStart.getTime()) / 86_400_000) + 1);
+  const monthStartIso = monthStart.toISOString().slice(0, 10);
+
+  if (!db) {
+    return {
+      month_start: monthStartIso, days_elapsed: daysElapsed, days_in_month: daysInMonth,
+      tokens_so_far: 0, cost_so_far_usd: 0, projected_tokens: 0, projected_cost_usd: 0,
+    };
+  }
+
+  const row = db.prepare(`
+    SELECT
+      COALESCE(SUM(input_tokens + output_tokens), 0) AS tokens,
+      COALESCE(SUM(estimated_cost_usd), 0) AS cost
+    FROM sessions WHERE started_at >= ?
+  `).get(monthStart.getTime() / 1000) as { tokens: number; cost: number };
+
+  const rate = row.tokens / daysElapsed;
+  const projectedTokens = Math.round(rate * daysInMonth);
+  const costRate = row.cost / daysElapsed;
+  const projectedCost = costRate * daysInMonth;
+
+  return {
+    month_start: monthStartIso,
+    days_elapsed: daysElapsed,
+    days_in_month: daysInMonth,
+    tokens_so_far: row.tokens,
+    cost_so_far_usd: row.cost,
+    projected_tokens: projectedTokens,
+    projected_cost_usd: projectedCost,
+  };
 }
