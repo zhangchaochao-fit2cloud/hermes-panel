@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*; font-src 'self' data:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+      "csp": null
     }
   },
   "bundle": {
@@ -33,6 +33,9 @@
     "icon": ["icons/icon.png"],
     "category": "Productivity",
     "shortDescription": "Beautiful Web UI for Hermes Agent",
-    "longDescription": "Hermes Panel is a beautiful, easy-to-use control panel for the Hermes Agent."
+    "longDescription": "Hermes Panel is a beautiful, easy-to-use control panel for the Hermes Agent.",
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
   }
 }

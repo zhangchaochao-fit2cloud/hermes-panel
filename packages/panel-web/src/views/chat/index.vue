@@ -25,8 +25,15 @@ const sending = ref(false);
 const scroller = ref<HTMLElement | null>(null);
 
 onMounted(async () => {
+  console.info('[chat] onMounted: calling system.refresh + system.loadToken');
   await system.refresh();
+  console.info('[chat] system.refresh done. health=', system.health, 'error=', system.error);
   await system.loadToken();
+  console.info('[chat] system.loadToken done. hermesApiBase=', system.hermesApiBase, 'hermesApiKey=', system.hermesApiKey ? '<set>' : '<null>', 'error=', system.error);
+
+  if (system.error) {
+    message.error(`Init failed: ${system.error}`, { duration: 0, closable: true });
+  }
 });
 
 watch(messages, async () => {
@@ -40,16 +47,19 @@ watch(state, (s, prev) => {
   if (s === 'error' && prev !== 'error') {
     const code = lastErrorCode.value ?? 'UNKNOWN';
     const detail = lastError.value ?? t('error.unknown');
-    const friendly = {
-      HERMES_API_UNREACHABLE: `${t('error.hermes_not_found')} · ${system.hermesApiBase}`,
+    const headline = {
+      HERMES_API_UNREACHABLE: t('error.hermes_not_found'),
       HERMES_API_UNAUTHORIZED: '认证失败：API key 无效或缺失',
-      HERMES_API_SERVER_ERROR: `Hermes 内部错误 (${detail})`,
-      HERMES_API_BAD_REQUEST: `请求被拒绝 (${detail})`,
-      HERMES_RUN_ERROR: `运行失败: ${detail}`,
-      UNKNOWN: detail,
-    }[code] ?? detail;
+      HERMES_API_SERVER_ERROR: 'Hermes 内部错误',
+      HERMES_API_BAD_REQUEST: '请求被拒绝',
+      HERMES_RUN_ERROR: '运行失败',
+      UNKNOWN: '出错了',
+    }[code] ?? '出错了';
 
-    message.error(friendly, { duration: 6000, closable: true });
+    // Show the raw error detail so users can self-diagnose (dev-friendly).
+    const full = `${headline}\n${detail}`;
+    console.error('[chat] error', { code, detail });
+    message.error(full, { duration: 10000, closable: true });
   }
 });
 

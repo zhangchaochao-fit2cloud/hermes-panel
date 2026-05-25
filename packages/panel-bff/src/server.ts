@@ -10,6 +10,7 @@ import { getSessionToken } from './lib/token.js';
 import { systemRouter } from './routes/system.js';
 import { tokenRouter } from './routes/token.js';
 import { sessionsRouter } from './routes/sessions.js';
+import { hermesProxyRouter } from './routes/hermes-proxy.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -31,6 +32,7 @@ export function createApp(): Koa {
   router.use(systemRouter.routes(), systemRouter.allowedMethods());
   router.use(tokenRouter.routes(), tokenRouter.allowedMethods());
   router.use(sessionsRouter.routes(), sessionsRouter.allowedMethods());
+  router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
   app.use(cors({

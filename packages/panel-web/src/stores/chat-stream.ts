@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { startRun, consumeSSE, type SSEHandle } from '@/api/hermes';
 import { useSessionStore } from './session';
-import { useSystemStore } from './system';
 
 export type StreamState = 'idle' | 'creating' | 'streaming' | 'done' | 'error' | 'reconnecting';
 
@@ -18,7 +17,6 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
 
   async function send(input: string, model: string): Promise<void> {
     const session = useSessionStore();
-    const system = useSystemStore();
 
     session.appendUserMessage(input);
     session.startAssistantMessage();
@@ -28,20 +26,17 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     lastErrorCode.value = null;
     reconnectAttempts.value = 0;
 
-    const apiBase = system.hermesApiBase || 'http://127.0.0.1:8642';
-    const apiKey = system.hermesApiKey ?? '';
-
     try {
-      const run = await startRun(apiKey, {
+      const run = await startRun('', {
         model,
         input,
         stream: true,
         session_id: session.sessionId ?? undefined,
-      }, apiBase);
+      });
       currentRunId.value = run.runId;
       state.value = 'streaming';
 
-      handle = consumeSSE(run.runId, apiKey, {
+      handle = consumeSSE(run.runId, '', {
         onEvent: (ev: HermesSSEEvent) => dispatch(ev),
         onError: (msg) => {
           lastError.value = msg;
@@ -52,7 +47,7 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
           handle = null;
           if (state.value === 'streaming') state.value = 'done';
         },
-      }, apiBase);
+      });
     } catch (err) {
       const msg = (err as Error).message ?? 'unknown';
       lastError.value = msg;

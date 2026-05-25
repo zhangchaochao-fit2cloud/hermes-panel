@@ -11,10 +11,26 @@ export class BffApiError extends Error {
 }
 
 export async function bffFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const url = `${getBffBase()}${path}`;
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
   headers.set(HEADERS.PANEL_TOKEN, getPanelToken());
-  const res = await fetch(`${getBffBase()}${path}`, { ...init, headers });
+
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch (err) {
+    // WebKit returns the unhelpful "Load failed" — annotate with context
+    const msg = (err as Error).message ?? String(err);
+    const enhanced = new BffApiError(
+      'BFF_UNREACHABLE',
+      `BFF unreachable at ${url}: ${msg}`,
+      0
+    );
+    console.error('[bff]', enhanced);
+    throw enhanced;
+  }
+
   if (!res.ok) {
     let err: BffError = { code: 'HTTP_ERROR', message: res.statusText };
     try { err = (await res.json()).error ?? err; } catch { /* ignore */ }

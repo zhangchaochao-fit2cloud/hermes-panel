@@ -1,5 +1,6 @@
 import type { HermesSSEEvent } from '@hermes-panel/shared';
-import { getHermesApiBase } from './token.js';
+import { HEADERS } from '@hermes-panel/shared';
+import { getBffBase, getPanelToken } from './token.js';
 
 interface RunStartPayload {
   model: string;
@@ -12,22 +13,47 @@ export interface RunHandle {
   runId: string;
 }
 
+/**
+ * Calls go through the BFF's /api/hermes/* proxy. This avoids:
+ *   - Tauri WebKit's "Load failed" on cross-origin POST to hermes
+ *   - Exposing the hermes API key to the browser
+ *   - Two CORS whitelists (just the BFF now)
+ */
+
+function bffUrl(path: string): string {
+  return `${getBffBase()}/api/hermes${path}`;
+}
+
+function authHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    [HEADERS.PANEL_TOKEN]: getPanelToken(),
+  };
+}
+
 export async function startRun(
-  apiKey: string,
+  _apiKey: string,
   payload: RunStartPayload,
-  baseUrl?: string,
 ): Promise<RunHandle> {
-  const base = baseUrl ?? getHermesApiBase();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-  const res = await fetch(`${base}/v1/runs`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
+  void _apiKey;  // BFF holds the real key; this param is kept for signature symmetry
+  const url = bffUrl('/v1/runs');
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    const msg = (err as Error).message ?? String(err);
+    console.error('[hermes] startRun network error', { url, msg, err });
+    throw new Error(`Hermes unreachable at ${url}: ${msg}`);
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`startRun failed: HTTP ${res.status} ${res.statusText}${text ? ' · ' + text.slice(0, 200) : ''}`);
+    throw new Error(`startRun HTTP ${res.status} ${res.statusText}${text ? ' · ' + text.slice(0, 200) : ''}`);
   }
   const data = (await res.json()) as { run_id: string };
   return { runId: data.run_id };
@@ -49,15 +75,15 @@ export interface SSEHandle {
  */
 export function consumeSSE(
   runId: string,
-  apiKey: string,
+  _apiKey: string,
   handlers: {
     onEvent: (ev: HermesSSEEvent) => void;
     onError: (msg: string) => void;
     onClose: () => void;
   },
-  baseUrl?: string,
 ): SSEHandle {
-  const base = baseUrl ?? getHermesApiBase();
+  void _apiKey;
+  const url = bffUrl(`/v1/runs/${runId}/events`);
   const controller = new AbortController();
   let closed = false;
 
@@ -70,12 +96,12 @@ export function consumeSSE(
 
   void (async () => {
     try {
-      const headers: Record<string, string> = { 'Accept': 'text/event-stream' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-      const res = await fetch(`${base}/v1/runs/${runId}/events`, {
+      const res = await fetch(url, {
         method: 'GET',
-        headers,
+        headers: {
+          'Accept': 'text/event-stream',
+          [HEADERS.PANEL_TOKEN]: getPanelToken(),
+        },
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
