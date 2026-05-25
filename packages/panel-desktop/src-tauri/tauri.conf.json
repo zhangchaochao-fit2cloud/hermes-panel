@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "Hermes Panel",
+  "version": "0.1.0",
+  "identifier": "org.hermespanel.app",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @hermes-panel/web dev",
+    "beforeBuildCommand": "pnpm --filter @hermes-panel/web build",
+    "devUrl": "http://127.0.0.1:5666",
+    "frontendDist": "../../panel-web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Hermes Panel",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 500,
+        "decorations": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*; font-src 'self' data:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": ["icons/icon.png"],
+    "category": "Productivity",
+    "shortDescription": "Beautiful Web UI for Hermes Agent",
+    "longDescription": "Hermes Panel is a beautiful, easy-to-use control panel for the Hermes Agent."
+  }
+}
