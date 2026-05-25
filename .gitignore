@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-web/
 target/
 *.log
 .DS_Store
