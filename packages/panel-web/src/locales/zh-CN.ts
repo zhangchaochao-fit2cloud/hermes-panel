@@ -33,6 +33,7 @@ export default {
       done: '已完成',
       error: '调用失败',
     },
+    resumed: '已恢复会话 {id}',
   },
   sessions: {
     searchPlaceholder: '搜索标题、内容...',

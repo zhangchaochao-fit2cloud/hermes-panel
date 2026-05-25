@@ -33,6 +33,7 @@ export default {
       done: 'Done',
       error: 'Failed',
     },
+    resumed: 'Resumed session {id}',
   },
   sessions: {
     searchPlaceholder: 'Search title, content...',

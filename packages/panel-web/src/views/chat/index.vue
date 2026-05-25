@@ -2,10 +2,12 @@
 import { onMounted, ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
+import { useRoute } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import { useSessionStore } from '@/stores/session';
 import { useChatStreamStore } from '@/stores/chat-stream';
 import { useSystemStore } from '@/stores/system';
+import { bffFetch } from '@/api/bff';
 import MessageBubble from '@/components/chat/MessageBubble.vue';
 import Composer from '@/components/chat/Composer.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
@@ -15,6 +17,7 @@ const session = useSessionStore();
 const stream = useChatStreamStore();
 const system = useSystemStore();
 const message = useMessage();
+const route = useRoute();
 
 const { messages } = storeToRefs(session);
 const { state, lastError, lastErrorCode } = storeToRefs(stream);
@@ -24,16 +27,59 @@ const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>('auto');
 const sending = ref(false);
 const scroller = ref<HTMLElement | null>(null);
 
-onMounted(async () => {
-  console.info('[chat] onMounted: calling system.refresh + system.loadToken');
-  await system.refresh();
-  console.info('[chat] system.refresh done. health=', system.health, 'error=', system.error);
-  await system.loadToken();
-  console.info('[chat] system.loadToken done. hermesApiBase=', system.hermesApiBase, 'hermesApiKey=', system.hermesApiKey ? '<set>' : '<null>', 'error=', system.error);
+interface SessionDetail {
+  id: string;
+  title: string;
+  model: string;
+  messages: Array<{
+    id: number;
+    role: string;
+    content: string;
+    reasoning?: string;
+    toolName?: string;
+    timestamp: number;
+  }>;
+}
 
+async function loadSession(id: string): Promise<void> {
+  try {
+    const detail = await bffFetch<SessionDetail>(`/api/sessions/${id}`);
+    session.reset();
+    session.sessionId = id;
+    if (detail.model) model.value = detail.model;
+    for (const m of detail.messages) {
+      if (m.role === 'user') {
+        const um = session.appendUserMessage(m.content);
+        um.createdAt = m.timestamp;
+      } else if (m.role === 'assistant') {
+        const am = session.startAssistantMessage();
+        am.content = m.content;
+        am.reasoning = m.reasoning ?? undefined;
+        am.completed = true;
+        am.createdAt = m.timestamp;
+      }
+      // tool / system roles are skipped from rendering for now
+    }
+    message.success(t('chat.resumed', { id: id.slice(0, 8) }), { duration: 2000 });
+  } catch (err) {
+    message.error(`恢复会话失败: ${(err as Error).message}`, { duration: 5000 });
+  }
+}
+
+onMounted(async () => {
+  await system.refresh();
+  await system.loadToken();
   if (system.error) {
     message.error(`Init failed: ${system.error}`, { duration: 0, closable: true });
   }
+
+  const resumeId = route.query.resume as string | undefined;
+  if (resumeId) await loadSession(resumeId);
+});
+
+// Watch for query change so navigating from Sessions list to Chat?resume=:id works
+watch(() => route.query.resume, async (id) => {
+  if (id && typeof id === 'string') await loadSession(id);
 });
 
 watch(messages, async () => {
