@@ -54,12 +54,13 @@ const server = createServer(async (req, res) => {
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
+    // Hermes API format: `data: {"event": "...", "run_id": "...", ...}\n\n`
+    // No SSE event header; event type lives inside the JSON payload.
     for (const event of sseReplay) {
       const { delayMs, ...payload } = event;
       await new Promise(r => setTimeout(r, delayMs ?? 100));
-      const finalPayload = payload.type === 'run.done' ? { ...payload, runId } : payload;
-      res.write(`event: ${payload.type}\n`);
-      res.write(`data: ${JSON.stringify(finalPayload)}\n\n`);
+      const enriched = { ...payload, run_id: runId, timestamp: Date.now() / 1000 };
+      res.write(`data: ${JSON.stringify(enriched)}\n\n`);
     }
     res.end();
     return;

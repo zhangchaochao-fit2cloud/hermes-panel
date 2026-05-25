@@ -50,7 +50,6 @@ function cycleSpeed(): void {
     <ContextRing
       :used="session.tokenUsage.total"
       :limit="session.contextLimit"
-      :cost="session.tokenUsage.cost"
     />
     <button
       v-if="sending"

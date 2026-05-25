@@ -37,7 +37,8 @@ defineProps<{ message: ChatMessage }>();
       <!-- footer (token usage, etc.) -->
       <div v-if="message.tokenUsage" class="mt-2 text-xs opacity-60">
         {{ message.tokenUsage.total }} tokens
-        <span v-if="message.tokenUsage.cost != null">· ${{ message.tokenUsage.cost.toFixed(4) }}</span>
+        <span v-if="message.tokenUsage.input">· in {{ message.tokenUsage.input }}</span>
+        <span v-if="message.tokenUsage.output">· out {{ message.tokenUsage.output }}</span>
       </div>
     </div>
   </div>

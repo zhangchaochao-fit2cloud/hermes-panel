@@ -1,4 +1,4 @@
-import type { SSEEvent } from '@hermes-panel/shared';
+import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { getHermesApiBase } from './token.js';
 
 interface RunStartPayload {
@@ -25,7 +25,10 @@ export async function startRun(
     headers,
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`startRun failed: HTTP ${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`startRun failed: HTTP ${res.status} ${res.statusText}${text ? ' · ' + text.slice(0, 200) : ''}`);
+  }
   const data = (await res.json()) as { run_id: string };
   return { runId: data.run_id };
 }
@@ -34,43 +37,90 @@ export interface SSEHandle {
   close: () => void;
 }
 
+/**
+ * Consume the Hermes SSE event stream for a given run.
+ *
+ * Hermes sends events as:
+ *   data: {"event": "message.delta", "run_id": "...", "delta": "..."}\n\n
+ *
+ * We use fetch + ReadableStream instead of EventSource because:
+ *  1. EventSource can't set Authorization headers.
+ *  2. Hermes doesn't use SSE `event:` headers — payload contains event name.
+ */
 export function consumeSSE(
   runId: string,
   apiKey: string,
   handlers: {
-    onEvent: (ev: SSEEvent) => void;
-    onError: (err: Event) => void;
+    onEvent: (ev: HermesSSEEvent) => void;
+    onError: (msg: string) => void;
     onClose: () => void;
   },
   baseUrl?: string,
 ): SSEHandle {
-  void apiKey;
   const base = baseUrl ?? getHermesApiBase();
-  const url = new URL(`${base}/v1/runs/${runId}/events`);
-  const es = new EventSource(url.toString());
+  const controller = new AbortController();
+  let closed = false;
 
-  const eventTypes: SSEEvent['type'][] = [
-    'message.start', 'message.delta', 'message.reasoning',
-    'tool.call.start', 'tool.call.result', 'tool.call.error',
-    'message.complete', 'run.done', 'run.error',
-  ];
+  const close = (): void => {
+    if (closed) return;
+    closed = true;
+    controller.abort();
+    handlers.onClose();
+  };
 
-  for (const type of eventTypes) {
-    es.addEventListener(type, (e) => {
-      try {
-        const data = JSON.parse((e as MessageEvent).data);
-        handlers.onEvent({ type, ...data } as SSEEvent);
-        if (type === 'run.done' || type === 'run.error') {
-          es.close();
-          handlers.onClose();
-        }
-      } catch (err) {
-        handlers.onError(new ErrorEvent('parse', { error: err }));
+  void (async () => {
+    try {
+      const headers: Record<string, string> = { 'Accept': 'text/event-stream' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+      const res = await fetch(`${base}/v1/runs/${runId}/events`, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) {
+        handlers.onError(`SSE stream failed: HTTP ${res.status}`);
+        close();
+        return;
       }
-    });
-  }
 
-  es.onerror = handlers.onError;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-  return { close: () => { es.close(); handlers.onClose(); } };
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Split into SSE messages on blank line (\n\n).
+        let sep: number;
+        while ((sep = buffer.indexOf('\n\n')) !== -1) {
+          const raw = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          const dataLine = raw.split('\n').find(line => line.startsWith('data:'));
+          if (!dataLine) continue;
+          const payload = dataLine.slice(5).trim();
+          if (!payload) continue;
+          try {
+            const ev = JSON.parse(payload) as HermesSSEEvent;
+            handlers.onEvent(ev);
+            if (ev.event === 'run.completed' || ev.event === 'run.error') {
+              close();
+              return;
+            }
+          } catch {
+            // Skip malformed events
+          }
+        }
+      }
+      close();
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') return;
+      handlers.onError((err as Error).message ?? 'unknown SSE error');
+      close();
+    }
+  })();
+
+  return { close };
 }

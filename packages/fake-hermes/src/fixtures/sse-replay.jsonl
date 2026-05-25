@@ -1,10 +1,8 @@
-{"type":"message.start","messageId":"m_1","role":"assistant","delayMs":100}
-{"type":"message.reasoning","messageId":"m_1","text":"用户问北京今天天气。我需要调用 web_search 工具。","delayMs":300}
-{"type":"tool.call.start","toolCallId":"tc_1","messageId":"m_1","name":"web_search","input":{"query":"北京今日天气"},"delayMs":200}
-{"type":"tool.call.result","toolCallId":"tc_1","output":{"temp":"18-26℃","condition":"多云","wind":"东南风3级"},"delayMs":600}
-{"type":"message.delta","messageId":"m_1","text":"北京今天","delayMs":80}
-{"type":"message.delta","messageId":"m_1","text":"多云","delayMs":80}
-{"type":"message.delta","messageId":"m_1","text":"，气温 18-26℃，","delayMs":80}
-{"type":"message.delta","messageId":"m_1","text":"东南风 3 级。","delayMs":80}
-{"type":"message.complete","messageId":"m_1","usage":{"prompt":142,"completion":92,"cached":120,"total":234,"cost":0.00023},"delayMs":100}
-{"type":"run.done","runId":"run_abc123","delayMs":50}
+{"event":"tool.started","tool":"web_search","preview":"query: \"北京今日天气\"","delayMs":300}
+{"event":"tool.completed","tool":"web_search","duration":0.6,"error":false,"delayMs":600}
+{"event":"message.delta","delta":"北京今天","delayMs":80}
+{"event":"message.delta","delta":"多云","delayMs":80}
+{"event":"message.delta","delta":"，气温 18-26℃，","delayMs":80}
+{"event":"message.delta","delta":"东南风 3 级。","delayMs":80}
+{"event":"reasoning.available","text":"用户问北京今天天气。我用 web_search 工具拿到了实时数据。","delayMs":100}
+{"event":"run.completed","output":"北京今天多云，气温 18-26℃，东南风 3 级。","usage":{"input_tokens":142,"output_tokens":92,"total_tokens":234},"delayMs":100}

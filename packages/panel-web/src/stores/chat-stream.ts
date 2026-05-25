@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { SSEEvent } from '@hermes-panel/shared';
+import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { startRun, consumeSSE, type SSEHandle } from '@/api/hermes';
 import { useSessionStore } from './session';
 import { useSystemStore } from './system';
@@ -21,6 +21,7 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     const system = useSystemStore();
 
     session.appendUserMessage(input);
+    session.startAssistantMessage();
 
     state.value = 'creating';
     lastError.value = null;
@@ -41,13 +42,11 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
       state.value = 'streaming';
 
       handle = consumeSSE(run.runId, apiKey, {
-        onEvent: (ev: SSEEvent) => dispatch(ev),
-        onError: () => {
-          // EventSource error usually triggers when the stream ends naturally,
-          // so don't surface unless we never received any events.
-          if (state.value === 'streaming') {
-            state.value = 'done';
-          }
+        onEvent: (ev: HermesSSEEvent) => dispatch(ev),
+        onError: (msg) => {
+          lastError.value = msg;
+          lastErrorCode.value = inferErrorCode(msg);
+          state.value = 'error';
         },
         onClose: () => {
           handle = null;
@@ -70,42 +69,41 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     return 'UNKNOWN';
   }
 
-  function dispatch(ev: SSEEvent): void {
+  function dispatch(ev: HermesSSEEvent): void {
     const session = useSessionStore();
-    switch (ev.type) {
-      case 'message.start':
-        session.getOrCreateAssistant(ev.messageId);
-        break;
+    switch (ev.event) {
       case 'message.delta':
-        session.appendDelta(ev.messageId, ev.text);
+        session.appendDelta((ev as { delta: string }).delta);
         break;
-      case 'message.reasoning':
-        session.appendReasoning(ev.messageId, ev.text);
+      case 'reasoning.available':
+        session.appendReasoning((ev as { text: string }).text);
         break;
-      case 'tool.call.start':
-        session.startToolCall(ev.messageId, ev.toolCallId, ev.name, ev.input);
+      case 'tool.started': {
+        const e = ev as { tool: string; preview?: string };
+        session.startToolCall(e.tool, e.preview);
         break;
-      case 'tool.call.result':
-        session.updateToolCall(ev.toolCallId, {
-          status: 'done', output: ev.output, completedAt: Date.now(),
-        });
+      }
+      case 'tool.completed': {
+        const e = ev as { tool: string; duration?: number; error?: boolean };
+        session.completeToolCall(e.tool, { error: e.error, durationSec: e.duration });
         break;
-      case 'tool.call.error':
-        session.updateToolCall(ev.toolCallId, {
-          status: 'error', errorMessage: ev.error, completedAt: Date.now(),
-        });
-        break;
-      case 'message.complete':
-        session.completeMessage(ev.messageId, ev.usage);
-        break;
-      case 'run.done':
+      }
+      case 'run.completed': {
+        const e = ev as { output?: string; usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number } };
+        session.completeRun(e.output, e.usage ? {
+          input: e.usage.input_tokens,
+          output: e.usage.output_tokens,
+          total: e.usage.total_tokens,
+        } : undefined);
         state.value = 'done';
         break;
+      }
       case 'run.error':
-        lastError.value = ev.error;
+        lastError.value = (ev as { error: string }).error;
         lastErrorCode.value = 'HERMES_RUN_ERROR';
         state.value = 'error';
         break;
+      // Unknown events are skipped silently (forward-compat)
     }
   }
 
