@@ -1,7 +1,8 @@
 import Koa from 'koa';
 import Router from '@koa/router';
+import cors from '@koa/cors';
 import bodyParser from 'koa-bodyparser';
-import { PORTS } from '@hermes-panel/shared';
+import { HEADERS, PORTS } from '@hermes-panel/shared';
 import { logger } from './lib/logger.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -9,6 +10,19 @@ import { getSessionToken } from './lib/token.js';
 import { systemRouter } from './routes/system.js';
 import { tokenRouter } from './routes/token.js';
 import { sessionsRouter } from './routes/sessions.js';
+
+// Origins allowed to call BFF. Tauri WebView serves the app from
+// tauri://localhost (and http://tauri.localhost on some platforms).
+// Browser dev uses http://127.0.0.1:5666 / http://localhost:5666.
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return true;  // same-origin / curl
+  if (origin === 'tauri://localhost') return true;
+  if (origin === 'http://tauri.localhost') return true;
+  if (origin === 'https://tauri.localhost') return true;
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return true;
+  const extra = (process.env.PANEL_CORS_ORIGINS ?? '').split(',').map(s => s.trim()).filter(Boolean);
+  return extra.includes(origin);
+}
 
 export function createApp(): Koa {
   const app = new Koa();
@@ -19,6 +33,16 @@ export function createApp(): Koa {
   router.use(sessionsRouter.routes(), sessionsRouter.allowedMethods());
 
   app.use(errorMiddleware);
+  app.use(cors({
+    origin: (ctx) => {
+      const origin = ctx.headers.origin ?? '';
+      return isAllowedOrigin(origin) ? origin : '';
+    },
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', HEADERS.PANEL_TOKEN, HEADERS.HERMES_SESSION],
+    maxAge: 600,
+  }));
   app.use(bodyParser());
   app.use(authMiddleware);
   app.use(router.routes());
