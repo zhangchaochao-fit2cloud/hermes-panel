@@ -1,0 +1,19 @@
+{
+  "name": "fake-hermes",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hermes-panel/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.19.0",
+    "@types/node": "20.14.10",
+    "typescript": "5.4.5"
+  }
+}
