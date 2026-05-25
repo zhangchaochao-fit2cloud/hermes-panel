@@ -8,6 +8,7 @@ import { authMiddleware } from './middleware/auth.js';
 import { getSessionToken } from './lib/token.js';
 import { systemRouter } from './routes/system.js';
 import { tokenRouter } from './routes/token.js';
+import { sessionsRouter } from './routes/sessions.js';
 
 export function createApp(): Koa {
   const app = new Koa();
@@ -15,6 +16,7 @@ export function createApp(): Koa {
 
   router.use(systemRouter.routes(), systemRouter.allowedMethods());
   router.use(tokenRouter.routes(), tokenRouter.allowedMethods());
+  router.use(sessionsRouter.routes(), sessionsRouter.allowedMethods());
 
   app.use(errorMiddleware);
   app.use(bodyParser());
