@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { HealthStatus } from '@hermes-panel/shared';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import GatewayControl from '@/components/shared/GatewayControl.vue';
 
 const props = defineProps<{
   health: HealthStatus | null;
@@ -63,6 +64,9 @@ const statusLabel = computed(() => {
         {{ timeLabel }}
       </p>
     </div>
-    <StatusBadge :state="statusState" :label="statusLabel" />
+    <div class="flex items-center gap-2">
+      <StatusBadge :state="statusState" :label="statusLabel" />
+      <GatewayControl />
+    </div>
   </header>
 </template>

@@ -3,7 +3,6 @@ import {
   listTools,
   setToolEnabled,
   listSkills,
-  listMcpServers,
   browseSkills,
   installSkill,
   uninstallSkill,
@@ -76,7 +75,4 @@ toolsRouter.delete('/skills/:name', async ctx => {
   ctx.body = { ok: true };
 });
 
-toolsRouter.get('/mcp', async ctx => {
-  const r = await listMcpServers();
-  ctx.body = r;
-});
+// GET /mcp lives in routes/mcp.ts together with POST/DELETE.

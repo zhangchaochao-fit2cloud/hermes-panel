@@ -7,7 +7,7 @@ import { useToolsStore } from '@/stores/tools';
 import ToolCard from '@/components/tools/ToolCard.vue';
 import SkillTable from '@/components/tools/SkillTable.vue';
 import SkillMarketplace from '@/components/tools/SkillMarketplace.vue';
-import McpPanel from '@/components/tools/McpPanel.vue';
+import McpServerList from '@/components/tools/McpServerList.vue';
 
 const { t } = useI18n();
 const store = useToolsStore();
@@ -99,7 +99,7 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
 
         <!-- MCP 服务 -->
         <NTabPane name="mcp" :tab="t('tools.tabs.mcp')">
-          <McpPanel />
+          <McpServerList />
         </NTabPane>
 
         <!-- 技能 -->

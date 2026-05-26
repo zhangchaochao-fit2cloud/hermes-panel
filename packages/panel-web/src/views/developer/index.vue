@@ -6,6 +6,8 @@ import ApiPlayground from '@/components/developer/ApiPlayground.vue';
 import SSEInspector from '@/components/developer/SSEInspector.vue';
 import CodeGen from '@/components/developer/CodeGen.vue';
 import WebhookTester from '@/components/developer/WebhookTester.vue';
+import LogsViewer from '@/components/developer/LogsViewer.vue';
+import DoctorPanel from '@/components/developer/DoctorPanel.vue';
 
 const { t } = useI18n();
 const tab = ref<string>('playground');
@@ -31,6 +33,12 @@ const tab = ref<string>('playground');
         </NTabPane>
         <NTabPane name="webhook" :tab="t('developer.tabs.webhook')">
           <WebhookTester />
+        </NTabPane>
+        <NTabPane name="logs" :tab="t('developer.tabs.logs')">
+          <LogsViewer />
+        </NTabPane>
+        <NTabPane name="doctor" :tab="t('developer.tabs.doctor')">
+          <DoctorPanel />
         </NTabPane>
       </NTabs>
     </div>
