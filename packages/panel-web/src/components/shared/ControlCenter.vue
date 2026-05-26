@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useAppearanceStore, type ThemeMode } from '@/stores/appearance';
+import { useHotkeysStore } from '@/stores/hotkeys';
 import { setLocale } from '@/locales';
 import { bffFetch } from '@/api/bff';
 
@@ -24,6 +25,7 @@ interface SessionRow {
 const router = useRouter();
 const { t } = useI18n();
 const appearance = useAppearanceStore();
+const hotkeys = useHotkeysStore();
 const { mode: themeMode } = storeToRefs(appearance);
 
 const open = ref(false);
@@ -133,10 +135,25 @@ async function runItem(action: Action): Promise<void> {
 }
 
 function onKeydown(e: KeyboardEvent): void {
-  // Global ⌘⇧P / Ctrl+Shift+P
-  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+  // Skip when the user is mid-IME composition.
+  if (e.isComposing) return;
+  // Global search — opens the Control Center palette.
+  if (hotkeys.matches(e, 'search')) {
     e.preventDefault();
     show();
+    return;
+  }
+  // Global new chat — route to the chat view.
+  if (hotkeys.matches(e, 'newChat')) {
+    e.preventDefault();
+    void router.push('/chat');
+    return;
+  }
+  // Global refresh — bypass the browser default so we go through location.reload
+  // (which honors service-worker / Vite HMR state).
+  if (hotkeys.matches(e, 'refresh')) {
+    e.preventDefault();
+    location.reload();
   }
 }
 

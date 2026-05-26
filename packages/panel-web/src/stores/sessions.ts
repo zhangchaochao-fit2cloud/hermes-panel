@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { HEADERS } from '@hermes-panel/shared';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
+import { getBffBase, getPanelToken } from '@/api/token';
 
 export type ViewMode = 'table' | 'grid';
 export type SourceFilter = 'all' | 'cli' | 'desktop' | 'web';
@@ -105,6 +107,59 @@ export const useSessionsStore = defineStore('sessions', () => {
     if (item) item.title = title;
   }
 
+  /**
+   * Download a Blob to the user's disk via an anchor click. The blob URL is
+   * revoked on the next tick so the click has time to start the download.
+   */
+  function triggerDownload(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  /**
+   * The export endpoints return JSONL (text/plain) — not JSON — so bffFetch
+   * would fail to parse the body. Use the underlying fetch directly with the
+   * panel token header, and stream the response into a Blob.
+   */
+  async function fetchExport(path: string): Promise<Blob> {
+    const url = `${getBffBase()}${path}`;
+    const headers = new Headers();
+    headers.set(HEADERS.PANEL_TOKEN, getPanelToken());
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const j = await res.json();
+        if (j?.error?.message) msg = j.error.message;
+      } catch { /* fall through with statusText */ }
+      throw new Error(msg || `export failed (${res.status})`);
+    }
+    return await res.blob();
+  }
+
+  async function exportOne(id: string): Promise<void> {
+    const blob = await fetchExport(`/api/sessions/${encodeURIComponent(id)}/export`);
+    const safeId = id.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64) || 'session';
+    triggerDownload(blob, `hermes-session-${safeId}.jsonl`);
+  }
+
+  async function exportAll(): Promise<void> {
+    const params = new URLSearchParams();
+    if (source.value !== 'all') params.set('source', source.value);
+    const qs = params.toString();
+    const blob = await fetchExport(`/api/sessions/export${qs ? `?${qs}` : ''}`);
+    const name = source.value !== 'all'
+      ? `hermes-sessions-${source.value}.jsonl`
+      : 'hermes-sessions-all.jsonl';
+    triggerDownload(blob, name);
+  }
+
   return {
     // state
     items, loading, refreshing, error, initialized,
@@ -114,5 +169,6 @@ export const useSessionsStore = defineStore('sessions', () => {
     // actions
     load, setView, setSource,
     removeLocal, deleteRemote, rename,
+    exportOne, exportAll,
   };
 });

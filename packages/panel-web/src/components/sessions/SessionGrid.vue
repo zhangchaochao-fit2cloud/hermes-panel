@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: 'open', id: string): void;
   (e: 'rename', row: SessionSummary): void;
   (e: 'delete', row: SessionSummary): void;
+  (e: 'export', row: SessionSummary): void;
 }>();
 
 const { t, locale } = useI18n();
@@ -27,6 +28,7 @@ function actions(): DropdownOption[] {
   return [
     { key: 'open', label: t('sessions.action.open') },
     { key: 'rename', label: t('sessions.action.rename') },
+    { key: 'export', label: t('sessions.action.export') },
     { type: 'divider', key: 'd1' },
     { key: 'delete', label: t('sessions.action.delete') },
   ];
@@ -35,6 +37,7 @@ function actions(): DropdownOption[] {
 function handle(key: string | number, row: SessionSummary): void {
   if (key === 'open') emit('open', row.id);
   else if (key === 'rename') emit('rename', row);
+  else if (key === 'export') emit('export', row);
   else if (key === 'delete') emit('delete', row);
 }
 </script>

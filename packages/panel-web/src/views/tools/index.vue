@@ -8,13 +8,14 @@ import ToolCard from '@/components/tools/ToolCard.vue';
 import SkillTable from '@/components/tools/SkillTable.vue';
 import SkillMarketplace from '@/components/tools/SkillMarketplace.vue';
 import McpServerList from '@/components/tools/McpServerList.vue';
+import PluginsList from '@/components/tools/PluginsList.vue';
 
 const { t } = useI18n();
 const store = useToolsStore();
 const message = useMessage();
 const { tools, loadingTools, enabledCount, totalCount } = storeToRefs(store);
 
-const tab = ref<'tools' | 'mcp' | 'skills'>('tools');
+const tab = ref<'tools' | 'mcp' | 'skills' | 'plugins'>('tools');
 const skillsSubTab = ref<'installed' | 'marketplace'>('installed');
 const search = ref('');
 
@@ -33,9 +34,10 @@ onMounted(async () => {
 });
 
 async function onTabChange(name: string): Promise<void> {
-  tab.value = name as 'tools' | 'mcp' | 'skills';
+  tab.value = name as 'tools' | 'mcp' | 'skills' | 'plugins';
   if (name === 'skills' && store.skills.length === 0) await store.loadSkills();
   if (name === 'mcp' && store.mcpServers.length === 0) await store.loadMcp();
+  // Plugins lazy-load themselves in PluginsList's onMounted, so nothing here.
 }
 
 async function onSkillsSubTabChange(name: string): Promise<void> {
@@ -119,6 +121,11 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
               <SkillMarketplace />
             </NTabPane>
           </NTabs>
+        </NTabPane>
+
+        <!-- 插件 -->
+        <NTabPane name="plugins" :tab="t('tools.tabs.plugins')">
+          <PluginsList />
         </NTabPane>
       </NTabs>
     </div>

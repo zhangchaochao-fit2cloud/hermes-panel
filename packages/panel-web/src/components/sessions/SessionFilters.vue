@@ -16,6 +16,7 @@ const emit = defineEmits<{
   (e: 'update:source', value: SourceFilter): void;
   (e: 'update:view', value: ViewMode): void;
   (e: 'create'): void;
+  (e: 'exportAll'): void;
 }>();
 
 const { t } = useI18n();
@@ -93,6 +94,11 @@ function setView(v: ViewMode): void {
         <span class="mr-1">▦</span>{{ t('sessions.view.grid') }}
       </NButton>
     </NButtonGroup>
+
+    <!-- export filtered -->
+    <NButton size="small" @click="emit('exportAll')">
+      {{ t('sessions.exportAll') }}
+    </NButton>
 
     <!-- new session -->
     <NButton size="small" type="primary" @click="emit('create')">

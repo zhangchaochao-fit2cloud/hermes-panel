@@ -8,6 +8,7 @@ import SectionProviders from '@/components/settings/SectionProviders.vue';
 import SectionLanguage from '@/components/settings/SectionLanguage.vue';
 import SectionHotkeys from '@/components/settings/SectionHotkeys.vue';
 import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
+import SectionBackup from '@/components/settings/SectionBackup.vue';
 import SectionAbout from '@/components/settings/SectionAbout.vue';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
@@ -23,6 +24,7 @@ const anchors: AnchorItem[] = [
   { key: 'language', label: 'settings.anchor.language' },
   { key: 'hotkeys', label: 'settings.anchor.hotkeys' },
   { key: 'advanced', label: 'settings.anchor.advanced' },
+  { key: 'backup', label: 'settings.anchor.backup' },
   { key: 'about', label: 'settings.anchor.about' },
 ];
 
@@ -153,6 +155,9 @@ onBeforeUnmount(() => {
         </section>
         <section id="settings-section-advanced" class="scroll-mt-24">
           <SectionAdvanced />
+        </section>
+        <section id="settings-section-backup" class="scroll-mt-24">
+          <SectionBackup />
         </section>
         <section id="settings-section-about" class="scroll-mt-24">
           <SectionAbout />

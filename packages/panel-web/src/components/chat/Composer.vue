@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ComposerFooter from './ComposerFooter.vue';
+import { useHotkeysStore } from '@/stores/hotkeys';
 
 const { t } = useI18n();
+const hotkeys = useHotkeysStore();
 
 const props = defineProps<{
   model: string;
@@ -23,7 +25,16 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const canSend = computed(() => text.value.trim().length > 0 && !props.sending);
 
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+  // Skip while IME is composing — Enter should commit the composition, not send.
+  if (e.isComposing) return;
+  // `newline` is the explicit no-op (default Shift+Enter inserts a newline as
+  // the browser already does); only handle it if the user remapped it, so
+  // that the chord doesn't accidentally trigger `send`.
+  if (hotkeys.matches(e, 'newline')) {
+    // Let the textarea handle the keystroke natively (insert newline).
+    return;
+  }
+  if (hotkeys.matches(e, 'send')) {
     e.preventDefault();
     submit();
   }

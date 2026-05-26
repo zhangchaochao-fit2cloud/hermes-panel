@@ -1,6 +1,7 @@
 import Router from '@koa/router';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { runHermesCli, HermesCliError } from '../services/hermes-cli.js';
+import { exportOne, exportFiltered } from '../services/hermes-export.js';
 import { listSessions, getSession, getMessages, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
 import { logger } from '../lib/logger.js';
 
@@ -29,6 +30,51 @@ sessionsRouter.get('/sessions', ctx => {
   } catch (err) {
     logger.warn({ err }, 'listSessions failed; returning []');
     ctx.body = [];
+  }
+});
+
+// Export must be registered before `/sessions/:id` so `/sessions/export`
+// doesn't get captured by the wildcard id param. Both endpoints stream JSONL
+// back to the browser with a Content-Disposition that triggers a download.
+function safeFilenamePart(value: string, fallback: string): string {
+  const cleaned = value.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64);
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
+sessionsRouter.get('/sessions/export', async ctx => {
+  const source = (ctx.query.source as string) || undefined;
+  try {
+    const body = await exportFiltered({ source });
+    const name = source
+      ? `hermes-sessions-${safeFilenamePart(source, 'all')}.jsonl`
+      : 'hermes-sessions-all.jsonl';
+    ctx.type = 'text/plain; charset=utf-8';
+    ctx.set('Content-Disposition', `attachment; filename="${name}"`);
+    ctx.body = body;
+  } catch (err) {
+    if (err instanceof HermesCliError) {
+      ctx.status = 502;
+      ctx.body = { error: { code: err.code, message: err.message } };
+      return;
+    }
+    throw err;
+  }
+});
+
+sessionsRouter.get('/sessions/:id/export', async ctx => {
+  try {
+    const body = await exportOne(ctx.params.id);
+    const name = `hermes-session-${safeFilenamePart(ctx.params.id, 'session')}.jsonl`;
+    ctx.type = 'text/plain; charset=utf-8';
+    ctx.set('Content-Disposition', `attachment; filename="${name}"`);
+    ctx.body = body;
+  } catch (err) {
+    if (err instanceof HermesCliError) {
+      ctx.status = 502;
+      ctx.body = { error: { code: err.code, message: err.message } };
+      return;
+    }
+    throw err;
   }
 });
 

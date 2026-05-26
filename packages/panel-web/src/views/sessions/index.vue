@@ -66,6 +66,22 @@ function onOpen(id: string): void {
   void router.push({ path: '/chat', query: { resume: id } });
 }
 
+async function onExport(row: SessionSummary): Promise<void> {
+  try {
+    await store.exportOne(row.id);
+  } catch (err) {
+    message.error(`${t('sessions.exportFailed')}: ${(err as Error).message}`);
+  }
+}
+
+async function onExportAll(): Promise<void> {
+  try {
+    await store.exportAll();
+  } catch (err) {
+    message.error(`${t('sessions.exportFailed')}: ${(err as Error).message}`);
+  }
+}
+
 function onRename(row: SessionSummary): void {
   const inputRef = ref(row.title);
   const d = dialog.create({
@@ -209,6 +225,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
       v-model:view="viewValue"
       :total="total"
       @create="onCreate"
+      @export-all="onExportAll"
     />
 
     <!-- thin top progress for non-initial refreshes -->
@@ -260,6 +277,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
           @open="onOpen"
           @rename="onRename"
           @delete="onDelete"
+          @export="onExport"
         />
         <SessionGrid
           v-else
@@ -267,6 +285,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
           @open="onOpen"
           @rename="onRename"
           @delete="onDelete"
+          @export="onExport"
         />
       </template>
     </div>
