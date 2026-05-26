@@ -8,19 +8,26 @@ import { useCapabilitiesStore } from '@/stores/capabilities';
 // is still accepted from DefaultLayout for backwards compatibility but
 // is intentionally ignored — the user explicitly prefers a persistent
 // sidebar over a hamburger drawer on every viewport.
-defineProps<{
+const props = withDefaults(defineProps<{
   drawerOpen?: boolean;
-}>();
+  collapsed?: boolean;
+}>(), {
+  collapsed: false,
+});
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'update:drawerOpen', v: boolean): void;
+  (e: 'update:collapsed', v: boolean): void;
 }>();
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
-const collapsed = ref(false);
 const caps = useCapabilitiesStore();
+const isCollapsed = computed({
+  get: () => props.collapsed,
+  set: (value: boolean) => emit('update:collapsed', value),
+});
 
 onMounted(() => { void caps.load(); });
 
@@ -31,18 +38,34 @@ interface MenuItem {
   path: string;
   disabled?: boolean;
   disabledReason?: string;
+  badge?: string;
+  dot?: 'success' | 'warning';
+}
+
+interface MenuGroup {
+  key: string;
+  iconPath: string;
+  label: string;
+  path?: string;
+  children?: MenuItem[];
+  disabled?: boolean;
+  disabledReason?: string;
+  badge?: string;
+  dot?: 'success' | 'warning';
 }
 
 const icons = {
-  dashboard: 'M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Zm12-2V5h4v14h-4ZM5 11V5h4v6H5Zm0 8v-2h4v2H5Z',
-  chat: 'M4 4h16v12H7.5L4 19.5V4Zm2 2v8.7l.7-.7H18V6H6Zm3 3h6v2H9V9Zm0 3h4v2H9v-2Z',
-  sessions: 'M5 3h14v18H5V3Zm2 2v14h10V5H7Zm2 3h6v2H9V8Zm0 4h6v2H9v-2Zm0 4h4v2H9v-2Z',
-  workspaces: 'M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7ZM6 6v3h3V6H6Zm9 0v3h3V6h-3ZM6 15v3h3v-3H6Zm9 0v3h3v-3h-3Z',
-  cron: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm1 3h-2v6l5 3 1-1.7-4-2.3V7Z',
-  memory: 'M8 4a4 4 0 0 0-4 4v1.2A4 4 0 0 0 2 13a4 4 0 0 0 4 4h1v3h2v-3h6v3h2v-3h1a4 4 0 0 0 4-4 4 4 0 0 0-2-3.8V8a4 4 0 0 0-7.4-2.1A4 4 0 0 0 8 4Zm0 2a2 2 0 0 1 2 2h2a2 2 0 0 1 4 0v3h1a2 2 0 1 1 0 4H7a2 2 0 1 1 0-4h1V8a2 2 0 0 1 2-2Z',
-  tools: 'M21 7.5 16.5 12l-2.5-2.5L18.5 5A5 5 0 0 0 12 11.5L4 19.5 5.5 21l8-8A5 5 0 0 0 20 6.5ZM5 5l3 3-1.5 1.5-3-3L5 5Zm13.5 13.5-3-3L17 14l3 3-1.5 1.5Z',
-  developer: 'M8.6 16.6 4 12l4.6-4.6L10 8.8 6.8 12l3.2 3.2-1.4 1.4Zm6.8 0L14 15.2l3.2-3.2L14 8.8l1.4-1.4L20 12l-4.6 4.6ZM12.8 5l-3.6 14h2l3.6-14h-2Z',
-  settings: 'M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A8 8 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 3l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a8 8 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5ZM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z',
+  dashboard: 'M3 13h7V3H3v10Zm11 8h7V3h-7v18ZM3 21h7v-5H3v5Zm11 0h7v-5h-7v5Z',
+  work: 'M4 6h16M4 12h16M4 18h16',
+  system: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
+  chat: 'M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z',
+  sessions: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  workspaces: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
+  cron: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
+  memory: 'M12 3a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM6 8a3 3 0 0 0 0 6m12-6a3 3 0 0 1 0 6M9 18H7a3 3 0 0 1-3-3v-1m11 4h2a3 3 0 0 0 3-3v-1',
+  tools: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z',
+  developer: 'm8 18-6-6 6-6m8 0 6 6-6 6M14 4l-4 16',
+  settings: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
 } as const;
 
 const items = computed<MenuItem[]>(() => [
@@ -50,90 +73,181 @@ const items = computed<MenuItem[]>(() => [
   { key: 'chat', iconPath: icons.chat, label: t('nav.chat'), path: '/chat' },
   { key: 'sessions', iconPath: icons.sessions, label: t('nav.sessions'), path: '/sessions' },
   { key: 'workspaces', iconPath: icons.workspaces, label: t('nav.workspaces'), path: '/workspaces',
-    disabled: !caps.has('profile'), disabledReason: 'Hermes profile not available' },
+    disabled: !caps.has('profile'), disabledReason: t('nav.disabled.profile'), dot: caps.has('profile') ? 'success' : 'warning' },
   { key: 'cron', iconPath: icons.cron, label: t('nav.cron'), path: '/cron',
-    disabled: !caps.has('cron'), disabledReason: 'Hermes cron not available' },
+    disabled: !caps.has('cron'), disabledReason: t('nav.disabled.cron'), badge: caps.has('cron') ? undefined : t('nav.notAvailable') },
   { key: 'memory', iconPath: icons.memory, label: t('nav.memory'), path: '/memory',
-    disabled: !caps.has('memory'), disabledReason: 'No ~/.hermes/memories directory' },
+    disabled: !caps.has('memory'), disabledReason: t('nav.disabled.memory'), badge: caps.has('memory') ? undefined : t('nav.notAvailable') },
   { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools' },
   { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer' },
   { key: 'settings', iconPath: icons.settings, label: t('nav.settings'), path: '/settings' },
 ]);
 
-const groups = computed(() => [
-  { key: 'main', label: 'MAIN', items: items.value.slice(0, 3) },
-  { key: 'workspace', label: 'WORK', items: items.value.slice(3, 7) },
-  { key: 'system', label: 'SYSTEM', items: items.value.slice(7) },
-]);
+// Flat menu: user prefers a single level over the previous work/system grouping.
+// We keep the MenuGroup shape so the rendering loop stays unchanged; each item
+// is just a leaf (no children) and reuses its own path.
+const expanded = ref<Record<string, boolean>>({});
+
+const menuTree = computed<MenuGroup[]>(() =>
+  items.value.map(i => ({
+    key: i.key,
+    iconPath: i.iconPath,
+    label: i.label,
+    path: i.path,
+    disabled: i.disabled,
+    disabledReason: i.disabledReason,
+    badge: i.badge,
+    dot: i.dot,
+  })),
+);
+
+function navigateTo(path: string): void {
+  if (route.path === path) return;
+  void router.push(path).catch((err: unknown) => {
+    console.error('[sidebar:navigate]', err);
+  });
+}
 
 function go(item: MenuItem): void {
   if (item.disabled) return;
-  void router.push(item.path);
+  navigateTo(item.path);
 }
 
 function isActive(path: string): boolean {
   return route.path === path || (path !== '/dashboard' && route.path.startsWith(`${path}/`));
+}
+
+function groupActive(group: MenuGroup): boolean {
+  if (group.path) return isActive(group.path);
+  return group.children?.some((item) => isActive(item.path)) ?? false;
+}
+
+function toggleGroup(group: MenuGroup): void {
+  // Flat menu: groups with children no longer exist; every entry has a path.
+  // Kept the function name so the existing template @click stays unchanged.
+  if (group.disabled) return;
+  if (group.path) {
+    navigateTo(group.path);
+    return;
+  }
+  if (group.children) {
+    expanded.value[group.key] = !expanded.value[group.key];
+  }
 }
 </script>
 
 <template>
   <aside
     class="app-sidebar h-full flex flex-col transition-[width] duration-200 flex-shrink-0 overflow-hidden"
-    :class="collapsed ? 'w-[68px]' : 'w-[224px]'"
+    :class="isCollapsed ? 'w-[68px]' : 'w-[248px]'"
   >
-    <div class="h-14 flex items-center px-4 gap-3 flex-shrink-0 border-b border-[var(--sidebar-border)]">
-      <div class="w-8 h-8 rounded-md bg-[var(--sidebar-logo-bg)] shadow-[0_8px_18px_rgba(9,96,189,0.35)] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+    <div class="h-16 flex items-center px-4 gap-3 flex-shrink-0">
+      <div class="vben-logo-mark w-9 h-9 rounded-lg shadow-[var(--shadow-2)] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
         H
       </div>
-      <div v-if="!collapsed" class="min-w-0">
-        <div class="text-[15px] font-semibold text-white leading-5 truncate">Hermes Panel</div>
-        <div class="text-[10px] text-[var(--sidebar-text-muted)] tracking-[0.16em] leading-4">CONTROL</div>
+      <div v-if="!isCollapsed" class="min-w-0">
+        <div class="text-[19px] font-semibold text-[var(--text-1)] leading-6 truncate">Hermes Panel</div>
       </div>
     </div>
 
-    <nav class="flex-1 min-h-0 px-2 py-2 overflow-hidden" aria-label="Primary navigation">
-      <section v-for="group in groups" :key="group.key" class="mb-1">
-        <div
-          v-if="!collapsed"
-          class="h-5 px-3 text-[10px] font-semibold tracking-[0.12em] text-[var(--sidebar-text-faint)] flex items-center"
-        >
-          {{ group.label }}
-        </div>
+    <nav class="flex-1 min-h-0 px-3 py-4 overflow-hidden" aria-label="Primary navigation">
+      <section v-for="group in menuTree" :key="group.key" class="mb-1">
         <button
-          v-for="item in group.items"
-          :key="item.key"
-          class="sidebar-menu-item relative w-full h-9 flex items-center gap-3 px-3 mb-1 text-sm transition-colors text-left rounded-md"
+          type="button"
+          class="sidebar-menu-item sidebar-menu-parent relative w-full h-11 flex items-center gap-3 px-3 transition-colors text-left rounded-lg"
           :class="[
-            collapsed ? 'justify-center px-0' : '',
-            isActive(item.path) ? 'is-active' : '',
-            item.disabled ? 'is-disabled cursor-not-allowed' : 'cursor-pointer',
+            isCollapsed ? 'justify-center px-0' : '',
+            groupActive(group) ? 'is-active' : '',
+            group.children && groupActive(group) ? 'is-parent-active' : '',
+            group.disabled ? 'is-disabled cursor-not-allowed' : (group.path || group.children ? 'cursor-pointer' : ''),
           ]"
-          :disabled="item.disabled"
-          :aria-current="isActive(item.path) ? 'page' : undefined"
-          :title="item.disabled ? (item.disabledReason ?? item.label) : item.label"
-          @click="go(item)"
+          :disabled="group.disabled"
+          :aria-current="group.path && groupActive(group) ? 'page' : undefined"
+          :aria-expanded="group.children ? expanded[group.key] : undefined"
+          :title="group.disabled ? (group.disabledReason ?? group.label) : group.label"
+          @click="toggleGroup(group)"
         >
-          <span v-if="isActive(item.path)" class="active-rail" aria-hidden="true" />
           <svg
-            class="w-[18px] h-[18px] flex-shrink-0"
+            class="w-[20px] h-[20px] flex-shrink-0"
             viewBox="0 0 24 24"
-            fill="currentColor"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path :d="item.iconPath" />
+            <path :d="group.iconPath" />
           </svg>
-          <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
-          <span v-if="!collapsed && item.disabled" class="ml-auto text-[10px] font-medium text-[var(--sidebar-text-faint)]">N/A</span>
+          <span v-if="!isCollapsed" class="truncate">{{ group.label }}</span>
+          <template v-if="!isCollapsed">
+            <span
+              v-if="group.dot"
+              class="ml-auto h-2.5 w-2.5 rounded-full"
+              :class="group.dot === 'success' ? 'bg-emerald-400' : 'bg-rose-400'"
+              aria-hidden="true"
+            />
+            <span v-else-if="group.badge" class="ml-auto sidebar-badge">{{ group.badge }}</span>
+            <svg
+              v-else-if="group.children"
+              class="ml-auto h-4 w-4 transition-transform"
+              :class="expanded[group.key] ? 'rotate-180' : ''"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </template>
         </button>
+
+        <div
+          v-if="group.children"
+          v-show="expanded[group.key] && !isCollapsed"
+          class="mt-1 space-y-1"
+        >
+          <button
+            v-for="item in group.children"
+            :key="item.key"
+            type="button"
+            class="sidebar-menu-item sidebar-menu-child relative w-full h-10 flex items-center gap-3 pl-11 pr-3 transition-colors text-left rounded-lg"
+            :class="[
+              isActive(item.path) ? 'is-active' : '',
+              item.disabled ? 'is-disabled cursor-not-allowed' : 'cursor-pointer',
+            ]"
+            :disabled="item.disabled"
+            :aria-current="isActive(item.path) ? 'page' : undefined"
+            :title="item.disabled ? (item.disabledReason ?? item.label) : item.label"
+            @click="go(item)"
+          >
+            <svg
+              class="w-[17px] h-[17px] flex-shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path :d="item.iconPath" />
+            </svg>
+            <span class="truncate">{{ item.label }}</span>
+            <span
+              v-if="item.dot"
+              class="ml-auto h-2.5 w-2.5 rounded-full"
+              :class="item.dot === 'success' ? 'bg-emerald-400' : 'bg-rose-400'"
+              aria-hidden="true"
+            />
+            <span v-else-if="item.badge" class="ml-auto sidebar-badge">{{ item.badge }}</span>
+          </button>
+        </div>
       </section>
     </nav>
 
-    <button
-      class="h-11 border-t border-[var(--sidebar-border)] flex items-center justify-center text-xs text-[var(--sidebar-text-muted)] hover:text-white hover:bg-white/5 flex-shrink-0 transition-colors"
-      :title="collapsed ? 'Expand' : 'Collapse'"
-      @click="collapsed = !collapsed"
-    >
-      <span class="text-base leading-none">{{ collapsed ? '>' : '<' }}</span>
-    </button>
   </aside>
 </template>

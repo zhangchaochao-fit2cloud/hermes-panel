@@ -35,6 +35,52 @@ const filtered = computed(() => {
   return items.value.filter(s => (s.title ?? '').toLowerCase().includes(q));
 });
 
+// Group items by source for the drawer. Same ordering policy as the Sessions
+// view: cli first, cron last (chattiest, easiest to ignore once collapsed).
+const SOURCE_ORDER = ['cli', 'api_server', 'cron', 'unknown'] as const;
+const SOURCE_META: Record<string, { icon: string; labelKey: string }> = {
+  cli:        { icon: '💬', labelKey: 'sessions.source.cli' },
+  cron:       { icon: '⏰', labelKey: 'sessions.source.cron' },
+  api_server: { icon: '🔌', labelKey: 'sessions.source.api_server' },
+  unknown:    { icon: '❔', labelKey: 'sessions.source.unknown' },
+};
+
+const grouped = computed<{ source: string; items: typeof filtered.value }[]>(() => {
+  const map = new Map<string, typeof filtered.value>();
+  for (const s of filtered.value) {
+    const key = s.source ?? 'unknown';
+    const bucket = map.get(key) ?? [];
+    bucket.push(s);
+    map.set(key, bucket);
+  }
+  const out: { source: string; items: typeof filtered.value }[] = [];
+  for (const src of SOURCE_ORDER) {
+    const list = map.get(src);
+    if (list && list.length > 0) out.push({ source: src, items: list });
+  }
+  // Surface any unexpected source not in the canonical order
+  for (const [k, v] of map) {
+    if (!(SOURCE_ORDER as readonly string[]).includes(k)) out.push({ source: k, items: v });
+  }
+  return out;
+});
+
+// Collapsed state per source in this drawer, persisted to localStorage.
+// Default cron to collapsed because it's typically dozens of short runs.
+const COLLAPSED_KEY = 'panel.chat.sidebar.groupCollapsed';
+function readCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { cron: true };
+}
+const groupCollapsed = ref<Record<string, boolean>>(readCollapsed());
+function toggleSource(src: string): void {
+  groupCollapsed.value = { ...groupCollapsed.value, [src]: !groupCollapsed.value[src] };
+  localStorage.setItem(COLLAPSED_KEY, JSON.stringify(groupCollapsed.value));
+}
+
 onMounted(() => {
   if (!initialized.value) void sessions.load({ initial: true });
 });
@@ -184,58 +230,76 @@ function fmtTime(ts: number): string {
         >
           {{ search.trim() ? t('chat.sidebar.noMatch') : t('chat.sidebar.empty') }}
         </div>
-        <ul v-else class="space-y-0.5">
-          <li
-            v-for="s in filtered"
-            :key="s.id"
-            class="group relative"
-          >
+        <div v-else>
+          <template v-for="g in grouped" :key="g.source">
+            <!-- Group header -->
             <button
-              class="w-full text-left px-2 py-1.5 rounded-md flex items-start gap-2 hover:bg-[var(--bg-elevate)] transition-colors"
-              :class="isCurrent(s.id) ? 'bg-[var(--bg-elevate)]' : ''"
-              @click="emit('select', s.id)"
+              class="w-full px-2 py-1 mt-1 first:mt-0 flex items-center gap-1.5 text-left text-[10px] uppercase tracking-wider text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
+              :aria-expanded="!groupCollapsed[g.source]"
+              @click="toggleSource(g.source)"
             >
               <span
-                v-if="isCurrent(s.id)"
-                class="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--brand-500)] flex-shrink-0"
-              />
-              <span v-else class="mt-1.5 h-1.5 w-1.5 flex-shrink-0" />
-              <div class="min-w-0 flex-1">
-                <div
-                  class="text-sm truncate"
-                  :class="isCurrent(s.id) ? 'text-[var(--text-1)] font-medium' : 'text-[var(--text-2)]'"
-                >
-                  {{ s.title || t('sessions.empty.title') }}
-                </div>
-                <div class="text-[10px] text-[var(--text-3)] mt-0.5 flex items-center gap-1.5">
-                  <span class="font-mono opacity-70">{{ s.id.slice(0, 8) }}</span>
-                  <span>·</span>
-                  <span>{{ fmtTime(s.updatedAt) }}</span>
-                </div>
-              </div>
+                class="inline-block w-2 transition-transform text-[8px]"
+                :class="groupCollapsed[g.source] ? '' : 'rotate-90'"
+              >▶</span>
+              <span class="text-[11px]">{{ SOURCE_META[g.source]?.icon ?? '❔' }}</span>
+              <span class="font-semibold">{{ t(SOURCE_META[g.source]?.labelKey ?? 'sessions.source.unknown') }}</span>
+              <span class="ml-auto opacity-70">{{ g.items.length }}</span>
             </button>
-            <!-- "..." button -->
-            <NDropdown
-              :options="menuOptions(s.id)"
-              :show="openMenuId === s.id"
-              placement="bottom-end"
-              @select="onMenuSelect"
-              @clickoutside="openMenuId = null"
-            >
-              <button
-                class="absolute right-1 top-1.5 h-6 w-6 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--border)] flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)] transition-opacity"
-                :title="t('chat.sidebar.more')"
-                @click.stop="openMenuId = openMenuId === s.id ? null : s.id"
+            <ul v-show="!groupCollapsed[g.source]" class="space-y-0.5 mb-1">
+              <li
+                v-for="s in g.items"
+                :key="s.id"
+                class="group relative"
               >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <circle cx="3" cy="8" r="1.4" />
-                  <circle cx="8" cy="8" r="1.4" />
-                  <circle cx="13" cy="8" r="1.4" />
-                </svg>
-              </button>
-            </NDropdown>
-          </li>
-        </ul>
+                <button
+                  class="w-full text-left px-2 py-1.5 rounded-md flex items-start gap-2 hover:bg-[var(--bg-elevate)] transition-colors"
+                  :class="isCurrent(s.id) ? 'bg-[var(--bg-elevate)]' : ''"
+                  @click="emit('select', s.id)"
+                >
+                  <span
+                    v-if="isCurrent(s.id)"
+                    class="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--brand-500)] flex-shrink-0"
+                  />
+                  <span v-else class="mt-1.5 h-1.5 w-1.5 flex-shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <div
+                      class="text-sm truncate"
+                      :class="isCurrent(s.id) ? 'text-[var(--text-1)] font-medium' : 'text-[var(--text-2)]'"
+                    >
+                      {{ s.title || t('sessions.empty.title') }}
+                    </div>
+                    <div class="text-[10px] text-[var(--text-3)] mt-0.5 flex items-center gap-1.5">
+                      <span class="font-mono opacity-70">{{ s.id.slice(0, 8) }}</span>
+                      <span>·</span>
+                      <span>{{ fmtTime(s.updatedAt) }}</span>
+                    </div>
+                  </div>
+                </button>
+                <!-- "..." button -->
+                <NDropdown
+                  :options="menuOptions(s.id)"
+                  :show="openMenuId === s.id"
+                  placement="bottom-end"
+                  @select="onMenuSelect"
+                  @clickoutside="openMenuId = null"
+                >
+                  <button
+                    class="absolute right-1 top-1.5 h-6 w-6 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--border)] flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)] transition-opacity"
+                    :title="t('chat.sidebar.more')"
+                    @click.stop="openMenuId = openMenuId === s.id ? null : s.id"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                      <circle cx="3" cy="8" r="1.4" />
+                      <circle cx="8" cy="8" r="1.4" />
+                      <circle cx="13" cy="8" r="1.4" />
+                    </svg>
+                  </button>
+                </NDropdown>
+              </li>
+            </ul>
+          </template>
+        </div>
       </div>
     </template>
   </aside>
