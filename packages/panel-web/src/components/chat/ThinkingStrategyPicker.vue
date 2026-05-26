@@ -39,7 +39,7 @@ function select(id: Strategy): void {
 <template>
   <div
     role="radiogroup"
-    class="inline-flex items-center gap-0.5 p-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevate)] shadow-inner"
+    class="strategy-picker inline-flex items-center p-0.5 rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
     :class="{ 'opacity-50 pointer-events-none': disabled }"
   >
     <NTooltip
@@ -54,10 +54,10 @@ function select(id: Strategy): void {
           role="radio"
           :aria-checked="value === chip.id"
           :disabled="disabled"
-          class="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs leading-none font-medium transition-all select-none"
+          class="strategy-chip cursor-pointer inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs leading-none font-medium select-none transition-all duration-150"
           :class="value === chip.id
-            ? 'bg-[var(--brand-500)] text-white shadow-[0_1px_3px_rgba(0,0,0,0.15)]'
-            : 'text-[var(--text-2)] hover:bg-[var(--bg-card)] hover:text-[var(--text-1)]'"
+            ? 'is-active text-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]'
+            : 'text-[var(--text-2)] hover:text-[var(--text-1)]'"
           @click="select(chip.id)"
         >
           <span aria-hidden="true" class="text-sm leading-none">{{ chip.icon }}</span>
@@ -71,3 +71,15 @@ function select(id: Strategy): void {
     </NTooltip>
   </div>
 </template>
+
+<style scoped>
+/* Active chip uses a brand gradient so the pill feels lit rather than
+ * just colored. Hover on inactive chips lifts the bg slightly so the
+ * affordance is clear without being noisy. */
+.strategy-chip.is-active {
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+}
+.strategy-chip:not(.is-active):hover {
+  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
+}
+</style>
