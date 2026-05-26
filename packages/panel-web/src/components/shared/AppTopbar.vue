@@ -5,25 +5,22 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useSystemStore } from '@/stores/system';
 import { setLocale } from '@/locales';
-import { useBreakpoint } from '@/composables/use-breakpoint';
 import StatusBadge from './StatusBadge.vue';
 import NotificationBell from './NotificationBell.vue';
 
-const emit = defineEmits<{
-  (e: 'toggle-sidebar'): void;
-}>();
+// Backwards-compat emit; no longer wired now that the sidebar is always
+// rendered as a fixed left rail.
+defineEmits<{ (e: 'toggle-sidebar'): void }>();
 
 const system = useSystemStore();
 const { health, loading } = storeToRefs(system);
 const { t, locale } = useI18n();
 const route = useRoute();
-const { isMobile } = useBreakpoint();
 
 let pollHandle: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
   if (!health.value) await system.refresh();
-  // Poll health every 10s so the topbar reflects hermes going up/down
   pollHandle = setInterval(() => {
     void system.refresh();
   }, 10_000);
@@ -49,7 +46,15 @@ const hermesLabel = computed(() => {
 
 const pageTitle = computed(() => {
   const map: Record<string, string> = {
+    '/dashboard': t('nav.dashboard'),
     '/chat': t('nav.chat'),
+    '/sessions': t('nav.sessions'),
+    '/workspaces': t('nav.workspaces'),
+    '/cron': t('nav.cron'),
+    '/memory': t('nav.memory'),
+    '/tools': t('nav.tools'),
+    '/developer': t('nav.developer'),
+    '/settings': t('nav.settings'),
   };
   return map[route.path] ?? '';
 });
@@ -60,16 +65,7 @@ function toggleLocale(): void {
 </script>
 
 <template>
-  <header class="h-16 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-4 sm:px-6 gap-2 sm:gap-4">
-    <!-- Hamburger: mobile only. 44x44 touch target. -->
-    <button
-      v-if="isMobile"
-      class="-ml-1 w-11 h-11 rounded-md flex items-center justify-center text-xl hover:bg-[var(--bg-elevate)] opacity-80 hover:opacity-100"
-      :aria-label="t('common.menu')"
-      @click="emit('toggle-sidebar')"
-    >
-      ☰
-    </button>
+  <header class="h-16 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-6 gap-4 flex-shrink-0">
     <h1 v-if="pageTitle" class="text-base font-medium truncate">{{ pageTitle }}</h1>
     <div class="flex-1" />
     <StatusBadge :state="hermesState" :label="hermesLabel" />

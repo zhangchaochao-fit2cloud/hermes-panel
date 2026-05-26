@@ -56,7 +56,7 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-[var(--bg-page)]">
+  <div class="min-h-full bg-[var(--bg-page)]">
     <div class="max-w-6xl mx-auto px-6 py-6">
       <header class="mb-6">
         <h1 class="text-xl font-semibold mb-1">{{ t('tools.title') }}</h1>

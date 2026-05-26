@@ -10,7 +10,7 @@ rust-version = "1.77"
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = ["macos-private-api", "devtools"] }
+tauri = { version = "2.0", features = [ "devtools"] }
 tauri-plugin-shell = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

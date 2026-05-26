@@ -201,7 +201,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-[var(--bg-page)]">
+  <div class="flex flex-col min-h-full bg-[var(--bg-page)]">
     <!-- filters / toolbar -->
     <SessionFilters
       v-model:search="searchValue"

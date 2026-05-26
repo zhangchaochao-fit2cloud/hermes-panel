@@ -18,7 +18,7 @@ const STORAGE_MODE = 'panel.themeMode';
 const STORAGE_COLOR = 'panel.themeColor';
 const STORAGE_FONT = 'panel.fontSize';
 
-const DEFAULT_MODE: ThemeMode = 'glass-apple';
+const DEFAULT_MODE: ThemeMode = 'auto';
 const DEFAULT_COLOR = '#1677ff';
 const DEFAULT_FONT: FontSize = 'medium';
 

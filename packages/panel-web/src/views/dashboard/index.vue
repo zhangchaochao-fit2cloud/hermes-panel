@@ -119,7 +119,7 @@ const todayUsdLabel = computed(() => {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-[var(--bg-page)]">
+  <div class="min-h-full bg-[var(--bg-page)]">
     <div class="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
       <WelcomeHeader :health="healthTyped" :loading="healthLoading" />
 

@@ -26,12 +26,7 @@
   --text-2: #52525b;
   --text-3: #a1a1aa;
 
-  /* Glass effect knobs — solid themes set these to safe pass-through defaults */
-  --glass-blur: 0px;
-  --glass-saturate: 100%;
-  --glass-bg-overlay: transparent;
   --body-bg: var(--bg-page);
-  --body-bg-attachment: local;
 
   --ease: cubic-bezier(.4, 0, .2, 1);
   --dur-fast: 150ms;
@@ -49,85 +44,61 @@
   --text-1: #fafafa;
   --text-2: #a1a1aa;
   --text-3: #71717a;
+  --body-bg: var(--bg-page);
 }
 
 /* =================================================================
-   Glass · Apple — frosted glass over a colorful wallpaper
+   Glass · Apple — frosted glass over a colorful wallpaper.
+   Surface alphas kept high enough (>= 0.55) that pages remain
+   readable without any backdrop-filter on Naive UI internals.
    ================================================================= */
 :root[data-theme='glass-apple'] {
-  --glass-blur: 28px;
-  --glass-saturate: 180%;
-  --glass-bg-overlay: rgba(255, 255, 255, 0.55);
-
-  --bg-page: transparent;
-  --bg-card: rgba(255, 255, 255, 0.55);
-  --bg-elevate: rgba(255, 255, 255, 0.4);
-  --border: rgba(255, 255, 255, 0.55);
+  --bg-page: rgba(247, 248, 250, 0.4);
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --bg-elevate: rgba(255, 255, 255, 0.55);
+  --border: rgba(255, 255, 255, 0.6);
   --text-1: #1c1c1e;
   --text-2: rgba(28, 28, 30, 0.7);
   --text-3: rgba(28, 28, 30, 0.5);
-
   --body-bg:
     radial-gradient(circle at 20% 30%, #ff8a65 0%, transparent 35%),
     radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 40%),
     radial-gradient(circle at 50% 80%, #22d3ee 0%, transparent 40%),
     linear-gradient(135deg, #f0abfc 0%, #818cf8 50%, #38bdf8 100%);
-  --body-bg-attachment: fixed;
 }
 
 /* =================================================================
    Glass · Vibrant — animated multi-color gradient + glass
    ================================================================= */
 :root[data-theme='glass-vibrant'] {
-  --glass-blur: 22px;
-  --glass-saturate: 160%;
-  --glass-bg-overlay: rgba(255, 255, 255, 0.45);
-
-  --bg-page: transparent;
-  --bg-card: rgba(255, 255, 255, 0.45);
-  --bg-elevate: rgba(255, 255, 255, 0.3);
-  --border: rgba(255, 255, 255, 0.55);
+  --bg-page: rgba(255, 255, 255, 0.3);
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-elevate: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.6);
   --text-1: #2d1f54;
   --text-2: rgba(45, 31, 84, 0.75);
   --text-3: rgba(45, 31, 84, 0.55);
-
   --body-bg: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee);
-  --body-bg-attachment: fixed;
-}
-:root[data-theme='glass-vibrant'] body {
-  background-size: 400% 400%;
-  animation: vibrant-shift 18s ease infinite;
-}
-@keyframes vibrant-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
 }
 
 /* =================================================================
    Glass · Tokyo Night — deep starfield + translucent dark panels
    ================================================================= */
 :root[data-theme='glass-tokyo'] {
-  --glass-blur: 20px;
-  --glass-saturate: 120%;
-  --glass-bg-overlay: rgba(31, 33, 53, 0.7);
-
   --brand-500: #7aa2f7;
   --brand-600: #6b8de8;
   --brand-700: #5677d1;
-
-  --bg-page: transparent;
-  --bg-card: rgba(36, 40, 59, 0.65);
-  --bg-elevate: rgba(26, 27, 38, 0.5);
-  --border: rgba(122, 162, 247, 0.15);
+  --bg-page: rgba(26, 27, 38, 0.5);
+  --bg-card: rgba(36, 40, 59, 0.82);
+  --bg-elevate: rgba(26, 27, 38, 0.7);
+  --border: rgba(122, 162, 247, 0.2);
   --text-1: #c0caf5;
   --text-2: #9aa5ce;
   --text-3: #565f89;
-
   --body-bg:
     radial-gradient(ellipse at 30% 20%, rgba(122, 162, 247, 0.18) 0%, transparent 60%),
     radial-gradient(ellipse at 70% 80%, rgba(187, 154, 247, 0.15) 0%, transparent 60%),
     linear-gradient(180deg, #1a1b26 0%, #16161e 100%);
-  --body-bg-attachment: fixed;
 }
 
 /* =================================================================
@@ -140,120 +111,21 @@ html, body, #app {
 
 body {
   background: var(--body-bg);
-  background-attachment: var(--body-bg-attachment);
+  background-attachment: fixed;
   color: var(--text-1);
   font-family: -apple-system, "Segoe UI", "Microsoft YaHei UI", Roboto, "Noto Sans CJK SC", system-ui, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
-/* =================================================================
-   Glass surface helpers — applied automatically to common surfaces
-   when [data-theme^='glass-'] is on the root.
-
-   We intentionally select the existing class soup used across the app
-   (bg-[var(--bg-card)] / bg-[var(--bg-elevate)]) by adding backdrop-filter
-   on any element using these CSS vars. Elements that need frosted glass
-   should already be using these tokens — so this gives us app-wide
-   translucency without touching every component.
-   ================================================================= */
-:root[data-theme^='glass-'] [class*="bg-[var(--bg-card)]"],
-:root[data-theme^='glass-'] [class*="bg-[var(--bg-elevate)]"] {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+/* Animated gradient only for vibrant theme */
+:root[data-theme='glass-vibrant'] body {
+  background-size: 400% 400%;
+  animation: vibrant-shift 18s ease infinite;
 }
-
-/* Naive UI cards / dropdowns / popovers — these don't use our CSS vars,
-   apply via Naive's data attributes / class names. */
-:root[data-theme^='glass-'] .n-card,
-:root[data-theme^='glass-'] .n-dropdown-menu,
-:root[data-theme^='glass-'] .n-popover,
-:root[data-theme^='glass-'] .n-drawer-content,
-:root[data-theme^='glass-'] .n-modal,
-:root[data-theme^='glass-'] .n-menu,
-:root[data-theme^='glass-'] .n-data-table {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  background-color: var(--glass-bg-overlay) !important;
-}
-
-/* Sidebar / topbar tinting — let them pop slightly more than cards */
-:root[data-theme^='glass-'] aside,
-:root[data-theme^='glass-'] header.h-16 {
-  backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
-}
-
-/* Inputs / textarea also frosted for consistency */
-:root[data-theme^='glass-'] .n-input .n-input__textarea-el,
-:root[data-theme^='glass-'] .n-input .n-input-wrapper,
-:root[data-theme^='glass-'] .n-input,
-:root[data-theme^='glass-'] textarea {
-  background-color: var(--bg-elevate) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* Reduce harsh shadows under glass (the blur already provides depth) */
-:root[data-theme^='glass-'] .shadow-\[var\(--shadow-1\)\],
-:root[data-theme^='glass-'] .shadow-\[var\(--shadow-2\)\] {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-}
-
-/* =================================================================
-   Naive UI text overrides — force readable text on glass surfaces.
-   When backdrop-filter lightens the surface, Naive's default text colors
-   stop providing enough contrast. Re-bind them to our --text-* tokens.
-   ================================================================= */
-:root[data-theme^='glass-'] {
-  --n-text-color-1: var(--text-1);
-  --n-text-color-2: var(--text-2);
-  --n-text-color-3: var(--text-3);
-}
-
-:root[data-theme^='glass-'] .n-card,
-:root[data-theme^='glass-'] .n-card .n-card__content,
-:root[data-theme^='glass-'] .n-card .n-card-header__main,
-:root[data-theme^='glass-'] .n-data-table,
-:root[data-theme^='glass-'] .n-data-table-th,
-:root[data-theme^='glass-'] .n-data-table-td,
-:root[data-theme^='glass-'] .n-button,
-:root[data-theme^='glass-'] .n-input,
-:root[data-theme^='glass-'] .n-input__input-el,
-:root[data-theme^='glass-'] .n-input__textarea-el,
-:root[data-theme^='glass-'] .n-tabs .n-tabs-tab,
-:root[data-theme^='glass-'] .n-menu .n-menu-item,
-:root[data-theme^='glass-'] .n-menu .n-menu-item-content,
-:root[data-theme^='glass-'] .n-dropdown-option,
-:root[data-theme^='glass-'] .n-form-item-label,
-:root[data-theme^='glass-'] .n-collapse-item__header {
-  color: var(--text-1) !important;
-}
-
-:root[data-theme^='glass-'] .n-input .n-input__placeholder,
-:root[data-theme^='glass-'] textarea::placeholder,
-:root[data-theme^='glass-'] input::placeholder {
-  color: var(--text-3) !important;
-}
-
-:root[data-theme^='glass-'] h1,
-:root[data-theme^='glass-'] h2,
-:root[data-theme^='glass-'] h3,
-:root[data-theme^='glass-'] h4,
-:root[data-theme^='glass-'] strong {
-  color: var(--text-1) !important;
-}
-
-/* Active tabs / menu items use brand color */
-:root[data-theme^='glass-'] .n-tabs .n-tabs-tab--active,
-:root[data-theme^='glass-'] .n-menu .n-menu-item-content--selected {
-  color: var(--brand-500) !important;
-}
-
-/* Tokyo: input wrappers stay opaque so caret/value is readable */
-:root[data-theme='glass-tokyo'] .n-base-selection,
-:root[data-theme='glass-tokyo'] .n-input-wrapper {
-  background-color: rgba(26, 27, 38, 0.6) !important;
+@keyframes vibrant-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
 
 /* =================================================================

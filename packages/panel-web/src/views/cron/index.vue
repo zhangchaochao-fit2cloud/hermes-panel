@@ -71,7 +71,7 @@ async function onRemove(job: CronJob): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-[var(--bg-page)]">
+  <div class="flex flex-col min-h-full bg-[var(--bg-page)]">
     <CronStatusBar
       :total="total"
       :active="activeCount"

@@ -12,7 +12,7 @@ const tab = ref<string>('playground');
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-[var(--bg-page)]">
+  <div class="min-h-full bg-[var(--bg-page)]">
     <div class="max-w-7xl mx-auto px-6 py-6">
       <header class="mb-4">
         <h1 class="text-xl font-semibold mb-1">{{ t('developer.title') }}</h1>
