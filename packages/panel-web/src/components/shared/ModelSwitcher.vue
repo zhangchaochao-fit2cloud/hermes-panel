@@ -112,6 +112,15 @@ function manageProviders(): void {
   popoverOpen.value = false;
   void router.push({ path: '/settings', hash: '#providers' });
 }
+
+/** "https://api.deepseek.com/v1" → "api.deepseek.com" */
+function shortHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url.replace(/^https?:\/\//, '').split('/')[0];
+  }
+}
 </script>
 
 <template>
@@ -188,8 +197,10 @@ function manageProviders(): void {
           <button
             v-for="m in g.models"
             :key="m.id"
-            class="relative w-full pl-3 pr-3 py-2.5 my-0.5 rounded-md flex items-center justify-between gap-3 text-left transition-colors hover:bg-[var(--bg-elevate)] disabled:opacity-50"
-            :class="isCurrent(m) ? 'bg-[var(--brand-500)]/8' : ''"
+            class="model-row relative w-full pl-3 pr-3 py-2.5 my-1 rounded-lg border flex items-center justify-between gap-3 text-left transition-all duration-150 disabled:opacity-50"
+            :class="isCurrent(m)
+              ? 'bg-[var(--brand-500)]/8 border-[var(--brand-500)]/60'
+              : 'border-transparent hover:bg-[var(--bg-elevate)] hover:border-[var(--border)] hover:shadow-[var(--shadow-1)]'"
             :disabled="settingModel"
             @click="pickModel(m)"
           >
@@ -200,13 +211,24 @@ function manageProviders(): void {
               aria-hidden="true"
             />
             <div class="min-w-0 flex-1">
-              <div
-                class="text-sm truncate leading-snug"
-                :class="isCurrent(m) ? 'text-[var(--brand-600)] font-medium' : 'text-[var(--text-1)]'"
-              >
-                {{ m.label }}
+              <div class="flex items-center gap-2">
+                <span
+                  class="text-sm truncate leading-snug"
+                  :class="isCurrent(m) ? 'text-[var(--brand-600)] font-semibold' : 'text-[var(--text-1)] font-medium'"
+                >
+                  {{ m.label }}
+                </span>
               </div>
-              <div class="text-[10px] text-[var(--text-3)] font-mono truncate mt-0.5">{{ m.id }}</div>
+              <div class="flex items-center gap-2 mt-0.5 min-w-0">
+                <span class="text-[10px] text-[var(--text-3)] font-mono truncate">{{ m.id }}</span>
+                <span
+                  v-if="m.baseUrl"
+                  class="text-[10px] text-[var(--text-3)] opacity-70 truncate flex-shrink-0"
+                  :title="m.baseUrl"
+                >
+                  · {{ shortHost(m.baseUrl) }}
+                </span>
+              </div>
             </div>
             <span
               v-if="isCurrent(m)"

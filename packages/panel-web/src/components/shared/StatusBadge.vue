@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { NPopover } from 'naive-ui';
 
 const props = defineProps<{
   state: 'connected' | 'connecting' | 'disconnected' | 'unknown';
@@ -15,8 +16,17 @@ const color = computed(() => ({
 </script>
 
 <template>
-  <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-[var(--bg-elevate)] border border-[var(--border)]">
-    <span :class="['inline-block w-1.5 h-1.5 rounded-full', color]" />
-    <span>{{ label }}</span>
-  </div>
+  <NPopover trigger="hover" placement="bottom-end" :delay="200">
+    <template #trigger>
+      <div
+        class="inline-flex h-8 max-w-[280px] shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] px-2.5 text-xs cursor-default"
+      >
+        <span :class="['inline-block w-1.5 h-1.5 rounded-full flex-shrink-0', color]" />
+        <span class="min-w-0 truncate">{{ label }}</span>
+      </div>
+    </template>
+    <div class="text-xs font-mono whitespace-nowrap max-w-[400px]">
+      {{ label }}
+    </div>
+  </NPopover>
 </template>

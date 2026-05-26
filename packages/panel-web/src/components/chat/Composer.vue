@@ -131,15 +131,15 @@ defineExpose({ prependMention, setText, focus });
 
 <template>
   <div
-    class="composer-shell rounded-lg bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-1)] transition-colors focus-within:border-[var(--brand-500)]"
+    class="composer-shell rounded-xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] transition-all duration-200 focus-within:border-[var(--brand-500)] focus-within:shadow-[var(--shadow-3)]"
   >
     <!-- Top row: textarea + send/stop button -->
-    <div class="flex items-end gap-2 px-3 pt-3 pb-2">
+    <div class="flex items-end gap-2 px-4 pt-3 pb-2">
       <textarea
         ref="textareaRef"
         v-model="text"
         :placeholder="t('chat.composer.placeholder')"
-        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-snug text-[var(--text-1)] placeholder:text-[var(--text-3)]"
+        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-relaxed text-[var(--text-1)] placeholder:text-[var(--text-3)]"
         rows="2"
         @keydown="onKeydown"
       />
@@ -150,6 +150,11 @@ defineExpose({ prependMention, setText, focus });
           size="medium"
           @click="onStop"
         >
+          <template #icon>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
+            </svg>
+          </template>
           {{ t('chat.composer.stop') }}
         </NButton>
         <NButton
@@ -159,14 +164,19 @@ defineExpose({ prependMention, setText, focus });
           :disabled="!canSend"
           @click="submit"
         >
+          <template #icon>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 8L14 2L9 14L8 9L2 8Z" />
+            </svg>
+          </template>
           {{ t('chat.composer.send') }}
         </NButton>
       </div>
     </div>
 
-    <!-- Bottom toolbar: speed chips · context ring · meta -->
+    <!-- Bottom toolbar: speed chips · context meter · meta -->
     <div
-      class="flex items-center gap-2 px-3 py-2 border-t border-[var(--border)] text-xs"
+      class="flex items-center gap-2 px-3 py-2 border-t border-[var(--border)] bg-[var(--bg-elevate)]/40 text-xs rounded-b-xl"
     >
       <!-- LEFT: thinking-speed picker (extracted reusable component) -->
       <ThinkingStrategyPicker
@@ -195,7 +205,7 @@ defineExpose({ prependMention, setText, focus });
       </span>
       <span
         v-if="!isMobile"
-        class="text-[var(--text-3)] hidden md:inline"
+        class="text-[var(--text-3)] hidden md:inline opacity-80"
       >
         {{ hotkeyHint }}
       </span>

@@ -70,20 +70,20 @@ function fmtFull(n: number): string {
 }
 
 const pctLabel = computed(() => pct.value.toFixed(1));
-const modelLabel = computed(() => props.model || 'default');
+const modelLabel = computed(() => props.model || t('chat.context.modelFallback'));
 </script>
 
 <template>
-  <NPopover trigger="click" placement="top-end" :width="280">
+  <NPopover trigger="click" placement="top-end" :width="300">
     <template #trigger>
       <button
         type="button"
-        class="inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-elevate)] transition-colors cursor-pointer"
+        class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs hover:bg-[var(--bg-elevate)] transition-colors cursor-pointer border border-transparent hover:border-[var(--border)]"
         :aria-label="t('chat.context.title')"
       >
         <!-- Bar -->
         <span
-          class="relative inline-block h-1.5 rounded-full overflow-hidden bg-[var(--border)]"
+          class="relative inline-block h-2 rounded-full overflow-hidden bg-[var(--border)]"
           style="width: 120px;"
         >
           <span
@@ -92,22 +92,25 @@ const modelLabel = computed(() => props.model || 'default');
           />
         </span>
         <!-- Readout -->
-        <span class="font-mono whitespace-nowrap text-[var(--text-secondary,inherit)]">
-          {{ fmtCompact(used) }} / {{ fmtCompact(resolvedLimit) }} · {{ pctLabel }}%
+        <span class="font-mono whitespace-nowrap text-[var(--text-2)]">
+          {{ fmtCompact(used) }} / {{ fmtCompact(resolvedLimit) }}
+        </span>
+        <span class="font-mono whitespace-nowrap tabular-nums" :style="{ color: barColor }">
+          {{ pctLabel }}%
         </span>
       </button>
     </template>
 
     <!-- Popover content -->
-    <div class="min-w-[240px] flex flex-col gap-2">
-      <div class="text-xs opacity-60">{{ t('chat.context.title') }}</div>
+    <div class="min-w-[260px] flex flex-col gap-2">
+      <div class="text-xs text-[var(--text-3)] font-medium uppercase tracking-wider">{{ t('chat.context.title') }}</div>
 
       <!-- Big total -->
       <div class="flex items-baseline gap-2">
         <span class="text-2xl font-semibold font-mono" :style="{ color: barColor }">
           {{ fmtFull(used) }}
         </span>
-        <span class="text-xs opacity-60">tokens</span>
+        <span class="text-xs text-[var(--text-3)]">{{ t('chat.context.tokens') }}</span>
       </div>
 
       <!-- Limit -->

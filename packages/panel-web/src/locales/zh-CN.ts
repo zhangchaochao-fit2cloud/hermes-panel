@@ -242,6 +242,23 @@ export default {
       copyId: '复制会话 ID',
       idCopied: '会话 ID 已复制',
     },
+    team: {
+      label: '当前队伍：',
+      summon: '@{id} 召唤',
+      collapse: '收起',
+      more: '+ {n}',
+    },
+    context: {
+      title: '上下文用量',
+      limit: '上限',
+      input: '输入',
+      output: '输出',
+      cache: '缓存',
+      cost: '估算成本',
+      tokens: 'tokens',
+      modelHint: '上限基于 {model}',
+      modelFallback: '默认',
+    },
   },
   sessions: {
     searchPlaceholder: '搜索标题、内容...',

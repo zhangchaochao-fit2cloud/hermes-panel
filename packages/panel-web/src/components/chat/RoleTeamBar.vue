@@ -2,9 +2,11 @@
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { NPopover } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
 
+const { t } = useI18n();
 const store = useWorkspacesStore();
 const { activeId } = storeToRefs(store);
 
@@ -26,7 +28,7 @@ function summon(role: RoleDef): void {
     class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 mb-2 text-xs"
   >
     <div class="flex items-center gap-2">
-      <span class="opacity-60 shrink-0">当前队伍：</span>
+      <span class="opacity-60 shrink-0">{{ t('chat.team.label') }}</span>
       <div class="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto">
         <NPopover
           v-for="role in (expanded ? team : team.slice(0, 5))"
@@ -37,7 +39,7 @@ function summon(role: RoleDef): void {
           <template #trigger>
             <button
               class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-transparent hover:border-[var(--brand-500)] hover:bg-[var(--brand-500)]/5 transition-colors whitespace-nowrap"
-              :title="`@${role.id} 召唤`"
+              :title="t('chat.team.summon', { id: role.id })"
               @click="summon(role)"
             >
               <span>{{ role.icon }}</span>
@@ -59,7 +61,7 @@ function summon(role: RoleDef): void {
         class="text-xs opacity-60 hover:opacity-100 shrink-0"
         @click="expanded = !expanded"
       >
-        {{ expanded ? '收起' : `+ ${team.length - 5}` }}
+        {{ expanded ? t('chat.team.collapse') : t('chat.team.more', { n: team.length - 5 }) }}
       </button>
     </div>
   </div>

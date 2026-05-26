@@ -242,6 +242,23 @@ export default {
       copyId: 'Copy session ID',
       idCopied: 'Session ID copied',
     },
+    team: {
+      label: 'Team:',
+      summon: '@{id} summon',
+      collapse: 'Collapse',
+      more: '+ {n}',
+    },
+    context: {
+      title: 'Context usage',
+      limit: 'Limit',
+      input: 'Input',
+      output: 'Output',
+      cache: 'Cache',
+      cost: 'Est. cost',
+      tokens: 'tokens',
+      modelHint: 'Limit derived from {model}',
+      modelFallback: 'default',
+    },
   },
   sessions: {
     searchPlaceholder: 'Search title, content...',
