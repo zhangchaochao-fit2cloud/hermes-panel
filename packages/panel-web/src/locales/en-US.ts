@@ -230,6 +230,8 @@ export default {
       searchPrefix: 'search',
     },
     reasoning: 'Reasoning',
+    reasoningDone: 'Thought',
+    reasoningWithTime: 'Thought for {time}',
     message: {
       copy: 'Copy',
       regenerate: 'Regenerate',

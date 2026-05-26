@@ -230,6 +230,8 @@ export default {
       searchPrefix: '搜索',
     },
     reasoning: '思考过程',
+    reasoningDone: '已处理',
+    reasoningWithTime: '已处理 {time}',
     message: {
       copy: '复制',
       regenerate: '重新生成',
