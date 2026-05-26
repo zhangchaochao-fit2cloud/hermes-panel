@@ -144,9 +144,10 @@ export default {
     },
   },
   notifications: {
-    title: '通知',
+    title: '通知中心',
     empty: '一切平静',
     markAllRead: '全部已读',
+    unreadCount: '{n} 条未读通知',
   },
   controlCenter: {
     placeholder: '搜索命令、页面或会话...  按 ⌘⇧P 唤起',
@@ -717,6 +718,8 @@ export default {
       providerConfigured: '该供应商已配置凭据',
       gatewayRestarted: '已重启 gateway，新配置已生效',
       gatewayRestartFailed: 'Gateway 重启失败，请在 Dashboard 手动重启使新模型生效',
+      searchPlaceholder: '搜索模型或供应商...',
+      noMatch: '没有匹配的模型',
     },
   },
   status: {

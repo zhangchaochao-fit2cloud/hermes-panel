@@ -139,7 +139,7 @@ defineExpose({ prependMention, setText, focus });
         ref="textareaRef"
         v-model="text"
         :placeholder="t('chat.composer.placeholder')"
-        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-snug placeholder:text-[var(--text-muted)]"
+        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-snug text-[var(--text-1)] placeholder:text-[var(--text-3)]"
         rows="2"
         @keydown="onKeydown"
       />
@@ -189,13 +189,13 @@ defineExpose({ prependMention, setText, focus });
       <!-- RIGHT: char count + hotkey hint -->
       <span
         v-if="showCharCount"
-        class="font-mono text-[var(--text-muted)] tabular-nums"
+        class="font-mono text-[var(--text-3)] tabular-nums"
       >
         {{ t('chat.composer.chars', { n: charCount }) }}
       </span>
       <span
         v-if="!isMobile"
-        class="text-[var(--text-muted)] hidden md:inline"
+        class="text-[var(--text-3)] hidden md:inline"
       >
         {{ hotkeyHint }}
       </span>

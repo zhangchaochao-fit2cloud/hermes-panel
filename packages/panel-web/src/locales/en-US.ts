@@ -147,6 +147,7 @@ export default {
     title: 'Notifications',
     empty: 'All quiet',
     markAllRead: 'Mark all read',
+    unreadCount: '{n} unread',
   },
   controlCenter: {
     placeholder: 'Search commands, pages or sessions...  press ⌘⇧P',
@@ -733,6 +734,8 @@ export default {
       providerConfigured: 'Credentials configured for this provider',
       gatewayRestarted: 'Gateway restarted — new model is live',
       gatewayRestartFailed: 'Gateway restart failed. Restart it from the Dashboard for the new model to take effect.',
+      searchPlaceholder: 'Search models or provider...',
+      noMatch: 'No matching models',
     },
   },
   status: {
