@@ -18,14 +18,15 @@ const color = computed(() => ({
 <template>
   <NPopover trigger="hover" placement="bottom-end" :delay="200">
     <template #trigger>
-      <div
-        class="inline-flex h-8 max-w-[280px] shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] px-2.5 text-xs cursor-default"
+      <button
+        type="button"
+        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+        :aria-label="label"
       >
-        <span :class="['inline-block w-1.5 h-1.5 rounded-full flex-shrink-0', color]" />
-        <span class="min-w-0 truncate">{{ label }}</span>
-      </div>
+        <span :class="['inline-block w-2 h-2 rounded-full', color]" />
+      </button>
     </template>
-    <div class="text-xs font-mono whitespace-nowrap max-w-[400px]">
+    <div class="text-xs font-mono whitespace-nowrap max-w-[400px] px-1">
       {{ label }}
     </div>
   </NPopover>

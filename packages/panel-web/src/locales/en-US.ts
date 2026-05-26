@@ -204,6 +204,7 @@ export default {
       send: 'Send',
       stop: 'Stop',
       sendHint: 'to send',
+      attach: 'Attach (coming soon)',
       chars: '{n} chars',
       speed: {
         fast: 'Fast',
@@ -329,6 +330,10 @@ export default {
         light: 'Light',
         dark: 'Dark',
         auto: 'Auto',
+        codexLight: 'Codex Light',
+        codexDark: 'Codex Dark',
+        githubPrimer: 'GitHub Primer',
+        minimalGlass: 'Minimal Glass',
         glassApple: 'Apple Glass',
         glassVibrant: 'Vibrant Glass',
         glassTokyo: 'Tokyo Night',

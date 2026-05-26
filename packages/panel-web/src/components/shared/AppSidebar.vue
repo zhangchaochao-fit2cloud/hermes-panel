@@ -141,12 +141,11 @@ function toggleGroup(group: MenuGroup): void {
     class="app-sidebar h-full flex flex-col transition-[width] duration-200 flex-shrink-0 overflow-hidden"
     :class="isCollapsed ? 'w-[68px] is-collapsed' : 'w-[248px]'"
   >
-    <div class="sidebar-brand h-16 flex items-center px-4 gap-3 flex-shrink-0" data-tauri-drag-region>
+    <!-- Brand row: H logo only (the wordmark was redundant against the
+         topbar breadcrumb and crowded the macOS traffic lights). -->
+    <div class="sidebar-brand h-14 flex items-center px-4 flex-shrink-0" data-tauri-drag-region>
       <div class="vben-logo-mark w-9 h-9 rounded-lg shadow-[var(--shadow-2)] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
         H
-      </div>
-      <div v-if="!isCollapsed" class="min-w-0">
-        <div class="text-[19px] font-semibold text-[var(--text-1)] leading-6 truncate">Hermes Panel</div>
       </div>
     </div>
 

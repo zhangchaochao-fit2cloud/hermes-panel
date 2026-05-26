@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { NButton } from 'naive-ui';
 import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
@@ -126,65 +125,52 @@ defineExpose({ prependMention, setText, focus });
 </script>
 
 <template>
+  <!--
+    Codex-style composer: pill-rounded card, textarea on top, a single
+    horizontal toolbar at the bottom (no internal divider), with a
+    circular Send button anchored bottom-right.
+  -->
   <div
-    class="composer-shell rounded-xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] transition-all duration-200 focus-within:border-[var(--brand-500)] focus-within:shadow-[var(--shadow-3)]"
+    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-1)] transition-all duration-200 focus-within:border-[var(--text-3)] focus-within:shadow-[var(--shadow-2)]"
   >
-    <!-- Top row: textarea + send/stop button -->
-    <div class="flex items-end gap-2 px-4 pt-3 pb-2">
+    <!-- Textarea -->
+    <div class="px-5 pt-4 pb-1">
       <textarea
         ref="textareaRef"
         v-model="text"
         :placeholder="t('chat.composer.placeholder')"
-        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-relaxed text-[var(--text-1)] placeholder:text-[var(--text-3)]"
+        class="composer-textarea block w-full resize-none outline-none bg-transparent text-[15px] font-sans leading-relaxed text-[var(--text-1)] placeholder:text-[var(--text-3)]"
         rows="2"
         @keydown="onKeydown"
       />
-      <div class="shrink-0 self-end pb-0.5">
-        <NButton
-          v-if="sending"
-          type="error"
-          size="medium"
-          @click="onStop"
-        >
-          <template #icon>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
-            </svg>
-          </template>
-          {{ t('chat.composer.stop') }}
-        </NButton>
-        <NButton
-          v-else
-          type="primary"
-          size="medium"
-          :disabled="!canSend"
-          @click="submit"
-        >
-          <template #icon>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M2 8L14 2L9 14L8 9L2 8Z" />
-            </svg>
-          </template>
-          {{ t('chat.composer.send') }}
-        </NButton>
-      </div>
     </div>
 
-    <!-- Bottom toolbar: speed chips · context meter · meta -->
-    <div
-      class="flex items-center gap-2 px-3 py-2 border-t border-[var(--border)] bg-[var(--bg-elevate)]/40 text-xs rounded-b-xl"
-    >
-      <!-- LEFT: thinking-speed picker (extracted reusable component) -->
+    <!-- Bottom toolbar: + button · speed · meter · meta · send -->
+    <div class="flex items-center gap-2 px-3 pb-3 pt-1">
+      <!-- "+" placeholder for attachments (visual only for v0.x) -->
+      <button
+        type="button"
+        class="composer-icon-btn cursor-pointer"
+        :title="t('chat.composer.attach')"
+        :aria-label="t('chat.composer.attach')"
+        disabled
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+      </button>
+
+      <!-- Thinking-speed segmented chips -->
       <ThinkingStrategyPicker
         :value="thinkingSpeed"
         :disabled="sending"
         @update:value="(v: 'fast' | 'auto' | 'extended') => emit('update:thinkingSpeed', v)"
       />
 
-      <!-- spacer (left chunk → right chunk) -->
+      <!-- spacer -->
       <span class="flex-1" />
 
-      <!-- MIDDLE-RIGHT: inline context meter (click opens breakdown) -->
+      <!-- Inline context meter (click opens breakdown popover) -->
       <ContextRing
         :used="session.tokenUsage.total"
         :input="session.tokenUsage.input"
@@ -192,23 +178,49 @@ defineExpose({ prependMention, setText, focus });
         :model="model"
       />
 
-      <!-- RIGHT: char count + hotkey hint -->
+      <!-- Char count + hotkey hint, desktop only -->
       <span
         v-if="showCharCount"
-        class="font-mono text-[var(--text-3)] tabular-nums"
+        class="font-mono text-[var(--text-3)] tabular-nums text-xs"
       >
         {{ t('chat.composer.chars', { n: charCount }) }}
       </span>
       <span
         v-if="!isMobile"
-        class="hidden md:inline-flex items-center gap-1 text-[var(--text-3)]"
+        class="hidden md:inline-flex items-center gap-1 text-[var(--text-3)] text-xs"
       >
         <template v-for="(tok, i) in sendChordTokens" :key="`${tok}-${i}`">
           <kbd class="composer-kbd">{{ tok }}</kbd>
           <span v-if="i < sendChordTokens.length - 1" class="opacity-50">+</span>
         </template>
-        <span class="ml-1 opacity-80">{{ t('chat.composer.sendHint') }}</span>
       </span>
+
+      <!-- Circular Send / Stop button -->
+      <button
+        v-if="sending"
+        type="button"
+        class="composer-send-btn is-stop cursor-pointer"
+        :title="t('chat.composer.stop')"
+        :aria-label="t('chat.composer.stop')"
+        @click="onStop"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="10" rx="1.5" />
+        </svg>
+      </button>
+      <button
+        v-else
+        type="button"
+        class="composer-send-btn cursor-pointer"
+        :disabled="!canSend"
+        :title="t('chat.composer.send')"
+        :aria-label="t('chat.composer.send')"
+        @click="submit"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 13V3M3 8l5-5 5 5" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -221,10 +233,10 @@ defineExpose({ prependMention, setText, focus });
  * measurement and rendered box agree.
  */
 .composer-textarea {
-  min-height: 64px; /* MIN_PX = 20 * 2 + 24 */
-  max-height: 184px; /* MAX_PX = 20 * 8 + 24 */
+  min-height: 56px;
+  max-height: 220px;
   padding: 0;
-  line-height: 1.4;
+  line-height: 1.5;
   /* Hide scrollbar until we explicitly toggle overflow-y in resize() */
   overflow-y: hidden;
 }
@@ -245,5 +257,60 @@ defineExpose({ prependMention, setText, focus });
   border: 1px solid var(--border);
   border-bottom-width: 2px;
   border-radius: 4px;
+}
+
+/* Round 32px utility buttons inside the composer toolbar (the leading
+ * "+" attach slot today, mic / other affordances tomorrow). */
+.composer-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.composer-icon-btn:hover {
+  background: var(--bg-elevate);
+  color: var(--text-1);
+}
+.composer-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Round 32px send button — dark filled circle with white arrow, matching
+ * the Codex-style reference. Stop variant uses the error color. */
+.composer-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 999px;
+  background: var(--text-1);
+  color: var(--bg-card);
+  border: none;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+.composer-send-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.composer-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.composer-send-btn.is-stop {
+  background: #ef4444;
+  color: #ffffff;
 }
 </style>

@@ -130,6 +130,87 @@
 }
 
 /* =================================================================
+   Codex · Light — clean white with dark accents
+   ================================================================= */
+:root[data-theme='codex-light'] {
+  --brand-500: #1a1a1a;
+  --brand-600: #0a0a0a;
+  --brand-700: #000000;
+  --bg-page: #fafafa;
+  --bg-card: #ffffff;
+  --bg-elevate: #f5f5f5;
+  --border: #e5e5e5;
+  --text-1: #0a0a0a;
+  --text-2: #404040;
+  --text-3: #737373;
+  --body-bg: #fafafa;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+
+/* =================================================================
+   Codex · Dark — near-black background, soft white text
+   ================================================================= */
+:root[data-theme='codex-dark'] {
+  --brand-500: #fafafa;
+  --brand-600: #ffffff;
+  --brand-700: #e5e5e5;
+  --bg-page: #0d0d0d;
+  --bg-card: #171717;
+  --bg-elevate: #1f1f1f;
+  --border: #2a2a2a;
+  --text-1: #fafafa;
+  --text-2: #a3a3a3;
+  --text-3: #737373;
+  --body-bg: #0d0d0d;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+/* =================================================================
+   GitHub Primer — light theme with GitHub blue
+   ================================================================= */
+:root[data-theme='github-primer'] {
+  --brand-500: #0969da;
+  --brand-600: #0860c7;
+  --brand-700: #0757b3;
+  --bg-page: #ffffff;
+  --bg-card: #ffffff;
+  --bg-elevate: #f6f8fa;
+  --border: #d0d7de;
+  --text-1: #1f2328;
+  --text-2: #59636e;
+  --text-3: #818b98;
+  --body-bg: #f6f8fa;
+}
+
+/* =================================================================
+   Minimal Glass — lightweight translucency, no chromatic wallpaper
+   ================================================================= */
+:root[data-theme='minimal-glass'] {
+  --glass-blur: 16px;
+  --glass-saturate: 110%;
+  --glass-bg-overlay: rgba(255, 255, 255, 0.7);
+
+  --bg-page: transparent;
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-elevate: rgba(255, 255, 255, 0.55);
+  --border: rgba(15, 23, 42, 0.08);
+  --text-1: #0f172a;
+  --text-2: rgba(15, 23, 42, 0.72);
+  --text-3: rgba(15, 23, 42, 0.5);
+
+  /* Soft neutral gradient — no vibrant hues. */
+  --body-bg:
+    radial-gradient(ellipse at 25% 20%, rgba(148, 163, 184, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 80%, rgba(203, 213, 225, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  --body-bg-attachment: fixed;
+}
+
+/* =================================================================
    Base layout
    ================================================================= */
 html, body, #app {

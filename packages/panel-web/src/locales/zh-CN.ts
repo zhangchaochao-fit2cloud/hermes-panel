@@ -204,6 +204,7 @@ export default {
       send: '发送',
       stop: '停止',
       sendHint: '发送',
+      attach: '附件（即将上线）',
       chars: '{n} 字',
       speed: {
         fast: '快速',
@@ -328,6 +329,10 @@ export default {
         light: '亮色',
         dark: '暗色',
         auto: '跟随系统',
+        codexLight: 'Codex 亮色',
+        codexDark: 'Codex 深色',
+        githubPrimer: 'GitHub Primer',
+        minimalGlass: '简约玻璃',
         glassApple: '苹果毛玻璃',
         glassVibrant: '炫彩玻璃',
         glassTokyo: 'Tokyo Night',

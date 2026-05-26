@@ -1,7 +1,17 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
-export type ThemeMode = 'light' | 'dark' | 'auto' | 'glass-apple' | 'glass-vibrant' | 'glass-tokyo';
+export type ThemeMode =
+  | 'light'
+  | 'dark'
+  | 'auto'
+  | 'glass-apple'
+  | 'glass-vibrant'
+  | 'glass-tokyo'
+  | 'codex-light'
+  | 'codex-dark'
+  | 'github-primer'
+  | 'minimal-glass';
 export type FontSize = 'small' | 'medium' | 'large';
 
 /** Which color family each mode falls into (drives Naive UI dark vs light). */
@@ -12,6 +22,10 @@ const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
   'glass-apple': false,    // Apple frosted glass uses light text on translucent surfaces over a colorful wallpaper
   'glass-vibrant': false,  // Vibrant uses dark text on translucent white
   'glass-tokyo': true,     // Tokyo night is a dark theme
+  'codex-light': false,
+  'codex-dark': true,
+  'github-primer': false,
+  'minimal-glass': false,
 };
 
 const STORAGE_MODE = 'panel.themeMode';
@@ -39,6 +53,7 @@ function readMode(): ThemeMode {
   const v = localStorage.getItem(STORAGE_MODE);
   if (v === 'light' || v === 'dark' || v === 'auto') return v;
   if (v === 'glass-apple' || v === 'glass-vibrant' || v === 'glass-tokyo') return v;
+  if (v === 'codex-light' || v === 'codex-dark' || v === 'github-primer' || v === 'minimal-glass') return v;
   return DEFAULT_MODE;
 }
 
@@ -120,7 +135,9 @@ export const useAppearanceStore = defineStore('appearance', () => {
   });
 
   /** True if current mode uses translucent surfaces (backdrop-filter). */
-  const isGlass = computed(() => mode.value.startsWith('glass-'));
+  const isGlass = computed(() =>
+    mode.value.startsWith('glass-') || mode.value === 'minimal-glass',
+  );
 
   function setMode(v: ThemeMode): void {
     mode.value = v;
