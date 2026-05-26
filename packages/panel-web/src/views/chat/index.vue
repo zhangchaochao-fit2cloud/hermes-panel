@@ -2,7 +2,7 @@
 import { onMounted, ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
 import { useSessionStore } from '@/stores/session';
 import { useChatStreamStore } from '@/stores/chat-stream';
@@ -12,6 +12,8 @@ import MessageBubble from '@/components/chat/MessageBubble.vue';
 import Composer from '@/components/chat/Composer.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
+import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
+import { useSessionsStore } from '@/stores/sessions';
 import { detectMention, type RoleDef } from '@/data/roles';
 import { useWorkspacesStore } from '@/stores/workspaces';
 
@@ -21,6 +23,7 @@ const stream = useChatStreamStore();
 const system = useSystemStore();
 const message = useMessage();
 const route = useRoute();
+const router = useRouter();
 
 const { messages } = storeToRefs(session);
 const { state, lastError, lastErrorCode } = storeToRefs(stream);
@@ -37,6 +40,28 @@ function summon(role: RoleDef): void {
   if (c?.prependMention) {
     c.prependMention(role.id);
   }
+}
+
+// Sessions drawer: collapsed state persisted to localStorage
+const sessionsList = useSessionsStore();
+const SIDEBAR_KEY = 'panel.chat.sidebar.collapsed';
+const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === '1');
+watch(sidebarCollapsed, v => {
+  localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0');
+});
+
+function onSelectSession(id: string): void {
+  if (session.sessionId === id) return;
+  void loadSession(id);
+}
+
+function onNewChat(): void {
+  session.reset();
+  // Drop ?resume= so a subsequent reload doesn't re-pop the old session
+  if (route.query.resume) {
+    void router.replace({ path: '/chat' });
+  }
+  void composerRef.value?.focus?.();
 }
 
 interface SessionDetail {
@@ -135,6 +160,12 @@ watch(messages, async () => {
 watch(state, (s, prev) => {
   sending.value = s === 'creating' || s === 'streaming' || s === 'reconnecting';
 
+  // When a stream ends successfully, refresh the sidebar list so a brand-new
+  // session shows up immediately without a manual reload.
+  if ((s === 'idle' || s === 'done') && (prev === 'streaming' || prev === 'creating')) {
+    void sessionsList.load();
+  }
+
   if (s === 'error' && prev !== 'error') {
     const code = lastErrorCode.value ?? 'UNKNOWN';
     const detail = lastError.value ?? t('error.unknown');
@@ -191,6 +222,11 @@ function trySample(q: string): void {
     the parent already constrains height (web build inside DefaultLayout).
   -->
   <div class="flex h-full w-full bg-[var(--bg-page)] md:h-full" style="min-height: 100dvh;">
+    <ChatSessionsDrawer
+      v-model:collapsed="sidebarCollapsed"
+      @select="onSelectSession"
+      @new="onNewChat"
+    />
     <main class="flex-1 flex flex-col min-w-0">
       <div ref="scroller" class="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div class="max-w-3xl mx-auto">
