@@ -250,7 +250,7 @@ function trySample(q: string): void {
               <button
                 v-for="q in sampleQuestions"
                 :key="q"
-                class="text-xs px-3 py-1.5 rounded-full border border-[var(--border)] hover:bg-[var(--bg-card)] hover:border-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors"
+                class="text-xs px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-2)] hover:bg-[var(--bg-elevate)] hover:border-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors"
                 @click="trySample(q)"
               >
                 {{ q }}

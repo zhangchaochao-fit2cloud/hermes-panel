@@ -122,8 +122,8 @@ onBeforeUnmount(() => {
           class="text-left px-3 py-2 rounded-md text-sm transition-colors border-l-2"
           :class="
             activeKey === a.key
-              ? 'bg-[var(--brand-500)]/10 text-[var(--brand-600)] border-[var(--brand-500)]'
-              : 'border-transparent hover:bg-[var(--bg-elevate)]'
+              ? 'bg-[var(--brand-500)]/10 text-[var(--brand-600)] border-[var(--brand-500)] font-medium'
+              : 'border-transparent text-[var(--text-2)] hover:bg-[var(--bg-elevate)] hover:text-[var(--text-1)]'
           "
           @click="goTo(a.key)"
         >

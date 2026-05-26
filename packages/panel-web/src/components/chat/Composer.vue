@@ -69,11 +69,7 @@ const charCount = computed(() => text.value.length);
 const showCharCount = computed(() => charCount.value > 50);
 
 const sendChord = computed(() => hotkeys.bindings.send);
-const hotkeyHint = computed(() => {
-  // e.g. "⌘+Enter to send" on mac, "Ctrl+Enter to send" elsewhere
-  const tokens = chordToDisplayTokens(sendChord.value);
-  return t('chat.composer.hotkeyHint', { chord: tokens.join('+') });
-});
+const sendChordTokens = computed(() => chordToDisplayTokens(sendChord.value));
 
 function onKeydown(e: KeyboardEvent): void {
   // Skip while IME is composing — Enter should commit the composition, not send.
@@ -205,9 +201,13 @@ defineExpose({ prependMention, setText, focus });
       </span>
       <span
         v-if="!isMobile"
-        class="text-[var(--text-3)] hidden md:inline opacity-80"
+        class="hidden md:inline-flex items-center gap-1 text-[var(--text-3)]"
       >
-        {{ hotkeyHint }}
+        <template v-for="(tok, i) in sendChordTokens" :key="`${tok}-${i}`">
+          <kbd class="composer-kbd">{{ tok }}</kbd>
+          <span v-if="i < sendChordTokens.length - 1" class="opacity-50">+</span>
+        </template>
+        <span class="ml-1 opacity-80">{{ t('chat.composer.sendHint') }}</span>
       </span>
     </div>
   </div>
@@ -227,5 +227,23 @@ defineExpose({ prependMention, setText, focus });
   line-height: 1.4;
   /* Hide scrollbar until we explicitly toggle overflow-y in resize() */
   overflow-y: hidden;
+}
+
+.composer-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
 }
 </style>

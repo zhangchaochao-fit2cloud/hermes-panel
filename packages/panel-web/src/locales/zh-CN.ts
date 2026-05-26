@@ -203,6 +203,8 @@ export default {
       placeholder: '输入消息，Shift+Enter 换行...',
       send: '发送',
       stop: '停止',
+      sendHint: '发送',
+      chars: '{n} 字',
       speed: {
         fast: '快速',
         auto: '自动',

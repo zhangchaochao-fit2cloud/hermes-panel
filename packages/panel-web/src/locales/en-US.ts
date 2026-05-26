@@ -203,6 +203,8 @@ export default {
       placeholder: 'Type a message, Shift+Enter for newline...',
       send: 'Send',
       stop: 'Stop',
+      sendHint: 'to send',
+      chars: '{n} chars',
       speed: {
         fast: 'Fast',
         auto: 'Auto',

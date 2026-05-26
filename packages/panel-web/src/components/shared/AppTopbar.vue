@@ -42,9 +42,13 @@ const hermesState = computed<'connected' | 'connecting' | 'disconnected' | 'unkn
 const hermesLabel = computed(() => {
   if (loading.value) return t('status.connecting');
   if (!health.value) return t('status.connecting');
-  return health.value.hermes.running
-    ? `Hermes ${health.value.hermes.version ?? 'unknown'}`
-    : t('error.hermes_not_found');
+  if (!health.value.hermes.running) return t('error.hermes_not_found');
+  const raw = health.value.hermes.version;
+  if (!raw) return 'Hermes';
+  // raw is like "Hermes Agent v0.8.0 (2026.4.8)". Strip the trailing
+  // build-date parens and use the version line as-is (it already starts
+  // with "Hermes …", so prefixing another "Hermes" would duplicate).
+  return raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
 });
 
 const pageSubtitle = computed(() => {
