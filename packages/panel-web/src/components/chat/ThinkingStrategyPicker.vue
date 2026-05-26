@@ -37,9 +37,16 @@ function select(id: Strategy): void {
 </script>
 
 <template>
+  <!--
+    Codex-style strategy picker: no outer frame at all. Each chip is a
+    transparent text-style button by default, lifts to bg-elevate on
+    hover, locks to a slightly darker bg-elevate when active. Cleaner
+    next to the composer where every other tool button follows the
+    same "transparent → hover bg → active bg" pattern.
+  -->
   <div
     role="radiogroup"
-    class="strategy-picker inline-flex items-center p-0.5 rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+    class="strategy-picker inline-flex items-center gap-0.5"
     :class="{ 'opacity-50 pointer-events-none': disabled }"
   >
     <NTooltip
@@ -54,10 +61,8 @@ function select(id: Strategy): void {
           role="radio"
           :aria-checked="value === chip.id"
           :disabled="disabled"
-          class="strategy-chip cursor-pointer inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs leading-none font-medium select-none transition-all duration-150"
-          :class="value === chip.id
-            ? 'is-active text-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]'
-            : 'text-[var(--text-2)] hover:text-[var(--text-1)]'"
+          class="strategy-chip cursor-pointer inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs leading-none font-medium select-none transition-colors duration-150"
+          :class="value === chip.id ? 'is-active' : ''"
           @click="select(chip.id)"
         >
           <span aria-hidden="true" class="text-sm leading-none">{{ chip.icon }}</span>
@@ -73,13 +78,16 @@ function select(id: Strategy): void {
 </template>
 
 <style scoped>
-/* Active chip uses a brand gradient so the pill feels lit rather than
- * just colored. Hover on inactive chips lifts the bg slightly so the
- * affordance is clear without being noisy. */
-.strategy-chip.is-active {
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+.strategy-chip {
+  color: var(--text-2);
+  background: transparent;
 }
-.strategy-chip:not(.is-active):hover {
-  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
+.strategy-chip:hover {
+  background: var(--bg-elevate);
+  color: var(--text-1);
+}
+.strategy-chip.is-active {
+  background: color-mix(in srgb, var(--text-1) 8%, var(--bg-card));
+  color: var(--text-1);
 }
 </style>

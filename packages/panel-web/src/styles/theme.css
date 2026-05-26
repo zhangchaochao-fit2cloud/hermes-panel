@@ -194,23 +194,27 @@
    Minimal Glass — lightweight translucency, no chromatic wallpaper
    ================================================================= */
 :root[data-theme='minimal-glass'] {
-  --glass-blur: 16px;
-  --glass-saturate: 110%;
-  --glass-bg-overlay: rgba(255, 255, 255, 0.7);
+  /* Real glass: low-alpha surfaces let the wallpaper show through, and
+   * backdrop-filter blurs whatever sits underneath. The wallpaper is a
+   * neutral slate so it never competes with content. */
+  --glass-blur: 22px;
+  --glass-saturate: 140%;
+  --glass-bg-overlay: rgba(255, 255, 255, 0.42);
 
   --bg-page: transparent;
-  --bg-card: rgba(255, 255, 255, 0.72);
-  --bg-elevate: rgba(255, 255, 255, 0.55);
-  --border: rgba(15, 23, 42, 0.08);
+  --bg-card: rgba(255, 255, 255, 0.42);
+  --bg-elevate: rgba(255, 255, 255, 0.28);
+  --border: rgba(15, 23, 42, 0.1);
   --text-1: #0f172a;
   --text-2: rgba(15, 23, 42, 0.72);
   --text-3: rgba(15, 23, 42, 0.5);
 
-  /* Soft neutral gradient — no vibrant hues. */
+  /* More chroma in the wallpaper so cards visibly tint when translucent. */
   --body-bg:
-    radial-gradient(ellipse at 25% 20%, rgba(148, 163, 184, 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse at 75% 80%, rgba(203, 213, 225, 0.22) 0%, transparent 55%),
-    linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+    radial-gradient(ellipse at 18% 18%, rgba(165, 180, 252, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 82%, rgba(186, 230, 253, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 30%, rgba(252, 211, 232, 0.25) 0%, transparent 55%),
+    linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
   --body-bg-attachment: fixed;
 }
 
@@ -236,41 +240,50 @@ body {
    Glass surface helpers — applied automatically to common surfaces
    when [data-theme^='glass-'] is on the root.
    ================================================================= */
-:root[data-theme^='glass-'] [class*="bg-[var(--bg-card)]"],
-:root[data-theme^='glass-'] [class*="bg-[var(--bg-elevate)]"] {
+/* All themes whose body background is meant to show through cards get
+ * the same treatment. `minimal-glass` is not prefixed `glass-` so we
+ * have to list it explicitly. */
+:is(
+  :root[data-theme^='glass-'],
+  :root[data-theme='minimal-glass']
+) :is(
+  [class*="bg-[var(--bg-card)]"],
+  [class*="bg-[var(--bg-elevate)]"]
+) {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
-:root[data-theme^='glass-'] .n-card,
-:root[data-theme^='glass-'] .n-dropdown-menu,
-:root[data-theme^='glass-'] .n-popover,
-:root[data-theme^='glass-'] .n-drawer-content,
-:root[data-theme^='glass-'] .n-modal,
-:root[data-theme^='glass-'] .n-menu,
-:root[data-theme^='glass-'] .n-data-table {
+:is(
+  :root[data-theme^='glass-'],
+  :root[data-theme='minimal-glass']
+) :is(.n-card, .n-dropdown-menu, .n-popover, .n-drawer-content, .n-modal, .n-menu, .n-data-table) {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   background-color: var(--glass-bg-overlay) !important;
 }
 
-:root[data-theme^='glass-'] aside,
-:root[data-theme^='glass-'] .app-topbar {
+:is(
+  :root[data-theme^='glass-'],
+  :root[data-theme='minimal-glass']
+) :is(aside, .app-topbar) {
   backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
 }
 
-:root[data-theme^='glass-'] .n-input .n-input__textarea-el,
-:root[data-theme^='glass-'] .n-input .n-input-wrapper,
-:root[data-theme^='glass-'] .n-input,
-:root[data-theme^='glass-'] textarea {
+:is(
+  :root[data-theme^='glass-'],
+  :root[data-theme='minimal-glass']
+) :is(.n-input .n-input__textarea-el, .n-input .n-input-wrapper, .n-input, textarea) {
   background-color: var(--bg-elevate) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-:root[data-theme^='glass-'] .shadow-\[var\(--shadow-1\)\],
-:root[data-theme^='glass-'] .shadow-\[var\(--shadow-2\)\] {
+:is(
+  :root[data-theme^='glass-'],
+  :root[data-theme='minimal-glass']
+) :is(.shadow-\[var\(--shadow-1\)\], .shadow-\[var\(--shadow-2\)\]) {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
@@ -468,14 +481,19 @@ body {
   padding-left: 16px;
 }
 
+/* Codex-style topbar icon button: completely transparent in resting
+ * state; hover lifts to bg-elevate with text-1, just like the composer
+ * toolbar buttons. Cursor pointer affordance always on. */
 .topbar-icon-button {
   height: 32px;
   width: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-2);
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition:
     background-color var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
@@ -483,7 +501,11 @@ body {
 
 .topbar-icon-button:hover {
   background: var(--bg-elevate);
-  color: var(--brand-600);
+  color: var(--text-1);
+}
+
+.topbar-icon-button:active {
+  background: color-mix(in srgb, var(--text-1) 8%, var(--bg-card));
 }
 
 .topbar-icon-button:focus-visible,

@@ -131,7 +131,7 @@ defineExpose({ prependMention, setText, focus });
     circular Send button anchored bottom-right.
   -->
   <div
-    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-1)] transition-all duration-200 focus-within:border-[var(--text-3)] focus-within:shadow-[var(--shadow-2)]"
+    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 focus-within:border-[var(--text-3)]"
   >
     <!-- Textarea -->
     <div class="px-5 pt-4 pb-1">
@@ -259,8 +259,9 @@ defineExpose({ prependMention, setText, focus });
   border-radius: 4px;
 }
 
-/* Round 32px utility buttons inside the composer toolbar (the leading
- * "+" attach slot today, mic / other affordances tomorrow). */
+/* Codex-style icon button: transparent default, soft elevate hover, no
+ * outer border — sits inline with text-style chips next to it. Used for
+ * the leading "+" attach slot and the trailing mic placeholder. */
 .composer-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -268,13 +269,12 @@ defineExpose({ prependMention, setText, focus });
   height: 32px;
   width: 32px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: none;
   background: transparent;
   color: var(--text-2);
   transition:
     background-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease);
 }
 .composer-icon-btn:hover {
   background: var(--bg-elevate);
