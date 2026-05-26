@@ -1,14 +1,24 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
-export type ThemeMode = 'light' | 'dark' | 'auto';
+export type ThemeMode = 'light' | 'dark' | 'auto' | 'glass-apple' | 'glass-vibrant' | 'glass-tokyo';
 export type FontSize = 'small' | 'medium' | 'large';
+
+/** Which color family each mode falls into (drives Naive UI dark vs light). */
+const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
+  light: false,
+  dark: true,
+  auto: 'auto',
+  'glass-apple': false,    // Apple frosted glass uses light text on translucent surfaces over a colorful wallpaper
+  'glass-vibrant': false,  // Vibrant uses dark text on translucent white
+  'glass-tokyo': true,     // Tokyo night is a dark theme
+};
 
 const STORAGE_MODE = 'panel.themeMode';
 const STORAGE_COLOR = 'panel.themeColor';
 const STORAGE_FONT = 'panel.fontSize';
 
-const DEFAULT_MODE: ThemeMode = 'auto';
+const DEFAULT_MODE: ThemeMode = 'glass-apple';
 const DEFAULT_COLOR = '#1677ff';
 const DEFAULT_FONT: FontSize = 'medium';
 
@@ -25,7 +35,9 @@ const VALID_COLORS = new Set([
 
 function readMode(): ThemeMode {
   const v = localStorage.getItem(STORAGE_MODE);
-  return v === 'light' || v === 'dark' || v === 'auto' ? v : DEFAULT_MODE;
+  if (v === 'light' || v === 'dark' || v === 'auto') return v;
+  if (v === 'glass-apple' || v === 'glass-vibrant' || v === 'glass-tokyo') return v;
+  return DEFAULT_MODE;
 }
 
 function readColor(): string {
@@ -44,11 +56,15 @@ function prefersDark(): boolean {
 
 function applyThemeAttr(mode: ThemeMode): void {
   const root = document.documentElement;
-  const effective = mode === 'auto' ? (prefersDark() ? 'dark' : 'light') : mode;
-  if (effective === 'dark') {
-    root.setAttribute('data-theme', 'dark');
-  } else {
+  // Resolve 'auto' -> 'light' | 'dark'
+  let effective: ThemeMode = mode;
+  if (mode === 'auto') effective = prefersDark() ? 'dark' : 'light';
+
+  // data-theme: lets CSS swap variable bundles
+  if (effective === 'light') {
     root.removeAttribute('data-theme');
+  } else {
+    root.setAttribute('data-theme', effective);
   }
 }
 
@@ -86,9 +102,15 @@ export const useAppearanceStore = defineStore('appearance', () => {
     mql.addEventListener('change', onOsChange);
   }
 
-  const effectiveDark = computed(() =>
-    mode.value === 'dark' || (mode.value === 'auto' && osDark.value),
-  );
+  const effectiveDark = computed(() => {
+    const m = mode.value;
+    if (m === 'auto') return osDark.value;
+    const flag = MODE_IS_DARK[m];
+    return flag === 'auto' ? osDark.value : flag;
+  });
+
+  /** True if current mode uses translucent surfaces (backdrop-filter). */
+  const isGlass = computed(() => mode.value.startsWith('glass-'));
 
   function setMode(v: ThemeMode): void {
     mode.value = v;
@@ -130,6 +152,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
     color,
     fontSize,
     effectiveDark,
+    isGlass,
     setMode,
     setColor,
     setFontSize,

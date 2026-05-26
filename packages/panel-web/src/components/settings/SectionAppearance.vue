@@ -7,11 +7,30 @@ const { t } = useI18n();
 const store = useAppearanceStore();
 const { mode, color, fontSize } = storeToRefs(store);
 
-interface ModeOption { value: ThemeMode; labelKey: string; icon: string }
+interface ModeOption {
+  value: ThemeMode;
+  labelKey: string;
+  icon: string;
+  /** Inline mini-preview CSS so the user sees the look without applying */
+  previewStyle?: Record<string, string>;
+}
 const modeOptions: ModeOption[] = [
-  { value: 'light', labelKey: 'settings.appearance.mode.light', icon: '☀️' },
-  { value: 'dark', labelKey: 'settings.appearance.mode.dark', icon: '🌙' },
-  { value: 'auto', labelKey: 'settings.appearance.mode.auto', icon: '🖥' },
+  { value: 'light', labelKey: 'settings.appearance.mode.light', icon: '☀️',
+    previewStyle: { background: '#f7f8fa' } },
+  { value: 'dark', labelKey: 'settings.appearance.mode.dark', icon: '🌙',
+    previewStyle: { background: '#0a0a0b' } },
+  { value: 'auto', labelKey: 'settings.appearance.mode.auto', icon: '🖥',
+    previewStyle: { background: 'linear-gradient(90deg, #f7f8fa 50%, #0a0a0b 50%)' } },
+  { value: 'glass-apple', labelKey: 'settings.appearance.mode.glassApple', icon: '🍎',
+    previewStyle: {
+      background: 'radial-gradient(circle at 30% 30%, #ff8a65 0%, transparent 40%), linear-gradient(135deg, #f0abfc 0%, #818cf8 60%, #38bdf8 100%)',
+    } },
+  { value: 'glass-vibrant', labelKey: 'settings.appearance.mode.glassVibrant', icon: '🌈',
+    previewStyle: { background: 'linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee)' } },
+  { value: 'glass-tokyo', labelKey: 'settings.appearance.mode.glassTokyo', icon: '🌃',
+    previewStyle: {
+      background: 'radial-gradient(circle at 30% 20%, rgba(122, 162, 247, 0.4) 0%, transparent 60%), #1a1b26',
+    } },
 ];
 
 const colors: { value: string; name: string }[] = [
@@ -44,20 +63,30 @@ const fontOptions: FontOption[] = [
     <!-- Mode -->
     <div class="mb-8">
       <div class="text-sm font-medium mb-3">{{ t('settings.appearance.mode.label') }}</div>
-      <div class="flex gap-3">
+      <div class="grid grid-cols-3 gap-3">
         <button
           v-for="opt in modeOptions"
           :key="opt.value"
-          class="flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border-2 transition-all"
+          class="flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden"
           :class="
             mode === opt.value
-              ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5'
+              ? 'border-[var(--brand-500)] shadow-[var(--shadow-2)]'
               : 'border-[var(--border)] hover:border-[var(--text-3)]'
           "
           @click="store.setMode(opt.value)"
         >
-          <span class="text-xl">{{ opt.icon }}</span>
-          <span class="text-sm">{{ t(opt.labelKey) }}</span>
+          <div
+            class="w-full h-12 rounded-md mb-1 relative overflow-hidden"
+            :style="opt.previewStyle"
+          >
+            <div class="absolute inset-x-2 top-2 h-1 bg-white/30 rounded-full" />
+            <div class="absolute inset-x-2 top-4 h-1 w-2/3 bg-white/20 rounded-full" />
+            <div class="absolute bottom-1 left-2 right-2 h-3 rounded bg-white/20 backdrop-blur" />
+          </div>
+          <div class="flex items-center gap-1.5 text-xs">
+            <span>{{ opt.icon }}</span>
+            <span class="font-medium">{{ t(opt.labelKey) }}</span>
+          </div>
         </button>
       </div>
     </div>

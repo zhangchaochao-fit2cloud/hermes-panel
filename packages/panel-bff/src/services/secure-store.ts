@@ -53,11 +53,22 @@ async function loadKeytar(): Promise<KeytarLike | null> {
   keytarTried = true;
   try {
     // Dynamic import so a missing native module doesn't crash module init.
-    const mod = (await import('keytar')) as unknown as
-      | KeytarLike
-      | { default: KeytarLike };
-    keytarMod = 'default' in mod ? mod.default : mod;
-    logger.debug('keytar loaded; using OS keychain for secrets');
+    // We type-cast through `unknown` because keytar's @types are not
+    // installed (the package itself ships its own .d.ts) and we want to
+    // tolerate both ESM-default and CJS-namespace shapes.
+    const mod = (await import('keytar')) as unknown as Record<string, unknown>;
+    const candidate = (mod.default ?? mod) as KeytarLike;
+    if (
+      typeof candidate.getPassword === 'function' &&
+      typeof candidate.setPassword === 'function' &&
+      typeof candidate.deletePassword === 'function'
+    ) {
+      keytarMod = candidate;
+      logger.debug('keytar loaded; using OS keychain for secrets');
+    } else {
+      logger.warn('keytar module loaded but missing expected API; ignoring');
+      keytarMod = null;
+    }
   } catch (err) {
     logger.warn(
       { err: (err as Error).message },

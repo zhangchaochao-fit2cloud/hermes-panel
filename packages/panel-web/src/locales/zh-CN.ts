@@ -54,6 +54,15 @@ export default {
     retry: '重试',
     loading: '加载中…',
     menu: '菜单',
+    justNow: '刚刚',
+    minutesAgo: '{n} 分钟前',
+    hoursAgo: '{n} 小时前',
+    daysAgo: '{n} 天前',
+    unknownError: '未知错误',
+    expand: '展开',
+    collapse: '收起',
+    pause: '暂停',
+    resume: '继续',
   },
   chat: {
     empty: {
@@ -112,7 +121,15 @@ export default {
     appearance: {
       title: '外观',
       desc: '调整配色模式、主题色和字号',
-      mode: { label: '配色模式', light: '亮色', dark: '暗色', auto: '跟随系统' },
+      mode: {
+        label: '配色模式',
+        light: '亮色',
+        dark: '暗色',
+        auto: '跟随系统',
+        glassApple: '苹果毛玻璃',
+        glassVibrant: '炫彩玻璃',
+        glassTokyo: 'Tokyo Night',
+      },
       color: { label: '主题色' },
       font: { label: '字号', small: '小', medium: '中', large: '大' },
     },
@@ -171,6 +188,24 @@ export default {
     usageChart: { title: '近 7 天 Token 趋势', subtitle: '按日聚合' },
     modelChart: { title: '模型分布', subtitle: '近 30 天', totalLabel: '总计' },
     recentSessions: { title: '最近会话', subtitle: '点击继续对话', untitled: '未命名会话', messages: '条消息' },
+    cache: {
+      title: 'Cache 命中率',
+      windowLabel: '近 30 天',
+      hits: '命中 tokens',
+      writes: '写入 tokens',
+      saved: '估算节省',
+    },
+    pace: {
+      title: '月度配速',
+      used: '本月已用',
+      projected: '预计本月：{n}',
+      dayCounter: '第 {elapsed} 天 / 共 {total} 天',
+    },
+  },
+  eventStream: {
+    title: '实时事件',
+    countItems: '{n} 条',
+    empty: '暂无事件',
   },
   status: {
     connecting: '正在连接...',

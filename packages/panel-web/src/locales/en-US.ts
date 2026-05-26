@@ -54,6 +54,15 @@ export default {
     retry: 'Retry',
     loading: 'Loading…',
     menu: 'Menu',
+    justNow: 'just now',
+    minutesAgo: '{n}m ago',
+    hoursAgo: '{n}h ago',
+    daysAgo: '{n}d ago',
+    unknownError: 'Unknown error',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    pause: 'Pause',
+    resume: 'Resume',
   },
   chat: {
     empty: {
@@ -112,7 +121,15 @@ export default {
     appearance: {
       title: 'Appearance',
       desc: 'Color mode, theme color and font size',
-      mode: { label: 'Color mode', light: 'Light', dark: 'Dark', auto: 'Auto' },
+      mode: {
+        label: 'Color mode',
+        light: 'Light',
+        dark: 'Dark',
+        auto: 'Auto',
+        glassApple: 'Apple Glass',
+        glassVibrant: 'Vibrant Glass',
+        glassTokyo: 'Tokyo Night',
+      },
       color: { label: 'Theme color' },
       font: { label: 'Font size', small: 'Small', medium: 'Medium', large: 'Large' },
     },
@@ -171,6 +188,24 @@ export default {
     usageChart: { title: '7-day Token usage', subtitle: 'Per day' },
     modelChart: { title: 'Model distribution', subtitle: 'Last 30 days', totalLabel: 'Total' },
     recentSessions: { title: 'Recent sessions', subtitle: 'Click to resume', untitled: 'Untitled session', messages: 'messages' },
+    cache: {
+      title: 'Cache hit rate',
+      windowLabel: 'last 30 days',
+      hits: 'cache reads',
+      writes: 'cache writes',
+      saved: 'est. saved',
+    },
+    pace: {
+      title: 'Monthly pace',
+      used: 'used so far',
+      projected: 'projected: {n}',
+      dayCounter: 'day {elapsed} of {total}',
+    },
+  },
+  eventStream: {
+    title: 'Live events',
+    countItems: '{n} items',
+    empty: 'No events',
   },
   status: {
     connecting: 'Connecting...',

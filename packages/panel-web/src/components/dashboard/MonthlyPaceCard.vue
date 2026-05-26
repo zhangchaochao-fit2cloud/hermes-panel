@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
 import { formatCompact as formatNumber } from '@/utils/format-number';
+
+const { t } = useI18n();
 
 interface PaceData {
   month_start: string;
@@ -46,25 +49,25 @@ onMounted(load);
 <template>
   <div class="rounded-xl bg-[var(--bg-card)] border border-[var(--border)] p-5 shadow-[var(--shadow-1)]">
     <div class="flex items-baseline justify-between mb-3">
-      <h3 class="text-sm font-semibold">月度配速</h3>
+      <h3 class="text-sm font-semibold">{{ t('dashboard.pace.title') }}</h3>
       <span class="text-xs text-[var(--text-3)]">{{ monthLabel }}</span>
     </div>
 
     <div v-if="loading || !data" class="h-[120px] flex items-center justify-center">
-      <div class="text-sm text-[var(--text-3)]">加载中…</div>
+      <div class="text-sm text-[var(--text-3)]">{{ t('common.loading') }}</div>
     </div>
 
     <div v-else-if="error" class="h-[120px] flex items-center justify-center">
-      <button class="text-sm text-[var(--brand-600)]" @click="load">重试</button>
+      <button class="text-sm text-[var(--brand-600)]" @click="load">{{ t('common.retry') }}</button>
     </div>
 
     <div v-else>
       <div class="flex items-baseline gap-2 mb-1">
         <span class="text-2xl font-bold tabular-nums">{{ formatNumber(data.tokens_so_far) }}</span>
-        <span class="text-xs text-[var(--text-3)]">本月已用</span>
+        <span class="text-xs text-[var(--text-3)]">{{ t('dashboard.pace.used') }}</span>
       </div>
       <div class="text-xs text-[var(--text-3)] mb-3">
-        预计本月：<span class="font-medium text-[var(--text-1)]">{{ formatNumber(data.projected_tokens) }} tokens</span>
+        {{ t('dashboard.pace.projected', { n: formatNumber(data.projected_tokens) + ' tokens' }) }}
         <span v-if="data.projected_cost_usd > 0">· ~${{ data.projected_cost_usd.toFixed(2) }}</span>
       </div>
 
@@ -75,8 +78,7 @@ onMounted(load);
         />
       </div>
       <div class="flex justify-between text-[11px] text-[var(--text-3)] mt-1.5">
-        <span>第 {{ data.days_elapsed }} 天</span>
-        <span>共 {{ data.days_in_month }} 天</span>
+        <span>{{ t('dashboard.pace.dayCounter', { elapsed: data.days_elapsed, total: data.days_in_month }) }}</span>
       </div>
     </div>
   </div>

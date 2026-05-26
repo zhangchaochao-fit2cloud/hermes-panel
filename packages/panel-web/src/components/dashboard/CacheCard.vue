@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
 import { formatCompact as formatNumber } from '@/utils/format-number';
+
+const { t } = useI18n();
 
 interface CacheStats {
   total_input_tokens: number;
@@ -47,16 +50,16 @@ onMounted(load);
 <template>
   <div class="rounded-xl bg-[var(--bg-card)] border border-[var(--border)] p-5 shadow-[var(--shadow-1)]">
     <div class="flex items-baseline justify-between mb-3">
-      <h3 class="text-sm font-semibold">Cache 命中率</h3>
-      <span class="text-xs text-[var(--text-3)]">近 30 天</span>
+      <h3 class="text-sm font-semibold">{{ t('dashboard.cache.title') }}</h3>
+      <span class="text-xs text-[var(--text-3)]">{{ t('dashboard.cache.windowLabel') }}</span>
     </div>
 
     <div v-if="loading || !data" class="h-[120px] flex items-center justify-center">
-      <div class="text-sm text-[var(--text-3)]">加载中…</div>
+      <div class="text-sm text-[var(--text-3)]">{{ t('common.loading') }}</div>
     </div>
 
     <div v-else-if="error" class="h-[120px] flex items-center justify-center">
-      <button class="text-sm text-[var(--brand-600)]" @click="load">重试</button>
+      <button class="text-sm text-[var(--brand-600)]" @click="load">{{ t('common.retry') }}</button>
     </div>
 
     <div v-else class="flex items-center gap-4">
@@ -80,15 +83,15 @@ onMounted(load);
 
       <div class="flex-1 min-w-0 text-xs space-y-1.5">
         <div class="flex justify-between gap-2">
-          <span class="text-[var(--text-3)]">命中 tokens</span>
+          <span class="text-[var(--text-3)]">{{ t('dashboard.cache.hits') }}</span>
           <span class="font-mono">{{ formatNumber(data.total_cache_read_tokens) }}</span>
         </div>
         <div class="flex justify-between gap-2">
-          <span class="text-[var(--text-3)]">写入 tokens</span>
+          <span class="text-[var(--text-3)]">{{ t('dashboard.cache.writes') }}</span>
           <span class="font-mono">{{ formatNumber(data.total_cache_write_tokens) }}</span>
         </div>
         <div class="flex justify-between gap-2 pt-1 border-t border-[var(--border)]">
-          <span class="text-[var(--text-3)]">估算节省</span>
+          <span class="text-[var(--text-3)]">{{ t('dashboard.cache.saved') }}</span>
           <span class="font-mono text-green-600">${{ data.estimated_saved_usd.toFixed(2) }}</span>
         </div>
       </div>

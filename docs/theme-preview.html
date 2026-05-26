@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hermes Panel · 半透明主题预览</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    color: #18181b;
+    background: #0f0f10;
+  }
+  .container { max-width: 1440px; margin: 0 auto; padding: 32px; }
+  h1 {
+    color: #fafafa;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .sub {
+    color: #a1a1aa;
+    text-align: center;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  .label {
+    color: #fafafa;
+    font-size: 13px;
+    text-align: center;
+    margin: 28px 0 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .label .tag {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #d4d4d8;
+  }
+
+  /* ===== Shared mock panel layout ===== */
+  .panel {
+    position: relative;
+    height: 360px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  .panel .sidebar { width: 180px; padding: 16px 12px; }
+  .panel .topbar {
+    height: 48px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .panel .body { flex: 1; display: flex; flex-direction: column; }
+  .panel .content {
+    flex: 1;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .panel .logo {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 18px; font-size: 13px; font-weight: 600;
+  }
+  .panel .logo-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: bold;
+  }
+  .panel .menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; margin-bottom: 2px;
+    cursor: default;
+  }
+  .panel .menu-item.active { font-weight: 500; }
+  .panel .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px;
+    font-size: 11px;
+  }
+  .panel .stat-card {
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  .panel .stat-card .num {
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .panel .chat-bubble {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    max-width: 80%;
+    line-height: 1.4;
+  }
+  .panel .chat-bubble.user {
+    align-self: flex-end;
+    color: #fff;
+  }
+  .panel .input-box {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    margin-top: auto;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  @media (max-width: 1024px) { .row { grid-template-columns: 1fr; } }
+
+  /* =========================================
+     STYLE A — Apple Frosted Glass (macOS Sonoma)
+     Background: bright photo-ish wallpaper, all surfaces frosted
+     ========================================= */
+  .style-a {
+    background:
+      radial-gradient(circle at 20% 30%, #ff8a65 0%, transparent 35%),
+      radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 40%),
+      radial-gradient(circle at 50% 80%, #22d3ee 0%, transparent 40%),
+      linear-gradient(135deg, #f0abfc 0%, #818cf8 50%, #38bdf8 100%);
+  }
+  .style-a .sidebar {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .style-a .topbar {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    color: #1c1c1e;
+  }
+  .style-a .logo-icon { background: linear-gradient(135deg, #6366f1, #ec4899); }
+  .style-a .logo { color: #1c1c1e; }
+  .style-a .menu-item { color: rgba(28, 28, 30, 0.75); }
+  .style-a .menu-item.active {
+    background: rgba(255, 255, 255, 0.5);
+    color: #1c1c1e;
+  }
+  .style-a .menu-item:hover:not(.active) { background: rgba(255, 255, 255, 0.25); }
+  .style-a .pill {
+    background: rgba(34, 197, 94, 0.2);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .style-a .stat-card {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #1c1c1e;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+  .style-a .stat-card .label-txt { color: rgba(28, 28, 30, 0.6); }
+  .style-a .chat-bubble.user {
+    background: rgba(99, 102, 241, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .style-a .chat-bubble.assistant {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #1c1c1e;
+  }
+  .style-a .input-box {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: rgba(28, 28, 30, 0.5);
+  }
+
+  /* =========================================
+     STYLE B — Glassmorphism + Vibrant Gradient
+     Background: animated multi-color gradient, glass on top
+     ========================================= */
+  .style-b {
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee);
+    background-size: 400% 400%;
+    animation: gradient-shift 18s ease infinite;
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .style-b .sidebar {
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .style-b .topbar {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    color: #2d1f54;
+  }
+  .style-b .logo-icon { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
+  .style-b .logo { color: #2d1f54; }
+  .style-b .menu-item { color: rgba(45, 31, 84, 0.75); }
+  .style-b .menu-item.active {
+    background: rgba(255, 255, 255, 0.5);
+    color: #2d1f54;
+  }
+  .style-b .menu-item:hover:not(.active) { background: rgba(255, 255, 255, 0.3); }
+  .style-b .pill {
+    background: rgba(255, 255, 255, 0.4);
+    color: #15803d;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .style-b .stat-card {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #2d1f54;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  }
+  .style-b .stat-card .label-txt { color: rgba(45, 31, 84, 0.6); }
+  .style-b .chat-bubble.user {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.85), rgba(236, 72, 153, 0.85));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .style-b .chat-bubble.assistant {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #2d1f54;
+  }
+  .style-b .input-box {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: rgba(45, 31, 84, 0.5);
+  }
+
+  /* =========================================
+     STYLE C — Tokyo Night Transparent
+     Background: deep blue-black with subtle starfield, near-opaque dark glass
+     ========================================= */
+  .style-c {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(122, 162, 247, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 80%, rgba(187, 154, 247, 0.12) 0%, transparent 60%),
+      linear-gradient(180deg, #1a1b26 0%, #16161e 100%);
+  }
+  .style-c .sidebar {
+    background: rgba(31, 33, 53, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(122, 162, 247, 0.15);
+  }
+  .style-c .topbar {
+    background: rgba(31, 33, 53, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(122, 162, 247, 0.15);
+    color: #c0caf5;
+  }
+  .style-c .logo-icon {
+    background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+  }
+  .style-c .logo { color: #c0caf5; }
+  .style-c .menu-item { color: #9aa5ce; }
+  .style-c .menu-item.active {
+    background: rgba(122, 162, 247, 0.15);
+    color: #7aa2f7;
+    border-left: 2px solid #7aa2f7;
+    padding-left: 8px;
+  }
+  .style-c .menu-item:hover:not(.active) {
+    background: rgba(122, 162, 247, 0.08);
+    color: #c0caf5;
+  }
+  .style-c .pill {
+    background: rgba(158, 206, 106, 0.15);
+    color: #9ece6a;
+    border: 1px solid rgba(158, 206, 106, 0.3);
+  }
+  .style-c .stat-card {
+    background: rgba(36, 40, 59, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(122, 162, 247, 0.12);
+    color: #c0caf5;
+  }
+  .style-c .stat-card .label-txt { color: #565f89; }
+  .style-c .stat-card .num { color: #7aa2f7; }
+  .style-c .stat-card.accent2 .num { color: #bb9af7; }
+  .style-c .stat-card.accent3 .num { color: #7dcfff; }
+  .style-c .stat-card.accent4 .num { color: #9ece6a; }
+  .style-c .chat-bubble.user {
+    background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+    color: #1a1b26;
+    font-weight: 500;
+  }
+  .style-c .chat-bubble.assistant {
+    background: rgba(36, 40, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(122, 162, 247, 0.12);
+    color: #c0caf5;
+  }
+  .style-c .input-box {
+    background: rgba(26, 27, 38, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(122, 162, 247, 0.2);
+    color: #565f89;
+  }
+
+  /* Footer notes */
+  .notes {
+    margin-top: 48px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #a1a1aa;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .notes h2 { color: #fafafa; font-size: 15px; margin-bottom: 12px; }
+  .notes code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: #d4d4d8;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hermes Panel · 半透明主题预览</h1>
+    <p class="sub">三种风格并排对比 — 看哪个最像你想的「类似半透明」</p>
+
+    <!-- ============ STYLE A ============ -->
+    <div class="label">
+      <span>方案 A · Apple 毛玻璃</span>
+      <span class="tag">macOS Sonoma 同款</span>
+    </div>
+    <div class="panel style-a">
+      <div class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">H</div>
+          <span>Hermes Panel</span>
+        </div>
+        <div class="menu-item">📊 仪表盘</div>
+        <div class="menu-item active">💬 对话</div>
+        <div class="menu-item">📜 会话历史</div>
+        <div class="menu-item">🧩 工作环境</div>
+        <div class="menu-item">⏰ 定时任务</div>
+        <div class="menu-item">🛠 工具</div>
+        <div class="menu-item">⚙️ 设置</div>
+      </div>
+      <div class="body">
+        <div class="topbar">
+          <span style="font-weight: 500; font-size: 14px;">对话</span>
+          <div style="flex:1"></div>
+          <span class="pill">● Hermes v0.8.0</span>
+          <span style="font-size:12px; opacity:0.7;">🔔</span>
+        </div>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="stat-card">
+              <div class="label-txt">总会话数</div>
+              <div class="num">109</div>
+            </div>
+            <div class="stat-card">
+              <div class="label-txt">今日 Tokens</div>
+              <div class="num">116K</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="chat-bubble user">用 Vue 写一个 todo 组件</div>
+            <div class="chat-bubble assistant">好的，下面是一个简洁的 Todo 组件...</div>
+            <div class="input-box">输入消息，Shift+Enter 换行...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STYLE B ============ -->
+    <div class="label">
+      <span>方案 B · 玻璃拟态 + 亮色渐变</span>
+      <span class="tag">Glassmorphism</span>
+    </div>
+    <div class="panel style-b">
+      <div class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">H</div>
+          <span>Hermes Panel</span>
+        </div>
+        <div class="menu-item">📊 仪表盘</div>
+        <div class="menu-item active">💬 对话</div>
+        <div class="menu-item">📜 会话历史</div>
+        <div class="menu-item">🧩 工作环境</div>
+        <div class="menu-item">⏰ 定时任务</div>
+        <div class="menu-item">🛠 工具</div>
+        <div class="menu-item">⚙️ 设置</div>
+      </div>
+      <div class="body">
+        <div class="topbar">
+          <span style="font-weight: 500; font-size: 14px;">对话</span>
+          <div style="flex:1"></div>
+          <span class="pill">● Hermes v0.8.0</span>
+          <span style="font-size:12px; opacity:0.7;">🔔</span>
+        </div>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="stat-card">
+              <div class="label-txt">总会话数</div>
+              <div class="num">109</div>
+            </div>
+            <div class="stat-card">
+              <div class="label-txt">今日 Tokens</div>
+              <div class="num">116K</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="chat-bubble user">用 Vue 写一个 todo 组件</div>
+            <div class="chat-bubble assistant">好的，下面是一个简洁的 Todo 组件...</div>
+            <div class="input-box">输入消息，Shift+Enter 换行...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STYLE C ============ -->
+    <div class="label">
+      <span>方案 C · Tokyo Night 透明深色</span>
+      <span class="tag">开发者友好</span>
+    </div>
+    <div class="panel style-c">
+      <div class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">H</div>
+          <span>Hermes Panel</span>
+        </div>
+        <div class="menu-item">📊 仪表盘</div>
+        <div class="menu-item active">💬 对话</div>
+        <div class="menu-item">📜 会话历史</div>
+        <div class="menu-item">🧩 工作环境</div>
+        <div class="menu-item">⏰ 定时任务</div>
+        <div class="menu-item">🛠 工具</div>
+        <div class="menu-item">⚙️ 设置</div>
+      </div>
+      <div class="body">
+        <div class="topbar">
+          <span style="font-weight: 500; font-size: 14px;">对话</span>
+          <div style="flex:1"></div>
+          <span class="pill">● Hermes v0.8.0</span>
+          <span style="font-size:12px; opacity:0.7;">🔔</span>
+        </div>
+        <div class="content">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="stat-card accent1">
+              <div class="label-txt">总会话数</div>
+              <div class="num">109</div>
+            </div>
+            <div class="stat-card accent2">
+              <div class="label-txt">今日 Tokens</div>
+              <div class="num">116K</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="chat-bubble user">用 Vue 写一个 todo 组件</div>
+            <div class="chat-bubble assistant">好的，下面是一个简洁的 Todo 组件...</div>
+            <div class="input-box">输入消息，Shift+Enter 换行...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h2>📝 评估要点</h2>
+      <ul style="padding-left: 20px;">
+        <li><strong>方案 A（毛玻璃）</strong>：日常用最自然，跟 macOS Big Sur+ 风格一致。Tauri 桌面应用里能开 <code>window.transparent = true</code> 真正透到桌面壁纸</li>
+        <li><strong>方案 B（玻璃拟态）</strong>：视觉冲击最强，发布截图好看，但长时间用眼睛累</li>
+        <li><strong>方案 C（Tokyo Night）</strong>：开发者最爱，配色克制，几乎不依赖背景</li>
+      </ul>
+      <p style="margin-top: 12px;">
+        💡 实施后 Settings → 外观 → 配色模式将出现第 4 个选项 <code>半透明</code>，与亮/暗/跟随系统并列。
+        会沿用当前已选主题色（11 种），所以 strokes/buttons 颜色不变，只是背景层和卡片层变透明。
+      </p>
+      <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+        浏览器直接打开此文件即可看到效果：<br />
+        <code>open /Users/chaochao/dev/workspace/f2c/north/cmp/test/hermes/docs/theme-preview.html</code>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
