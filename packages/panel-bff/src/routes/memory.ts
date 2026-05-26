@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { listMemory, readMemory, writeMemory } from '../services/hermes-memory.js';
+import { listMemory, readMemory, writeMemory, deleteMemory } from '../services/hermes-memory.js';
 
 export const memoryRouter = new Router();
 
@@ -28,6 +28,23 @@ memoryRouter.put('/memory/file', ctx => {
   if (!r.ok) {
     ctx.status = r.error === 'INVALID_PATH' ? 400 : 500;
     ctx.body = { error: { code: r.error ?? 'WRITE_FAILED', message: 'failed' } };
+    return;
+  }
+  ctx.body = { ok: true };
+});
+
+memoryRouter.delete('/memory/file', ctx => {
+  const path = (ctx.query.path as string) || '';
+  if (!path) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'BAD_REQUEST', message: 'path required' } };
+    return;
+  }
+  const r = deleteMemory(path);
+  if (!r.ok) {
+    ctx.status = r.error === 'NOT_FOUND' ? 404
+      : r.error === 'INVALID_PATH' ? 400 : 500;
+    ctx.body = { error: { code: r.error ?? 'DELETE_FAILED', message: 'failed' } };
     return;
   }
   ctx.body = { ok: true };

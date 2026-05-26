@@ -128,6 +128,26 @@ export const useMemoryStore = defineStore('memory', () => {
     }
   }
 
+  async function deleteFile(path: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await bffFetch<{ ok: true }>(
+        `/api/memory/file?path=${encodeURIComponent(path)}`,
+        { method: 'DELETE' },
+      );
+      // If we just deleted the currently-open file, clear selection
+      if (currentPath.value === path) {
+        currentPath.value = null;
+        currentContent.value = '';
+        draftContent.value = '';
+      }
+      await loadList();
+      return { ok: true };
+    } catch (err) {
+      const e = err as BffApiError;
+      return { ok: false, error: e.code ?? e.message };
+    }
+  }
+
   function setDraft(v: string): void {
     draftContent.value = v;
   }
@@ -158,6 +178,6 @@ export const useMemoryStore = defineStore('memory', () => {
     // computed
     dirty, filteredFiles, tree, currentFile,
     // actions
-    loadList, openFile, save, createFile, setDraft, discardDraft, reset,
+    loadList, openFile, save, createFile, deleteFile, setDraft, discardDraft, reset,
   };
 });

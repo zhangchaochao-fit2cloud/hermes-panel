@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { getHermesHome } from './hermes-home.js';
 import { logger } from '../lib/logger.js';
@@ -78,5 +78,20 @@ export function writeMemory(rel: string, content: string): { ok: boolean; error?
   } catch (err) {
     logger.warn({ err, rel }, 'writeMemory failed');
     return { ok: false, error: 'WRITE_FAILED' };
+  }
+}
+
+export function deleteMemory(rel: string): { ok: boolean; error?: string } {
+  const full = safePath(rel);
+  if (!full) return { ok: false, error: 'INVALID_PATH' };
+  if (!existsSync(full)) return { ok: false, error: 'NOT_FOUND' };
+  const st = statSync(full);
+  if (!st.isFile()) return { ok: false, error: 'NOT_FILE' };
+  try {
+    unlinkSync(full);
+    return { ok: true };
+  } catch (err) {
+    logger.warn({ err, rel }, 'deleteMemory failed');
+    return { ok: false, error: 'DELETE_FAILED' };
   }
 }

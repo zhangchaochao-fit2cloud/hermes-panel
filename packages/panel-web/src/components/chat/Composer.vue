@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const text = ref('');
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const canSend = computed(() => text.value.trim().length > 0 && !props.sending);
 
 function onKeydown(e: KeyboardEvent): void {
@@ -38,14 +39,33 @@ function submit(): void {
 function prependMention(roleId: string): void {
   const prefix = `@${roleId} `;
   text.value = prefix + text.value.replace(/^@[\w-]+\s+/, '');
+  focus();
 }
 
-defineExpose({ prependMention });
+/** Externally populate the composer (e.g. from VS Code draft, sample prompts). */
+function setText(v: string): void {
+  text.value = v;
+  focus();
+}
+
+function focus(): void {
+  // Wait a tick so the new value is rendered before we move the cursor
+  setTimeout(() => {
+    const el = textareaRef.value;
+    if (!el) return;
+    el.focus();
+    // Place caret at the end so the user can keep typing
+    el.setSelectionRange(text.value.length, text.value.length);
+  }, 0);
+}
+
+defineExpose({ prependMention, setText, focus });
 </script>
 
 <template>
   <div class="border border-[var(--border)] rounded-md bg-[var(--bg-card)] shadow-[var(--shadow-1)]">
     <textarea
+      ref="textareaRef"
       v-model="text"
       :placeholder="t('chat.composer.placeholder')"
       class="w-full resize-none outline-none bg-transparent p-3 text-sm font-sans max-h-[200px]"

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NSkeleton, useDialog, useMessage } from 'naive-ui';
+import { NSkeleton, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import CronStatusBar from '@/components/cron/CronStatusBar.vue';
 import CronCard from '@/components/cron/CronCard.vue';
+import CreateJobModal from '@/components/cron/CreateJobModal.vue';
 import { useCronStore, type CronJob } from '@/stores/cron';
 
 const { t } = useI18n();
 const store = useCronStore();
 const message = useMessage();
-const dialog = useDialog();
 
 const { jobs, loading, refreshing, initialized, error, total, activeCount, earliestNextRun } = storeToRefs(store);
 
@@ -33,12 +33,10 @@ onBeforeUnmount(() => {
   pollTimer = null;
 });
 
+const createModalOpen = ref(false);
+
 function onCreate(): void {
-  dialog.info({
-    title: t('cron.create.placeholderTitle'),
-    content: () => t('cron.create.placeholderContent'),
-    positiveText: t('common.confirm'),
-  });
+  createModalOpen.value = true;
 }
 
 function onRefresh(): void {
@@ -130,6 +128,8 @@ async function onRemove(job: CronJob): Promise<void> {
         />
       </div>
     </div>
+
+    <CreateJobModal v-model:show="createModalOpen" />
   </div>
 </template>
 

@@ -59,23 +59,45 @@ const pageTitle = computed(() => {
   return map[route.path] ?? '';
 });
 
+const pageSubtitle = computed(() => {
+  const map: Record<string, string> = {
+    '/dashboard': 'Overview',
+    '/chat': 'Conversation',
+    '/sessions': 'History',
+    '/workspaces': 'Profiles',
+    '/cron': 'Automation',
+    '/memory': 'Knowledge',
+    '/tools': 'Integrations',
+    '/developer': 'Diagnostics',
+    '/settings': 'Preferences',
+  };
+  return map[route.path] ?? 'Console';
+});
+
 function toggleLocale(): void {
   setLocale(locale.value === 'zh-CN' ? 'en-US' : 'zh-CN');
 }
 </script>
 
 <template>
-  <header class="h-16 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-6 gap-4 flex-shrink-0">
-    <h1 v-if="pageTitle" class="text-base font-medium truncate">{{ pageTitle }}</h1>
+  <header class="app-topbar h-14 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-5 gap-4 flex-shrink-0">
+    <div class="min-w-0">
+      <div class="flex items-center gap-2 text-[11px] text-[var(--text-3)] leading-4">
+        <span>Hermes</span>
+        <span class="text-[var(--text-3)]">/</span>
+        <span>{{ pageSubtitle }}</span>
+      </div>
+      <h1 v-if="pageTitle" class="text-[15px] font-semibold leading-5 truncate text-[var(--text-1)]">{{ pageTitle }}</h1>
+    </div>
     <div class="flex-1" />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />
     <button
-      class="text-xs px-2 py-1 rounded hover:bg-[var(--bg-elevate)] opacity-70 hover:opacity-100"
+      class="h-8 min-w-10 px-2 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] text-xs font-medium text-[var(--text-2)] hover:text-[var(--brand-600)] hover:border-[var(--brand-500)] transition-colors"
       :title="locale === 'zh-CN' ? 'Switch to English' : '切换到中文'"
       @click="toggleLocale"
     >
-      🌐 {{ locale === 'zh-CN' ? '中' : 'EN' }}
+      {{ locale === 'zh-CN' ? '中 / EN' : 'EN / 中' }}
     </button>
   </header>
 </template>

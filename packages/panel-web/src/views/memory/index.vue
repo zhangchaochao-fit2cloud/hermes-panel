@@ -117,6 +117,16 @@ async function doSave(): Promise<void> {
   }
 }
 
+// ---- delete ----
+async function doDelete(path: string): Promise<void> {
+  const r = await store.deleteFile(path);
+  if (r.ok) {
+    message.success(t('memory.deleted'));
+  } else {
+    message.error(`${t('memory.deleteFailed')}${r.error ? `: ${r.error}` : ''}`);
+  }
+}
+
 // ---- new file modal ----
 function onNewFile(): void {
   const inputRef = ref('');
@@ -295,6 +305,7 @@ watch(files, (next) => {
           :saving="saving"
           :dirty="dirty"
           @save="doSave"
+          @delete="doDelete"
         />
       </aside>
 

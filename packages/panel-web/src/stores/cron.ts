@@ -99,9 +99,31 @@ export const useCronStore = defineStore('cron', () => {
     return ok;
   }
 
+  interface CreateInput {
+    schedule: string;
+    prompt: string;
+    name?: string;
+    deliver?: string;
+    repeat?: number;
+  }
+
+  async function create(input: CreateInput): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await bffFetch('/api/cron', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      await load();
+      return { ok: true };
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      return { ok: false, error: e.code ?? e.message ?? 'CRON_CREATE_FAILED' };
+    }
+  }
+
   return {
     jobs, loading, refreshing, initialized, error,
     total, activeCount, earliestNextRun,
-    load, pause, resume, runNow, remove,
+    load, pause, resume, runNow, remove, create,
   };
 });

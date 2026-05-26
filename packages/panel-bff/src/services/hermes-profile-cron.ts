@@ -125,6 +125,38 @@ export async function cronAction(id: string, action: 'pause' | 'resume' | 'run' 
   }
 }
 
+export interface CreateCronInput {
+  schedule: string;
+  prompt: string;
+  name?: string;
+  deliver?: string;
+  repeat?: number;
+}
+
+/**
+ * Create a new cron job via `hermes cron create <schedule> <prompt> [...flags]`.
+ * Returns the new job id by re-scanning `cron list` after creation, since
+ * `cron create` doesn't print the id on stdout in a stable format.
+ */
+export async function createCron(input: CreateCronInput): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!input.schedule.trim()) return { ok: false, error: 'SCHEDULE_REQUIRED' };
+  if (!input.prompt.trim()) return { ok: false, error: 'PROMPT_REQUIRED' };
+
+  const args: string[] = ['cron', 'create'];
+  if (input.name) args.push('--name', input.name);
+  if (input.deliver) args.push('--deliver', input.deliver);
+  if (input.repeat && input.repeat > 0) args.push('--repeat', String(input.repeat));
+  args.push(input.schedule, input.prompt);
+
+  try {
+    await runHermesCli(args, { timeoutMs: 15_000 });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof HermesCliError) return { ok: false, error: err.code };
+    throw err;
+  }
+}
+
 export async function profileUse(name: string): Promise<{ ok: boolean; error?: string }> {
   try {
     await runHermesCli(['profile', 'use', name], { timeoutMs: 10_000 });

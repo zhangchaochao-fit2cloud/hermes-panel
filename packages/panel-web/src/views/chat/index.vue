@@ -78,6 +78,25 @@ async function loadSession(id: string): Promise<void> {
   }
 }
 
+interface DraftResponse {
+  draft: { prompt: string; source: string; stagedAt: number } | null;
+}
+
+async function pickUpDraft(): Promise<void> {
+  try {
+    const r = await bffFetch<DraftResponse>('/api/draft');
+    if (r.draft?.prompt) {
+      const c = composerRef.value as { setText?: (v: string) => void } | null;
+      c?.setText?.(r.draft.prompt);
+      message.info(`Loaded draft from ${r.draft.source}`, { duration: 2500 });
+      // Consume so we don't re-fill on the next mount
+      await bffFetch('/api/draft', { method: 'DELETE' }).catch(() => { /* ignore */ });
+    }
+  } catch {
+    // Silent — BFF unreachable or no draft, neither is fatal
+  }
+}
+
 onMounted(async () => {
   await system.refresh();
   await system.loadToken();
@@ -86,8 +105,22 @@ onMounted(async () => {
   }
 
   const resumeId = route.query.resume as string | undefined;
-  if (resumeId) await loadSession(resumeId);
+  if (resumeId) {
+    await loadSession(resumeId);
+  } else {
+    // Only pick up IDE draft when not resuming a specific session
+    await pickUpDraft();
+  }
 });
+
+// Re-check for drafts whenever the window regains focus, so a quick
+// VS Code → Panel switch loads the freshly-sent prompt.
+function onFocus(): void {
+  if (!route.query.resume) void pickUpDraft();
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', onFocus);
+}
 
 // Watch for query change so navigating from Sessions list to Chat?resume=:id works
 watch(() => route.query.resume, async (id) => {

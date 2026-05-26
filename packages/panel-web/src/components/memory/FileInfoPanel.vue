@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { NButton, NTooltip, useMessage } from 'naive-ui';
+import { NButton, NTooltip, useDialog, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import type { MemoryFile } from '@/utils/tree-helpers';
 import { formatSize } from '@/utils/tree-helpers';
@@ -15,7 +15,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   save: [];
+  delete: [path: string];
 }>();
+
+const dialog = useDialog();
 
 const { t, locale } = useI18n();
 const message = useMessage();
@@ -46,6 +49,20 @@ async function copy(): Promise<void> {
   } catch (err) {
     message.error(`${t('memory.copyFailed')}: ${(err as Error).message}`);
   }
+}
+
+function confirmDelete(): void {
+  if (!props.file) return;
+  const path = props.file.path;
+  dialog.error({
+    title: t('memory.deleteConfirmTitle'),
+    content: t('memory.deleteConfirmContent', { path }),
+    positiveText: t('common.delete'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: () => {
+      emit('delete', path);
+    },
+  });
 }
 </script>
 
@@ -105,16 +122,9 @@ async function copy(): Promise<void> {
           {{ t('memory.copy') }}
         </NButton>
 
-        <NTooltip trigger="hover" placement="left">
-          <template #trigger>
-            <div>
-              <NButton block type="error" ghost disabled>
-                {{ t('common.delete') }}
-              </NButton>
-            </div>
-          </template>
-          {{ t('memory.deleteUnsupported') }}
-        </NTooltip>
+        <NButton block type="error" ghost @click="confirmDelete">
+          {{ t('common.delete') }}
+        </NButton>
       </div>
     </template>
   </div>
