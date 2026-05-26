@@ -1,43 +1,150 @@
 <script setup lang="ts">
+/**
+ * Inline context-usage meter shown in the composer footer.
+ *
+ * Filename stays "ContextRing.vue" so existing imports (Composer.vue,
+ * ComposerFooter.vue) keep working, but the visual is no longer a ring — it
+ * is a horizontal bar + textual readout + click-to-open popover.
+ *
+ * Backwards compatible: callers that only pass `used`/`limit` still work.
+ * Optional props (`model`, `input`, `output`, `cache`, `cost`) light up
+ * richer popover content when supplied. If both `limit` and `model` are
+ * given, the explicit `limit` wins.
+ */
 import { computed } from 'vue';
+import { NPopover } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
+import { inferContextLimit } from '@/data/model-limits';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   used: number;
-  limit: number;
+  /** Explicit context window. When omitted, derived from `model`. */
+  limit?: number;
+  /** Optional model id used to infer a default `limit`. */
+  model?: string | null;
+  /** Input/output/cache breakdown for the popover. */
+  input?: number;
+  output?: number;
+  cache?: number;
+  /** Estimated USD cost; renders a Cost line in the popover when set. */
   cost?: number;
-}>();
-
-const pct = computed(() => Math.min(100, (props.used / Math.max(1, props.limit)) * 100));
-const stroke = computed(() => {
-  if (pct.value >= 95) return '#ef4444';
-  if (pct.value >= 80) return '#f97316';
-  if (pct.value >= 50) return '#eab308';
-  return '#10b981';
+}>(), {
+  limit: undefined,
+  model: null,
+  input: undefined,
+  output: undefined,
+  cache: undefined,
+  cost: undefined,
 });
-const r = 18;
-const c = 2 * Math.PI * r;
-const dashOffset = computed(() => c * (1 - pct.value / 100));
 
-function fmt(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+const { t } = useI18n();
+
+/** Resolved limit: explicit prop wins over the model-inferred default. */
+const resolvedLimit = computed<number>(() =>
+  typeof props.limit === 'number' && props.limit > 0
+    ? props.limit
+    : inferContextLimit(props.model),
+);
+
+const pct = computed(() =>
+  Math.min(100, (props.used / Math.max(1, resolvedLimit.value)) * 100),
+);
+
+/** Tailwind-flavoured color tokens at the four pressure thresholds. */
+const barColor = computed(() => {
+  if (pct.value >= 95) return '#ef4444'; // red-500
+  if (pct.value >= 80) return '#f97316'; // orange-500
+  if (pct.value >= 50) return '#f59e0b'; // amber-500
+  return '#10b981'; // emerald-500
+});
+
+/** Compact display: 12345 → "12.3K", 1234567 → "1.2M". */
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return String(n);
 }
+
+function fmtFull(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+const pctLabel = computed(() => pct.value.toFixed(1));
+const modelLabel = computed(() => props.model || 'default');
 </script>
 
 <template>
-  <div class="relative inline-flex items-center justify-center w-12 h-12" :title="cost != null ? `~$${cost.toFixed(4)}` : ''">
-    <svg width="48" height="48" viewBox="0 0 48 48">
-      <circle cx="24" cy="24" :r="r" stroke="var(--border)" stroke-width="3" fill="none" />
-      <circle
-        cx="24" cy="24" :r="r"
-        :stroke="stroke" stroke-width="3" fill="none"
-        :stroke-dasharray="c"
-        :stroke-dashoffset="dashOffset"
-        stroke-linecap="round"
-        transform="rotate(-90 24 24)"
-        style="transition: stroke-dashoffset 250ms var(--ease)"
-      />
-    </svg>
-    <span class="absolute text-[10px] font-mono font-semibold">{{ fmt(used) }}</span>
-  </div>
+  <NPopover trigger="click" placement="top-end" :width="280">
+    <template #trigger>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-2 py-1 rounded-md text-xs hover:bg-[var(--bg-elevate)] transition-colors cursor-pointer"
+        :aria-label="t('chat.context.title')"
+      >
+        <!-- Bar -->
+        <span
+          class="relative inline-block h-1.5 rounded-full overflow-hidden bg-[var(--border)]"
+          style="width: 120px;"
+        >
+          <span
+            class="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+            :style="{ width: `${pct}%`, background: barColor }"
+          />
+        </span>
+        <!-- Readout -->
+        <span class="font-mono whitespace-nowrap text-[var(--text-secondary,inherit)]">
+          {{ fmtCompact(used) }} / {{ fmtCompact(resolvedLimit) }} · {{ pctLabel }}%
+        </span>
+      </button>
+    </template>
+
+    <!-- Popover content -->
+    <div class="min-w-[240px] flex flex-col gap-2">
+      <div class="text-xs opacity-60">{{ t('chat.context.title') }}</div>
+
+      <!-- Big total -->
+      <div class="flex items-baseline gap-2">
+        <span class="text-2xl font-semibold font-mono" :style="{ color: barColor }">
+          {{ fmtFull(used) }}
+        </span>
+        <span class="text-xs opacity-60">tokens</span>
+      </div>
+
+      <!-- Limit -->
+      <div class="text-xs">
+        <span class="opacity-60">{{ t('chat.context.limit') }}:</span>
+        <span class="font-mono ml-1">{{ fmtFull(resolvedLimit) }}</span>
+      </div>
+
+      <!-- Breakdown: only render if at least one figure is provided -->
+      <div
+        v-if="input != null || output != null || cache != null"
+        class="text-xs flex flex-wrap gap-x-3 gap-y-1 border-t border-[var(--border)] pt-2"
+      >
+        <span v-if="input != null">
+          <span class="opacity-60">{{ t('chat.context.input') }}:</span>
+          <span class="font-mono ml-1">{{ fmtFull(input) }}</span>
+        </span>
+        <span v-if="output != null">
+          <span class="opacity-60">{{ t('chat.context.output') }}:</span>
+          <span class="font-mono ml-1">{{ fmtFull(output) }}</span>
+        </span>
+        <span v-if="cache != null">
+          <span class="opacity-60">{{ t('chat.context.cache') }}:</span>
+          <span class="font-mono ml-1">{{ fmtFull(cache) }}</span>
+        </span>
+      </div>
+
+      <!-- Cost (optional) -->
+      <div v-if="cost != null" class="text-xs">
+        <span class="opacity-60">{{ t('chat.context.cost') }}:</span>
+        <span class="font-mono ml-1">${{ cost.toFixed(4) }}</span>
+      </div>
+
+      <!-- Model hint -->
+      <div class="text-[10px] opacity-50 border-t border-[var(--border)] pt-1 mt-1">
+        {{ t('chat.context.modelHint', { model: modelLabel }) }}
+      </div>
+    </div>
+  </NPopover>
 </template>

@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import ComposerFooter from './ComposerFooter.vue';
-import { useHotkeysStore } from '@/stores/hotkeys';
+import { NButton } from 'naive-ui';
+import ContextRing from './ContextRing.vue';
+import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
+import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
+import { useSessionStore } from '@/stores/session';
+import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
 const hotkeys = useHotkeysStore();
+const session = useSessionStore();
+const { isMobile } = useBreakpoint();
 
 const props = defineProps<{
   model: string;
@@ -20,9 +26,54 @@ const emit = defineEmits<{
   (e: 'update:thinkingSpeed', v: 'fast' | 'extended' | 'auto'): void;
 }>();
 
+// Suppress "unused" warning for `model` — kept on the prop signature for
+// backward compatibility with parent v-model:model bindings even though the
+// composer itself no longer renders a model switcher.
+void props.model;
+void emit;
+
 const text = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const canSend = computed(() => text.value.trim().length > 0 && !props.sending);
+
+/**
+ * Auto-grow: starts ~2 rows, grows up to ~8, then scrolls. We measure
+ * `scrollHeight` of an offscreen-shrunk textarea each tick the value changes
+ * and clamp to MAX_PX. Doing it imperatively (rather than via rows="…") keeps
+ * the textarea a single source of truth and avoids layout jumps from
+ * row→pixel rounding.
+ */
+const LINE_HEIGHT_PX = 20; // matches text-sm (14px) * leading-snug; see <textarea> class
+const MIN_ROWS = 2;
+const MAX_ROWS = 8;
+const VERTICAL_PADDING_PX = 24; // p-3 = 12px top + 12px bottom
+const MIN_PX = LINE_HEIGHT_PX * MIN_ROWS + VERTICAL_PADDING_PX;
+const MAX_PX = LINE_HEIGHT_PX * MAX_ROWS + VERTICAL_PADDING_PX;
+
+function resize(): void {
+  const el = textareaRef.value;
+  if (!el) return;
+  // Collapse first so scrollHeight reflects content height, not the previous
+  // (larger) box height.
+  el.style.height = 'auto';
+  const next = Math.min(MAX_PX, Math.max(MIN_PX, el.scrollHeight));
+  el.style.height = `${next}px`;
+  // Show scrollbar only when clamped at the max.
+  el.style.overflowY = el.scrollHeight > MAX_PX ? 'auto' : 'hidden';
+}
+
+watch(text, () => { void nextTick(resize); });
+onMounted(() => { resize(); });
+
+const charCount = computed(() => text.value.length);
+const showCharCount = computed(() => charCount.value > 50);
+
+const sendChord = computed(() => hotkeys.bindings.send);
+const hotkeyHint = computed(() => {
+  // e.g. "⌘+Enter to send" on mac, "Ctrl+Enter to send" elsewhere
+  const tokens = chordToDisplayTokens(sendChord.value);
+  return t('chat.composer.hotkeyHint', { chord: tokens.join('+') });
+});
 
 function onKeydown(e: KeyboardEvent): void {
   // Skip while IME is composing — Enter should commit the composition, not send.
@@ -31,7 +82,6 @@ function onKeydown(e: KeyboardEvent): void {
   // the browser already does); only handle it if the user remapped it, so
   // that the chord doesn't accidentally trigger `send`.
   if (hotkeys.matches(e, 'newline')) {
-    // Let the textarea handle the keystroke natively (insert newline).
     return;
   }
   if (hotkeys.matches(e, 'send')) {
@@ -44,6 +94,11 @@ function submit(): void {
   if (!canSend.value) return;
   emit('send', text.value.trim());
   text.value = '';
+  void nextTick(resize);
+}
+
+function onStop(): void {
+  emit('stop');
 }
 
 /** Prepend an @role mention so the user can keep typing the request. */
@@ -64,6 +119,7 @@ function focus(): void {
   setTimeout(() => {
     const el = textareaRef.value;
     if (!el) return;
+    resize();
     el.focus();
     // Place caret at the end so the user can keep typing
     el.setSelectionRange(text.value.length, text.value.length);
@@ -74,24 +130,92 @@ defineExpose({ prependMention, setText, focus });
 </script>
 
 <template>
-  <div class="border border-[var(--border)] rounded-md bg-[var(--bg-card)] shadow-[var(--shadow-1)]">
-    <textarea
-      ref="textareaRef"
-      v-model="text"
-      :placeholder="t('chat.composer.placeholder')"
-      class="w-full resize-none outline-none bg-transparent p-3 text-sm font-sans max-h-[200px]"
-      rows="2"
-      @keydown="onKeydown"
-    />
-    <ComposerFooter
-      :model="model"
-      :thinking-speed="thinkingSpeed"
-      :disabled="!canSend"
-      :sending="sending"
-      @update:model="$emit('update:model', $event)"
-      @update:thinking-speed="$emit('update:thinkingSpeed', $event)"
-      @send="submit"
-      @stop="$emit('stop')"
-    />
+  <div
+    class="composer-shell rounded-lg bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-1)] transition-colors focus-within:border-[var(--brand-500)]"
+  >
+    <!-- Top row: textarea + send/stop button -->
+    <div class="flex items-end gap-2 px-3 pt-3 pb-2">
+      <textarea
+        ref="textareaRef"
+        v-model="text"
+        :placeholder="t('chat.composer.placeholder')"
+        class="composer-textarea flex-1 resize-none outline-none bg-transparent text-sm font-sans leading-snug placeholder:text-[var(--text-muted)]"
+        rows="2"
+        @keydown="onKeydown"
+      />
+      <div class="shrink-0 self-end pb-0.5">
+        <NButton
+          v-if="sending"
+          type="error"
+          size="medium"
+          @click="onStop"
+        >
+          {{ t('chat.composer.stop') }}
+        </NButton>
+        <NButton
+          v-else
+          type="primary"
+          size="medium"
+          :disabled="!canSend"
+          @click="submit"
+        >
+          {{ t('chat.composer.send') }}
+        </NButton>
+      </div>
+    </div>
+
+    <!-- Bottom toolbar: speed chips · context ring · meta -->
+    <div
+      class="flex items-center gap-2 px-3 py-2 border-t border-[var(--border)] text-xs"
+    >
+      <!-- LEFT: thinking-speed picker (extracted reusable component) -->
+      <ThinkingStrategyPicker
+        :value="thinkingSpeed"
+        :disabled="sending"
+        @update:value="(v: 'fast' | 'auto' | 'extended') => emit('update:thinkingSpeed', v)"
+      />
+
+      <!-- spacer (left chunk → right chunk) -->
+      <span class="flex-1" />
+
+      <!-- MIDDLE-RIGHT: inline context meter (click opens breakdown) -->
+      <ContextRing
+        :used="session.tokenUsage.total"
+        :input="session.tokenUsage.input"
+        :output="session.tokenUsage.output"
+        :model="model"
+      />
+
+      <!-- RIGHT: char count + hotkey hint -->
+      <span
+        v-if="showCharCount"
+        class="font-mono text-[var(--text-muted)] tabular-nums"
+      >
+        {{ t('chat.composer.chars', { n: charCount }) }}
+      </span>
+      <span
+        v-if="!isMobile"
+        class="text-[var(--text-muted)] hidden md:inline"
+      >
+        {{ hotkeyHint }}
+      </span>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/*
+ * Auto-grown textarea: explicit min/max so the inline style.height stays
+ * within the documented bounds even if JS hasn't run yet (first paint).
+ * Padding here matches VERTICAL_PADDING_PX in the script so scrollHeight
+ * measurement and rendered box agree.
+ */
+.composer-textarea {
+  min-height: 64px; /* MIN_PX = 20 * 2 + 24 */
+  max-height: 184px; /* MAX_PX = 20 * 8 + 24 */
+  padding: 0;
+  line-height: 1.4;
+  /* Hide scrollbar until we explicitly toggle overflow-y in resize() */
+  overflow-y: hidden;
+}
+</style>
