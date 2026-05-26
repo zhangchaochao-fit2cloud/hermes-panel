@@ -9,6 +9,7 @@ import { useChatStreamStore } from '@/stores/chat-stream';
 import { useSystemStore } from '@/stores/system';
 import { bffFetch } from '@/api/bff';
 import MessageBubble from '@/components/chat/MessageBubble.vue';
+import ChatNavigator from '@/components/chat/ChatNavigator.vue';
 import Composer from '@/components/chat/Composer.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
@@ -231,7 +232,7 @@ function trySample(q: string): void {
       @select="onSelectSession"
       @new="onNewChat"
     />
-    <main class="flex-1 flex flex-col min-w-0 min-h-0">
+    <main class="relative flex-1 flex flex-col min-w-0 min-h-0">
       <div ref="scroller" class="relative flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div
           v-if="resumingSession"
@@ -265,6 +266,11 @@ function trySample(q: string): void {
           <MessageBubble v-for="m in messages" :key="m.id" :message="m" />
         </div>
       </div>
+      <ChatNavigator
+        v-if="messages.length > 1"
+        :scroller="scroller"
+        :messages="messages"
+      />
       <div
         class="flex-shrink-0 px-4 pt-2 pb-4 sm:px-6 border-t border-[var(--border)] bg-[var(--bg-page)]"
         style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"

@@ -89,6 +89,7 @@ function onFeedback(kind: 'up' | 'down'): void {
   <div
     class="group relative flex w-full mb-4 message-enter"
     :class="isUser ? 'justify-end' : 'justify-start'"
+    :data-msg-id="message.id"
   >
     <div class="relative max-w-[80%]">
       <!-- hover toolbar: floats above bubble, mirrored by role -->

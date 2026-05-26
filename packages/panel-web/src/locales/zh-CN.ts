@@ -259,6 +259,9 @@ export default {
       collapse: '收起',
       more: '+ {n}',
     },
+    navigator: {
+      jumpBottom: '回到底部',
+    },
     context: {
       title: '上下文用量',
       limit: '上限',

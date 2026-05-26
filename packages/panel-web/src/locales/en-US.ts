@@ -259,6 +259,9 @@ export default {
       collapse: 'Collapse',
       more: '+ {n}',
     },
+    navigator: {
+      jumpBottom: 'Jump to bottom',
+    },
     context: {
       title: 'Context usage',
       limit: 'Limit',
