@@ -3,7 +3,7 @@ import { onMounted, ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
-import { useMessage } from 'naive-ui';
+import { NSpin, useMessage } from 'naive-ui';
 import { useSessionStore } from '@/stores/session';
 import { useChatStreamStore } from '@/stores/chat-stream';
 import { useSystemStore } from '@/stores/system';
@@ -31,6 +31,7 @@ const { state, lastError, lastErrorCode } = storeToRefs(stream);
 const model = ref('hermes-agent');
 const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>('auto');
 const sending = ref(false);
+const resumingSession = ref(false);
 const scroller = ref<HTMLElement | null>(null);
 const composerRef = ref<InstanceType<typeof Composer> | null>(null);
 
@@ -79,6 +80,7 @@ interface SessionDetail {
 }
 
 async function loadSession(id: string): Promise<void> {
+  resumingSession.value = true;
   try {
     const detail = await bffFetch<SessionDetail>(`/api/sessions/${id}`);
     session.reset();
@@ -100,6 +102,8 @@ async function loadSession(id: string): Promise<void> {
     message.success(t('chat.resumed', { id: id.slice(0, 8) }), { duration: 2000 });
   } catch (err) {
     message.error(`恢复会话失败: ${(err as Error).message}`, { duration: 5000 });
+  } finally {
+    resumingSession.value = false;
   }
 }
 
@@ -109,13 +113,13 @@ interface DraftResponse {
 
 async function pickUpDraft(): Promise<void> {
   try {
-    const r = await bffFetch<DraftResponse>('/api/draft');
+    const r = await bffFetch<DraftResponse>('/api/draft', { silent: true });
     if (r.draft?.prompt) {
       const c = composerRef.value as { setText?: (v: string) => void } | null;
       c?.setText?.(r.draft.prompt);
       message.info(`Loaded draft from ${r.draft.source}`, { duration: 2500 });
       // Consume so we don't re-fill on the next mount
-      await bffFetch('/api/draft', { method: 'DELETE' }).catch(() => { /* ignore */ });
+      await bffFetch('/api/draft', { method: 'DELETE', silent: true }).catch(() => { /* ignore */ });
     }
   } catch {
     // Silent — BFF unreachable or no draft, neither is fatal
@@ -221,14 +225,20 @@ function trySample(q: string): void {
     collapse doesn't push the composer off-screen. h-full is the fallback when
     the parent already constrains height (web build inside DefaultLayout).
   -->
-  <div class="flex h-full w-full bg-[var(--bg-page)] md:h-full" style="min-height: 100dvh;">
+  <div class="flex h-full w-full overflow-hidden bg-[var(--bg-page)]">
     <ChatSessionsDrawer
       v-model:collapsed="sidebarCollapsed"
       @select="onSelectSession"
       @new="onNewChat"
     />
-    <main class="flex-1 flex flex-col min-w-0">
-      <div ref="scroller" class="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+    <main class="flex-1 flex flex-col min-w-0 min-h-0">
+      <div ref="scroller" class="relative flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        <div
+          v-if="resumingSession"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-page)]/70 backdrop-blur-[1px]"
+        >
+          <NSpin size="small" />
+        </div>
         <div class="max-w-3xl mx-auto">
           <EmptyState
             v-if="messages.length === 0"
@@ -256,7 +266,7 @@ function trySample(q: string): void {
         </div>
       </div>
       <div
-        class="px-4 pb-4 sm:px-6"
+        class="flex-shrink-0 px-4 pt-2 pb-4 sm:px-6 border-t border-[var(--border)] bg-[var(--bg-page)]"
         style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"
       >
         <div class="max-w-3xl mx-auto">
