@@ -218,6 +218,22 @@ async function copy(text: string): Promise<void> {
       </svg>
     </summary>
 
+    <!--
+      Soft "running" hint: only visible while the card is collapsed AND the
+      tool is still in flight. Re-using <details>'s open/closed state via
+      the :not([open]) selector on the parent .tool-call lets us hide this
+      via CSS only — no extra reactivity. Uses an inline 3-dot CSS
+      animation so the user has continuous feedback that something is
+      happening.
+    -->
+    <div
+      v-if="status === 'running'"
+      class="tool-call__running-hint px-3 pb-2 pt-0 text-[var(--text-3)] text-[11px] flex items-center gap-1.5"
+    >
+      <span>{{ t('chat.toolCall.runningHint') }}</span>
+      <span class="tool-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    </div>
+
     <!-- Expanded detail: name + raw input + raw output -->
     <div class="px-3 pb-3 pt-1 space-y-3 border-t border-[var(--border)]">
       <div class="text-[10px] font-mono text-[var(--text-3)] uppercase tracking-wider">
@@ -261,6 +277,20 @@ async function copy(text: string): Promise<void> {
         </div>
       </div>
 
+      <!--
+        While running, output is not yet available. Show a "waiting"
+        placeholder using the same dot animation so expanding the card
+        mid-run isn't a dead-end. Suppressed once the tool actually
+        produces output (the v-if above takes over).
+      -->
+      <div
+        v-else-if="status === 'running'"
+        class="text-[var(--text-3)] text-[11px] flex items-center gap-1.5"
+      >
+        <span>{{ t('chat.toolCall.waitingOutput') }}</span>
+        <span class="tool-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+      </div>
+
       <div v-if="toolCall.errorMessage" class="text-red-600 font-mono text-[11px]">
         {{ toolCall.errorMessage }}
       </div>
@@ -289,5 +319,46 @@ async function copy(text: string): Promise<void> {
   margin: 0;
   font-size: 11px;
   line-height: 1.5;
+}
+
+/*
+ * Running hint: shown next to the summary while the card is closed.
+ * <details> sets `open` on the parent .tool-call when expanded, so hiding
+ * via :not([open]) means the hint vanishes when the user expands the
+ * card (the in-body "Waiting for output…" takes over).
+ */
+.tool-call[open] > .tool-call__running-hint {
+  display: none;
+}
+
+/*
+ * CSS-only 3-dot animation. Each dot fades in turn so the user sees a
+ * gentle moving rhythm without any JS state. Honors prefers-reduced-motion
+ * by collapsing to a static row of dots at constant 60% opacity.
+ */
+.tool-dots {
+  display: inline-flex;
+  gap: 2px;
+  line-height: 0;
+}
+.tool-dots > span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.2;
+  animation: tool-dots-blink 1.2s var(--ease) infinite;
+}
+.tool-dots > span:nth-child(2) { animation-delay: 0.2s; }
+.tool-dots > span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tool-dots-blink {
+  0%, 80%, 100% { opacity: 0.2; }
+  40%           { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tool-dots > span {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 </style>

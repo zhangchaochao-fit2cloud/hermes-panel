@@ -228,6 +228,8 @@ export default {
       writePrefix: 'write',
       readPrefix: 'read',
       searchPrefix: 'search',
+      runningHint: 'Running',
+      waitingOutput: 'Waiting for output',
     },
     reasoning: 'Reasoning',
     reasoningDone: 'Thought',
@@ -240,6 +242,8 @@ export default {
       feedbackDown: 'Bad response',
       copied: 'Copied to clipboard',
       edited: 'edited',
+      cost: '${value}',
+      duration: '{n}s',
     },
     resumed: 'Resumed session {id}',
     sidebar: {
@@ -786,5 +790,8 @@ export default {
     hermes_api_timeout: 'Hermes did not respond',
     network_offline: 'Network is offline',
     unknown: 'Unknown error',
+    boundaryTitle: 'Something went wrong',
+    boundaryBody: 'The panel hit an unexpected error while rendering this view. You can reload to try again — your Hermes session data is safe.',
+    reload: 'Reload',
   },
 } as const;

@@ -29,6 +29,13 @@ function tagPlatform(): void {
 tagPlatform();
 
 const app = createApp(App);
+// Last-resort handler for component errors that escape both the per-view
+// catch blocks and AppErrorBoundary (which stops propagation for render
+// errors but lifecycle hooks outside the boundary still land here). We
+// keep this minimal — the boundary owns the UI; this is just a log.
+app.config.errorHandler = (err, _instance, info) => {
+  console.error('[panel:vue]', info, err);
+};
 app.use(createPinia());
 app.use(router);
 app.use(i18n);

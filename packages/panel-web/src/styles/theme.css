@@ -1006,3 +1006,23 @@ body {
   color: #6b7280;
 }
 
+/* =================================================================
+   Accessibility — keyboard focus indicators
+   :focus-visible-only (so mouse clicks stay clean). Naive UI
+   components paint their own focus ring; suppress ours on those to
+   avoid double-rings.
+   ================================================================= */
+*:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.n-button:focus-visible,
+.n-input:focus-visible,
+.n-base-selection:focus-visible {
+  outline: none;
+}
+.composer-textarea:focus-visible {
+  outline: none;
+}
+

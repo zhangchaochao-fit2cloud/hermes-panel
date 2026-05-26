@@ -5,6 +5,7 @@ import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import ControlCenter from '@/components/shared/ControlCenter.vue';
+import AppErrorBoundary from '@/components/shared/AppErrorBoundary.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 
 const appearance = useAppearanceStore();
@@ -119,10 +120,12 @@ onMounted(() => appearance.init());
     <NMessageProvider>
       <NDialogProvider>
         <NNotificationProvider>
-          <DefaultLayout>
-            <RouterView />
-          </DefaultLayout>
-          <ControlCenter />
+          <AppErrorBoundary>
+            <DefaultLayout>
+              <RouterView />
+            </DefaultLayout>
+            <ControlCenter />
+          </AppErrorBoundary>
         </NNotificationProvider>
       </NDialogProvider>
     </NMessageProvider>

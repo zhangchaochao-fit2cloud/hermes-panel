@@ -228,6 +228,8 @@ export default {
       writePrefix: '写入',
       readPrefix: '读取',
       searchPrefix: '搜索',
+      runningHint: '正在执行',
+      waitingOutput: '等待输出',
     },
     reasoning: '思考过程',
     reasoningDone: '已处理',
@@ -240,6 +242,8 @@ export default {
       feedbackDown: '回答有问题',
       copied: '已复制到剪贴板',
       edited: '已编辑',
+      cost: '估算 ${value}',
+      duration: '{n}s',
     },
     resumed: '已恢复会话 {id}',
     sidebar: {
@@ -770,5 +774,8 @@ export default {
     hermes_api_timeout: 'Hermes 没有响应',
     network_offline: '网络已断开',
     unknown: '未知错误',
+    boundaryTitle: '出错了',
+    boundaryBody: '面板在渲染当前视图时遇到未预期的错误。可以点击重新加载再试一次 —— 你的 Hermes 会话数据不会受到影响。',
+    reload: '重新加载',
   },
 } as const;

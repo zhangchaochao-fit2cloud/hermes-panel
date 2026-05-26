@@ -74,6 +74,33 @@ const tokenBreakdownTitle = computed(() => {
   return parts.length ? parts.join(' · ') : undefined;
 });
 
+/**
+ * Cost (USD) — surfaced in the footer when the run came back with a
+ * cost estimate. We format inside the component so locales can wrap the
+ * number with their preferred prefix ("$" / "估算 $" / "~$" / etc.).
+ */
+const costLabel = computed(() => {
+  const cost = props.message.tokenUsage?.cost;
+  if (typeof cost !== 'number' || !Number.isFinite(cost)) return null;
+  return t('chat.message.cost', { value: cost.toFixed(4) });
+});
+
+/**
+ * Duration — soft-read `completedAt` because ChatMessage doesn't carry
+ * it in the shared type yet. The orchestrator may stamp it later; until
+ * then this stays a no-op when the field is absent (same pattern as
+ * `edited` above).
+ */
+const durationLabel = computed(() => {
+  const completedAt = (props.message as unknown as { completedAt?: number }).completedAt;
+  if (typeof completedAt !== 'number') return null;
+  const startedAt = props.message.createdAt;
+  if (typeof startedAt !== 'number') return null;
+  const ms = completedAt - startedAt;
+  if (!(ms > 0)) return null;
+  return t('chat.message.duration', { n: (ms / 1000).toFixed(1) });
+});
+
 function fmtTime(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -201,7 +228,7 @@ function onFeedback(kind: 'up' | 'down'): void {
         />
       </div>
 
-      <!-- footer (time + tokens) — small, low-weight, only when completed -->
+      <!-- footer (time + tokens + cost + duration) — small, low-weight, only when completed -->
       <div
         v-if="message.completed && (message.tokenUsage || true)"
         class="mt-2 text-[11px] text-[var(--text-3)] flex items-center gap-2 flex-wrap"
@@ -210,6 +237,14 @@ function onFeedback(kind: 'up' | 'down'): void {
         <template v-if="tokenTotal != null">
           <span>·</span>
           <span :title="tokenBreakdownTitle">{{ tokenTotal }} tokens</span>
+        </template>
+        <template v-if="costLabel">
+          <span>·</span>
+          <span>{{ costLabel }}</span>
+        </template>
+        <template v-if="durationLabel">
+          <span>·</span>
+          <span>{{ durationLabel }}</span>
         </template>
         <template v-if="showLocalMetrics && message.qualityScore != null">
           <span>·</span>
