@@ -274,10 +274,18 @@ body {
 :root[data-theme^='glass-'] .n-input .n-input__textarea-el,
 :root[data-theme^='glass-'] .n-input .n-input-wrapper,
 :root[data-theme^='glass-'] .n-input,
-:root[data-theme^='glass-'] textarea {
+:root[data-theme^='glass-'] textarea:not(.composer-textarea) {
   background-color: var(--bg-elevate) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+/* The composer textarea is bare — it inherits the composer-shell glass
+ * surface; giving it its own bg-elevate makes it look like a nested
+ * inset box. Force transparent so the shell's tint shows through. */
+:root[data-theme^='glass-'] .composer-textarea {
+  background-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 :root[data-theme^='glass-'] .shadow-\[var\(--shadow-1\)\],

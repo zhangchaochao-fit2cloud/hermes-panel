@@ -134,13 +134,16 @@ defineExpose({ prependMention, setText, focus });
     class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 focus-within:border-[var(--text-3)]"
   >
     <!-- Textarea -->
-    <div class="px-5 pt-4 pb-1">
+    <div class="composer-textarea-wrap px-5 pt-4 pb-1">
       <textarea
         ref="textareaRef"
         v-model="text"
         :placeholder="t('chat.composer.placeholder')"
-        class="composer-textarea block w-full resize-none outline-none bg-transparent text-[15px] font-sans leading-relaxed text-[var(--text-1)] placeholder:text-[var(--text-3)]"
+        class="composer-textarea block w-full resize-none outline-none bg-transparent text-[15px] font-sans"
         rows="2"
+        spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off"
         @keydown="onKeydown"
       />
     </div>
@@ -232,13 +235,66 @@ defineExpose({ prependMention, setText, focus });
  * Padding here matches VERTICAL_PADDING_PX in the script so scrollHeight
  * measurement and rendered box agree.
  */
+/*
+ * Wrap exists so we can paint a soft top/bottom mask once content
+ * exceeds max-height: the scrolling textarea fades into the toolbar
+ * instead of slamming into it with a hard edge.
+ */
+.composer-textarea-wrap {
+  position: relative;
+}
+
 .composer-textarea {
-  min-height: 56px;
+  min-height: 52px;
   max-height: 220px;
   padding: 0;
-  line-height: 1.5;
+  line-height: 1.55;
+  color: var(--text-1);
+  /* Use a slightly soft brand-tinted caret so the cursor stands out in
+   * every theme without resorting to the OS default. */
+  caret-color: var(--brand-500);
   /* Hide scrollbar until we explicitly toggle overflow-y in resize() */
   overflow-y: hidden;
+  /* Word break: prevent URL-style content from blowing the toolbar out. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.composer-textarea::placeholder {
+  color: var(--text-3);
+  /* placeholder should slightly fade out as the user starts typing —
+   * lower opacity makes it less competing for attention. */
+  opacity: 0.85;
+}
+
+/* Selection color mirrors the brand so highlighted text doesn't look
+ * out of place on dark / glass themes (default browser selection is a
+ * jarring system blue). */
+.composer-textarea::selection {
+  background: color-mix(in srgb, var(--brand-500) 28%, transparent);
+  color: var(--text-1);
+}
+
+/* Slim Codex-style scrollbar — only visible once the textarea exceeds
+ * max-height. Hidden by default; revealed when the resize() helper
+ * flips overflow-y to auto. */
+.composer-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+.composer-textarea::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-3) 35%, transparent);
+  border-radius: 999px;
+}
+.composer-textarea::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-3) 55%, transparent);
+}
+.composer-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Firefox */
+.composer-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-3) 35%, transparent) transparent;
 }
 
 .composer-kbd {
