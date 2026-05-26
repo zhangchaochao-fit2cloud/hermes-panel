@@ -72,7 +72,10 @@ function toggleLocale(): void {
 </script>
 
 <template>
-  <header class="app-topbar h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-4 gap-3 flex-shrink-0">
+  <header
+    class="app-topbar border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center gap-3 flex-shrink-0"
+    data-tauri-drag-region
+  >
     <button
       type="button"
       class="topbar-icon-button"

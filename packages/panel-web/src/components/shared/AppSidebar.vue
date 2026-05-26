@@ -139,9 +139,9 @@ function toggleGroup(group: MenuGroup): void {
 <template>
   <aside
     class="app-sidebar h-full flex flex-col transition-[width] duration-200 flex-shrink-0 overflow-hidden"
-    :class="isCollapsed ? 'w-[68px]' : 'w-[248px]'"
+    :class="isCollapsed ? 'w-[68px] is-collapsed' : 'w-[248px]'"
   >
-    <div class="h-16 flex items-center px-4 gap-3 flex-shrink-0">
+    <div class="sidebar-brand h-16 flex items-center px-4 gap-3 flex-shrink-0" data-tauri-drag-region>
       <div class="vben-logo-mark w-9 h-9 rounded-lg shadow-[var(--shadow-2)] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
         H
       </div>

@@ -68,7 +68,7 @@ const fontOptions: FontOption[] = [
         <button
           v-for="opt in modeOptions"
           :key="opt.value"
-          class="flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden"
+          class="cursor-pointer flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden"
           :class="
             mode === opt.value
               ? 'border-[var(--brand-500)] shadow-[var(--shadow-2)]'
@@ -99,7 +99,7 @@ const fontOptions: FontOption[] = [
         <button
           v-for="c in colors"
           :key="c.value"
-          class="w-9 h-9 rounded-md transition-all relative flex items-center justify-center"
+          class="cursor-pointer w-9 h-9 rounded-md transition-all relative flex items-center justify-center"
           :class="
             color === c.value
               ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)]'
@@ -122,21 +122,28 @@ const fontOptions: FontOption[] = [
     <!-- Font size -->
     <div class="mb-8">
       <div class="text-sm font-medium mb-3">{{ t('settings.appearance.font.label') }}</div>
-      <div class="inline-flex border border-[var(--border)] rounded-md overflow-hidden">
+      <div class="grid grid-cols-3 gap-3 max-w-md">
         <button
-          v-for="(opt, idx) in fontOptions"
+          v-for="opt in fontOptions"
           :key="opt.value"
-          class="px-4 py-1.5 text-sm transition-colors"
-          :class="[
+          class="cursor-pointer flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-lg border-2 transition-all"
+          :class="
             fontSize === opt.value
-              ? 'bg-[var(--brand-500)] text-white'
-              : 'hover:bg-[var(--bg-elevate)]',
-            idx > 0 ? 'border-l border-[var(--border)]' : '',
-          ]"
+              ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 shadow-[var(--shadow-1)]'
+              : 'border-[var(--border)] hover:border-[var(--text-3)] hover:bg-[var(--bg-elevate)]'
+          "
           @click="store.setFontSize(opt.value)"
         >
-          {{ t(opt.labelKey) }}
-          <span class="opacity-60 ml-1 text-xs">{{ opt.px }}px</span>
+          <span
+            class="font-semibold leading-none"
+            :class="fontSize === opt.value ? 'text-[var(--brand-600)]' : 'text-[var(--text-1)]'"
+            :style="{ fontSize: `${opt.px + 4}px` }"
+          >Aa</span>
+          <span
+            class="text-xs leading-tight"
+            :class="fontSize === opt.value ? 'text-[var(--brand-600)] font-medium' : 'text-[var(--text-2)]'"
+          >{{ t(opt.labelKey) }}</span>
+          <span class="text-[10px] font-mono text-[var(--text-3)] tabular-nums">{{ opt.px }}px</span>
         </button>
       </div>
     </div>

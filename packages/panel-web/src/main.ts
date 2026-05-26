@@ -6,6 +6,28 @@ import { i18n } from './locales/index.js';
 import { registerServiceWorker } from './utils/register-sw.js';
 import './styles/theme.css';
 
+// Detect the running platform so CSS can react to macOS (which needs to
+// reserve space for the overlay traffic-light buttons). We mirror this on
+// <html data-tauri-platform="…"> only when actually running inside a Tauri
+// shell; plain browser dev keeps the attribute absent.
+function tagPlatform(): void {
+  // Tauri 2 exposes `window.__TAURI_INTERNALS__` (and the older
+  // __TAURI__). Either signals desktop shell.
+  const w = window as typeof window & {
+    __TAURI_INTERNALS__?: unknown;
+    __TAURI__?: unknown;
+  };
+  const inTauri = !!(w.__TAURI_INTERNALS__ || w.__TAURI__);
+  if (!inTauri) return;
+  const ua = navigator.userAgent;
+  let platform: 'macos' | 'windows' | 'linux' | undefined;
+  if (/Mac OS X|Macintosh/.test(ua)) platform = 'macos';
+  else if (/Windows/.test(ua)) platform = 'windows';
+  else if (/Linux|X11/.test(ua)) platform = 'linux';
+  if (platform) document.documentElement.dataset.tauriPlatform = platform;
+}
+tagPlatform();
+
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);

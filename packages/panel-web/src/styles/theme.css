@@ -341,6 +341,46 @@ body {
 .app-topbar {
   background: var(--bg-card);
   backdrop-filter: blur(14px);
+  /* Match the previous h-12 fixed height; padding handled below so the
+   * traffic-light buttons can overlay this row on macOS. */
+  min-height: 48px;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+/*
+ * macOS Tauri runs with titleBarStyle: "Overlay" + hiddenTitle, which
+ * means the system traffic-light buttons paint on top of our content
+ * in the top-left corner. Reserve ~78px on the left so the hamburger
+ * sits clear of the close/min/zoom buttons, and bump the topbar
+ * height a touch to make the drag region comfortable.
+ *
+ * We can't reliably detect Tauri-on-macOS from CSS alone; the userAgent
+ * for Tauri WebView on macOS still says "Macintosh", so we use a
+ * platform UA hook applied to <html> at runtime. As a robust fallback
+ * the rule below matches when the OS is mac AND we're inside a Tauri
+ * window (window.__TAURI__ presence). See `panel-web/src/main.ts`
+ * for the runtime data-platform attribute.
+ */
+:root[data-tauri-platform='macos'] .app-topbar {
+  min-height: 52px;
+}
+
+/* Sidebar logo row sits in the top-left corner where macOS paints its
+ * traffic-light buttons. Pad the entire row down so the logo + product
+ * name aren't covered by close/min/zoom. Indent left content too so the
+ * Hermes mark doesn't collide with the buttons themselves. */
+:root[data-tauri-platform='macos'] .sidebar-brand {
+  padding-top: 28px;
+  padding-left: 84px;
+  height: calc(64px + 28px);
+}
+
+:root[data-tauri-platform='macos'] .app-sidebar.is-collapsed .sidebar-brand {
+  /* When sidebar is collapsed (68px wide) the traffic lights overlap the
+   * narrow logo column; keep the same vertical inset but skip the left
+   * indent since the row is too narrow to honor it. */
+  padding-left: 16px;
 }
 
 .topbar-icon-button {
