@@ -44,6 +44,31 @@ function resolveBin(): string {
  * with the child PID (the actual readiness probe is the existing
  * /api/system/health endpoint).
  */
+/**
+ * Hermes gateway only exposes the OpenAI-compatible /v1/* API when the
+ * api_server "messaging platform" is enabled. By default it's off, and
+ * config.yaml lacks a `platforms:` block — so the platform's only
+ * trigger is the env-var pair API_SERVER_ENABLED + API_SERVER_PORT/HOST.
+ *
+ * `scripts/tauri-dev-prep.sh` injects these when bootstrapping the dev
+ * gateway, but when the panel itself reaches over to start/restart the
+ * gateway (e.g. after a provider switch), the BFF's own process env
+ * isn't guaranteed to carry them. Injecting them here makes the api
+ * server the panel's single source of truth — no more "ran fine on
+ * first boot, then died after a config change" surprise.
+ */
+function gatewayEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    API_SERVER_ENABLED: process.env.API_SERVER_ENABLED ?? 'true',
+    API_SERVER_HOST: process.env.API_SERVER_HOST ?? '127.0.0.1',
+    API_SERVER_PORT: process.env.API_SERVER_PORT ?? '8642',
+    API_SERVER_CORS_ORIGINS:
+      process.env.API_SERVER_CORS_ORIGINS
+      ?? 'tauri://localhost,http://127.0.0.1:5666,http://localhost:5666',
+  };
+}
+
 export function startGateway(): Promise<StartGatewayResult> {
   const bin = resolveBin();
   return new Promise<StartGatewayResult>((resolve, reject) => {
@@ -59,7 +84,7 @@ export function startGateway(): Promise<StartGatewayResult> {
         detached: true,
         stdio: 'ignore',
         shell: false,
-        env: { ...process.env },
+        env: gatewayEnv(),
       });
 
       child.once('error', (err: NodeJS.ErrnoException) => {
