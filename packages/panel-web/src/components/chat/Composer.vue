@@ -244,10 +244,28 @@ defineExpose({ prependMention, setText, focus });
   position: relative;
 }
 
+/*
+ * Reset the browser UA styling on textarea — by default it ships with
+ * a 1px border, system monospace font, beige bg and an inset shadow on
+ * focus. Without these declarations the field looks "raw HTML" no
+ * matter what classes Tailwind adds on top.
+ */
 .composer-textarea {
+  /* Layout */
   min-height: 52px;
   max-height: 220px;
   padding: 0;
+  margin: 0;
+  /* Kill UA chrome */
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  box-shadow: none;
+  background-clip: padding-box;
+  /* Typography */
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
   line-height: 1.55;
   color: var(--text-1);
   /* Use a slightly soft brand-tinted caret so the cursor stands out in
@@ -258,6 +276,14 @@ defineExpose({ prependMention, setText, focus });
   /* Word break: prevent URL-style content from blowing the toolbar out. */
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.composer-textarea:focus,
+.composer-textarea:focus-visible {
+  /* The shell already gives a focus ring; the textarea itself stays
+   * borderless and outlineless inside. */
+  outline: none;
+  border: 0;
+  box-shadow: none;
 }
 
 .composer-textarea::placeholder {
