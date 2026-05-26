@@ -10,6 +10,7 @@
     "frontendDist": "../../panel-web/dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
