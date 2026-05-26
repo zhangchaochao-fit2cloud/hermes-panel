@@ -17,6 +17,17 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
+const SOURCE_META: Record<string, { icon: string; tone: 'info' | 'warning' | 'success' | 'default' }> = {
+  cli:        { icon: '💬', tone: 'success' },
+  cron:       { icon: '⏰', tone: 'warning' },
+  api_server: { icon: '🔌', tone: 'info' },
+  unknown:    { icon: '❔', tone: 'default' },
+};
+
+function sourceMeta(s: string): { icon: string; tone: 'info' | 'warning' | 'success' | 'default' } {
+  return SOURCE_META[s] ?? SOURCE_META.unknown;
+}
+
 function fmtNum(n: number): string {
   if (!n) return '0';
   if (n < 1000) return String(n);
@@ -75,9 +86,18 @@ function handle(key: string | number, row: SessionSummary): void {
         </NDropdown>
       </div>
 
-      <!-- model badge -->
-      <div class="mb-3">
+      <!-- model + source badges -->
+      <div class="mb-3 flex items-center gap-1.5 flex-wrap">
         <NTag size="small" :bordered="false" type="info">{{ row.model }}</NTag>
+        <NTag
+          size="small"
+          :bordered="false"
+          :type="sourceMeta(row.source).tone"
+          :title="t(`sessions.source.${row.source}`)"
+        >
+          <span class="mr-0.5">{{ sourceMeta(row.source).icon }}</span>
+          {{ t(`sessions.source.${row.source}`) }}
+        </NTag>
       </div>
 
       <!-- stats -->

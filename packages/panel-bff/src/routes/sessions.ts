@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import type { SessionSummary } from '@hermes-panel/shared';
+import type { SessionSummary, SessionSource } from '@hermes-panel/shared';
 import { runHermesCli, HermesCliError } from '../services/hermes-cli.js';
 import { exportOne, exportFiltered } from '../services/hermes-export.js';
 import { listSessions, getSession, getMessages, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
@@ -7,12 +7,22 @@ import { logger } from '../lib/logger.js';
 
 export const sessionsRouter = new Router();
 
+function classifySource(raw: string | null | undefined): SessionSource {
+  switch (raw) {
+    case 'cli': return 'cli';
+    case 'cron': return 'cron';
+    case 'api_server': return 'api_server';
+    default: return 'unknown';
+  }
+}
+
 function normalize(row: SessionRow): SessionSummary {
   const trimmed = row.title?.trim();
   return {
     id: row.id,
     title: trimmed && trimmed.length > 0 ? trimmed : `(${row.id.slice(0, 12)}…)`,
     model: row.model ?? 'unknown',
+    source: classifySource(row.source),
     messageCount: row.message_count ?? 0,
     tokenTotal: (row.input_tokens ?? 0) + (row.output_tokens ?? 0),
     createdAt: Math.floor((row.started_at ?? 0) * 1000),

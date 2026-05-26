@@ -2,12 +2,13 @@
 import { computed } from 'vue';
 import { NInput, NSelect, NButton, NButtonGroup, NTag } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import type { SourceFilter, ViewMode } from '@/stores/sessions';
+import type { SourceFilter, ViewMode, GroupBy } from '@/stores/sessions';
 
 const props = defineProps<{
   search: string;
   source: SourceFilter;
   view: ViewMode;
+  groupBy: GroupBy;
   total: number;
 }>();
 
@@ -15,6 +16,7 @@ const emit = defineEmits<{
   (e: 'update:search', value: string): void;
   (e: 'update:source', value: SourceFilter): void;
   (e: 'update:view', value: ViewMode): void;
+  (e: 'update:groupBy', value: GroupBy): void;
   (e: 'create'): void;
   (e: 'exportAll'): void;
 }>();
@@ -34,12 +36,16 @@ const sourceModel = computed({
 const sourceOptions = computed(() => [
   { label: t('sessions.source.all'), value: 'all' },
   { label: t('sessions.source.cli'), value: 'cli' },
-  { label: t('sessions.source.desktop'), value: 'desktop' },
-  { label: t('sessions.source.web'), value: 'web' },
+  { label: t('sessions.source.cron'), value: 'cron' },
+  { label: t('sessions.source.api_server'), value: 'api_server' },
 ]);
 
 function setView(v: ViewMode): void {
   emit('update:view', v);
+}
+
+function toggleGroup(): void {
+  emit('update:groupBy', props.groupBy === 'source' ? 'none' : 'source');
 }
 </script>
 
@@ -76,6 +82,18 @@ function setView(v: ViewMode): void {
     </NTag>
 
     <div class="flex-1" />
+
+    <!-- group toggle -->
+    <NButton
+      size="small"
+      :type="groupBy === 'source' ? 'primary' : 'default'"
+      :ghost="groupBy === 'source'"
+      :title="groupBy === 'source' ? t('sessions.groupBy.grouped') : t('sessions.groupBy.none')"
+      @click="toggleGroup"
+    >
+      <span class="mr-1">{{ groupBy === 'source' ? '▼' : '▶' }}</span>
+      {{ t('sessions.groupBy.title') }}
+    </NButton>
 
     <!-- view toggle -->
     <NButtonGroup size="small">

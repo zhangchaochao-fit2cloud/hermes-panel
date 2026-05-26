@@ -50,7 +50,32 @@ function handleAction(key: string | number, row: SessionSummary): void {
   else if (key === 'delete') emit('delete', row);
 }
 
+const SOURCE_META: Record<string, { icon: string; tone: 'info' | 'warning' | 'success' | 'default' }> = {
+  cli:        { icon: '💬', tone: 'success' },
+  cron:       { icon: '⏰', tone: 'warning' },
+  api_server: { icon: '🔌', tone: 'info' },
+  unknown:    { icon: '❔', tone: 'default' },
+};
+
 const columns = computed<DataTableColumns<SessionSummary>>(() => [
+  {
+    title: t('sessions.col.source'),
+    key: 'source',
+    width: 100,
+    render: (row): VNodeChild => {
+      const m = SOURCE_META[row.source] ?? SOURCE_META.unknown;
+      return h(
+        NTag,
+        {
+          size: 'small',
+          bordered: false,
+          type: m.tone,
+          title: t(`sessions.source.${row.source}`),
+        },
+        { default: () => `${m.icon} ${t(`sessions.source.${row.source}`)}` },
+      );
+    },
+  },
   {
     title: t('sessions.col.title'),
     key: 'title',

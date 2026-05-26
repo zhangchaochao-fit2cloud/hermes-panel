@@ -6,10 +6,14 @@ import { bffFetch } from '@/api/bff';
 import { getBffBase, getPanelToken } from '@/api/token';
 
 export type ViewMode = 'table' | 'grid';
-export type SourceFilter = 'all' | 'cli' | 'desktop' | 'web';
+/** Match real DB source values plus 'all'. Legacy 'desktop' / 'web' from older
+ *  localStorage values are migrated to 'all' on read. */
+export type SourceFilter = 'all' | 'cli' | 'cron' | 'api_server';
+export type GroupBy = 'none' | 'source';
 
 const VIEW_KEY = 'panel.sessions.view';
 const SOURCE_KEY = 'panel.sessions.source';
+const GROUP_KEY = 'panel.sessions.groupBy';
 
 function readView(): ViewMode {
   const v = localStorage.getItem(VIEW_KEY);
@@ -18,8 +22,16 @@ function readView(): ViewMode {
 
 function readSource(): SourceFilter {
   const s = localStorage.getItem(SOURCE_KEY);
-  if (s === 'cli' || s === 'desktop' || s === 'web') return s;
+  if (s === 'cli' || s === 'cron' || s === 'api_server') return s;
+  // Migrate legacy 'desktop' / 'web' (never matched real DB rows) → 'all'.
   return 'all';
+}
+
+function readGroupBy(): GroupBy {
+  const v = localStorage.getItem(GROUP_KEY);
+  // Default to grouped — cron jobs produce many short sessions that drown out
+  // CLI/API conversations in a flat list.
+  return v === 'none' ? 'none' : 'source';
 }
 
 export const useSessionsStore = defineStore('sessions', () => {
@@ -32,6 +44,7 @@ export const useSessionsStore = defineStore('sessions', () => {
   const search = ref('');
   const source = ref<SourceFilter>(readSource());
   const view = ref<ViewMode>(readView());
+  const groupBy = ref<GroupBy>(readGroupBy());
 
   const total = computed(() => items.value.length);
 
@@ -43,6 +56,11 @@ export const useSessionsStore = defineStore('sessions', () => {
   function setSource(s: SourceFilter): void {
     source.value = s;
     localStorage.setItem(SOURCE_KEY, s);
+  }
+
+  function setGroupBy(g: GroupBy): void {
+    groupBy.value = g;
+    localStorage.setItem(GROUP_KEY, g);
   }
 
   function buildQuery(): string {
@@ -163,11 +181,11 @@ export const useSessionsStore = defineStore('sessions', () => {
   return {
     // state
     items, loading, refreshing, error, initialized,
-    search, source, view,
+    search, source, view, groupBy,
     // computed
     total,
     // actions
-    load, setView, setSource,
+    load, setView, setSource, setGroupBy,
     removeLocal, deleteRemote, rename,
     exportOne, exportAll,
   };

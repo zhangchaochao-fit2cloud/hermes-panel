@@ -15,6 +15,8 @@ import EmptyState from '@/components/shared/EmptyState.vue';
 import SessionFilters from '@/components/sessions/SessionFilters.vue';
 import SessionTable from '@/components/sessions/SessionTable.vue';
 import SessionGrid from '@/components/sessions/SessionGrid.vue';
+import SessionGroupHeader from '@/components/sessions/SessionGroupHeader.vue';
+import type { SessionSource } from '@hermes-panel/shared';
 import { useSessionsStore, type SourceFilter, type ViewMode } from '@/stores/sessions';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
@@ -24,7 +26,7 @@ const message = useMessage();
 const dialog = useDialog();
 
 const store = useSessionsStore();
-const { items, loading, refreshing, error, initialized, search, source, view, total } = storeToRefs(store);
+const { items, loading, refreshing, error, initialized, search, source, view, groupBy, total } = storeToRefs(store);
 const { isMobile } = useBreakpoint();
 
 // Force grid view on phones — the table layout horizontally scrolls and is
@@ -211,9 +213,52 @@ const viewValue = computed({
   get: () => effectiveView.value,
   set: v => store.setView(v as ViewMode),
 });
+const groupByValue = computed({
+  get: () => groupBy.value,
+  set: v => store.setGroupBy(v),
+});
 
 const isEmpty = computed(() => initialized.value && !loading.value && items.value.length === 0);
 const showInitialSkeleton = computed(() => loading.value && !initialized.value);
+
+// --- Grouping ---
+// Preserve a stable order: most-relevant first. cron sits last because it's
+// the chattiest and easiest to ignore once collapsed.
+const GROUP_ORDER: SessionSource[] = ['cli', 'api_server', 'cron', 'unknown'];
+
+const groupedItems = computed<{ source: SessionSource; items: SessionSummary[] }[]>(() => {
+  const map = new Map<SessionSource, SessionSummary[]>();
+  for (const item of items.value) {
+    const key = item.source ?? 'unknown';
+    const bucket = map.get(key) ?? [];
+    bucket.push(item);
+    map.set(key, bucket);
+  }
+  const groups: { source: SessionSource; items: SessionSummary[] }[] = [];
+  for (const s of GROUP_ORDER) {
+    const list = map.get(s);
+    if (list && list.length > 0) groups.push({ source: s, items: list });
+  }
+  // Surface any unexpected source not in GROUP_ORDER
+  for (const [s, list] of map) {
+    if (!GROUP_ORDER.includes(s)) groups.push({ source: s, items: list });
+  }
+  return groups;
+});
+
+// Collapsed state per source, persisted to localStorage.
+const COLLAPSED_KEY = 'panel.sessions.collapsed';
+function readCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+const collapsed = ref<Record<string, boolean>>(readCollapsed());
+function toggleGroup(s: SessionSource): void {
+  collapsed.value = { ...collapsed.value, [s]: !collapsed.value[s] };
+  localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed.value));
+}
 </script>
 
 <template>
@@ -223,6 +268,7 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
       v-model:search="searchValue"
       v-model:source="sourceValue"
       v-model:view="viewValue"
+      v-model:group-by="groupByValue"
       :total="total"
       @create="onCreate"
       @export-all="onExportAll"
@@ -269,8 +315,8 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
         </NButton>
       </EmptyState>
 
-      <!-- content -->
-      <template v-else-if="initialized">
+      <!-- content: flat -->
+      <template v-else-if="initialized && groupBy === 'none'">
         <SessionTable
           v-if="effectiveView === 'table'"
           :items="items"
@@ -287,6 +333,37 @@ const showInitialSkeleton = computed(() => loading.value && !initialized.value);
           @delete="onDelete"
           @export="onExport"
         />
+      </template>
+
+      <!-- content: grouped by source -->
+      <template v-else-if="initialized">
+        <div
+          v-for="g in groupedItems"
+          :key="g.source"
+        >
+          <SessionGroupHeader
+            :source="g.source"
+            :count="g.items.length"
+            :collapsed="!!collapsed[g.source]"
+            @toggle="toggleGroup(g.source)"
+          />
+          <SessionTable
+            v-if="!collapsed[g.source] && effectiveView === 'table'"
+            :items="g.items"
+            @open="onOpen"
+            @rename="onRename"
+            @delete="onDelete"
+            @export="onExport"
+          />
+          <SessionGrid
+            v-else-if="!collapsed[g.source]"
+            :items="g.items"
+            @open="onOpen"
+            @rename="onRename"
+            @delete="onDelete"
+            @export="onExport"
+          />
+        </div>
       </template>
     </div>
   </div>
