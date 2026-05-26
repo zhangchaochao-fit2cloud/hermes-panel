@@ -28,8 +28,10 @@ const modeOptions: ModeOption[] = [
     previewStyle: { background: '#0d0d0d' } },
   { value: 'github-primer', labelKey: 'settings.appearance.mode.githubPrimer', icon: '🐙',
     previewStyle: { background: 'linear-gradient(135deg, #f6f8fa 0%, #ffffff 70%)', borderTop: '3px solid #0969da' } },
-  { value: 'minimal-glass', labelKey: 'settings.appearance.mode.minimalGlass', icon: '◌',
-    previewStyle: { background: 'linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)' } },
+  { value: 'glass-minimal', labelKey: 'settings.appearance.mode.minimalGlass', icon: '◌',
+    previewStyle: {
+      background: 'radial-gradient(ellipse at 30% 30%, rgba(165, 180, 252, 0.6) 0%, transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(186, 230, 253, 0.6) 0%, transparent 60%), linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)',
+    } },
   { value: 'glass-apple', labelKey: 'settings.appearance.mode.glassApple', icon: '🍎',
     previewStyle: {
       background: 'radial-gradient(circle at 30% 30%, #d65a3e 0%, transparent 40%), linear-gradient(135deg, #c378d6 0%, #5b67d6 60%, #2a93cc 100%)',

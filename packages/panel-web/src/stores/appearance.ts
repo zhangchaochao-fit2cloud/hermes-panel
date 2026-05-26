@@ -11,7 +11,7 @@ export type ThemeMode =
   | 'codex-light'
   | 'codex-dark'
   | 'github-primer'
-  | 'minimal-glass';
+  | 'glass-minimal';
 export type FontSize = 'small' | 'medium' | 'large';
 
 /** Which color family each mode falls into (drives Naive UI dark vs light). */
@@ -25,7 +25,7 @@ const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
   'codex-light': false,
   'codex-dark': true,
   'github-primer': false,
-  'minimal-glass': false,
+  'glass-minimal': false,
 };
 
 const STORAGE_MODE = 'panel.themeMode';
@@ -53,7 +53,13 @@ function readMode(): ThemeMode {
   const v = localStorage.getItem(STORAGE_MODE);
   if (v === 'light' || v === 'dark' || v === 'auto') return v;
   if (v === 'glass-apple' || v === 'glass-vibrant' || v === 'glass-tokyo') return v;
-  if (v === 'codex-light' || v === 'codex-dark' || v === 'github-primer' || v === 'minimal-glass') return v;
+  if (v === 'codex-light' || v === 'codex-dark' || v === 'github-primer' || v === 'glass-minimal') return v;
+  // Migrate the v0.x value 'minimal-glass' (not prefixed glass-, so it
+  // missed every glass-only style rule) to the renamed 'glass-minimal'.
+  if (v === 'minimal-glass') {
+    localStorage.setItem(STORAGE_MODE, 'glass-minimal');
+    return 'glass-minimal';
+  }
   return DEFAULT_MODE;
 }
 
@@ -135,9 +141,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
   });
 
   /** True if current mode uses translucent surfaces (backdrop-filter). */
-  const isGlass = computed(() =>
-    mode.value.startsWith('glass-') || mode.value === 'minimal-glass',
-  );
+  const isGlass = computed(() => mode.value.startsWith('glass-'));
 
   function setMode(v: ThemeMode): void {
     mode.value = v;

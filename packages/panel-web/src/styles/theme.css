@@ -193,27 +193,26 @@
 /* =================================================================
    Minimal Glass — lightweight translucency, no chromatic wallpaper
    ================================================================= */
-:root[data-theme='minimal-glass'] {
+:root[data-theme='glass-minimal'] {
   /* Real glass: low-alpha surfaces let the wallpaper show through, and
-   * backdrop-filter blurs whatever sits underneath. The wallpaper is a
-   * neutral slate so it never competes with content. */
-  --glass-blur: 22px;
-  --glass-saturate: 140%;
-  --glass-bg-overlay: rgba(255, 255, 255, 0.42);
+   * backdrop-filter blurs whatever sits underneath. The wallpaper has
+   * a bit of chroma so the translucent cards visibly tint. */
+  --glass-blur: 24px;
+  --glass-saturate: 160%;
+  --glass-bg-overlay: rgba(255, 255, 255, 0.35);
 
   --bg-page: transparent;
-  --bg-card: rgba(255, 255, 255, 0.42);
-  --bg-elevate: rgba(255, 255, 255, 0.28);
-  --border: rgba(15, 23, 42, 0.1);
+  --bg-card: rgba(255, 255, 255, 0.35);
+  --bg-elevate: rgba(255, 255, 255, 0.22);
+  --border: rgba(15, 23, 42, 0.12);
   --text-1: #0f172a;
   --text-2: rgba(15, 23, 42, 0.72);
   --text-3: rgba(15, 23, 42, 0.5);
 
-  /* More chroma in the wallpaper so cards visibly tint when translucent. */
   --body-bg:
-    radial-gradient(ellipse at 18% 18%, rgba(165, 180, 252, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 82% 82%, rgba(186, 230, 253, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 60% 30%, rgba(252, 211, 232, 0.25) 0%, transparent 55%),
+    radial-gradient(ellipse at 18% 18%, rgba(165, 180, 252, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 82%, rgba(186, 230, 253, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 30%, rgba(252, 211, 232, 0.30) 0%, transparent 55%),
     linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
   --body-bg-attachment: fixed;
 }
@@ -240,50 +239,49 @@ body {
    Glass surface helpers — applied automatically to common surfaces
    when [data-theme^='glass-'] is on the root.
    ================================================================= */
-/* All themes whose body background is meant to show through cards get
- * the same treatment. `minimal-glass` is not prefixed `glass-` so we
- * have to list it explicitly. */
-:is(
-  :root[data-theme^='glass-'],
-  :root[data-theme='minimal-glass']
-) :is(
-  [class*="bg-[var(--bg-card)]"],
-  [class*="bg-[var(--bg-elevate)]"]
-) {
+/* All glass-* themes (including glass-minimal) share these surface
+ * treatments. `data-theme^='glass-'` matches every variant we ship. */
+:root[data-theme^='glass-'] [class*="bg-[var(--bg-card)]"],
+:root[data-theme^='glass-'] [class*="bg-[var(--bg-elevate)]"] {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
-:is(
-  :root[data-theme^='glass-'],
-  :root[data-theme='minimal-glass']
-) :is(.n-card, .n-dropdown-menu, .n-popover, .n-drawer-content, .n-modal, .n-menu, .n-data-table) {
+:root[data-theme^='glass-'] .n-card,
+:root[data-theme^='glass-'] .n-dropdown-menu,
+:root[data-theme^='glass-'] .n-popover,
+:root[data-theme^='glass-'] .n-drawer-content,
+:root[data-theme^='glass-'] .n-modal,
+:root[data-theme^='glass-'] .n-menu,
+:root[data-theme^='glass-'] .n-data-table {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   background-color: var(--glass-bg-overlay) !important;
 }
 
-:is(
-  :root[data-theme^='glass-'],
-  :root[data-theme='minimal-glass']
-) :is(aside, .app-topbar) {
+:root[data-theme^='glass-'] aside,
+:root[data-theme^='glass-'] .app-topbar,
+:root[data-theme^='glass-'] .app-sidebar {
   backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 8px)) saturate(var(--glass-saturate));
 }
 
-:is(
-  :root[data-theme^='glass-'],
-  :root[data-theme='minimal-glass']
-) :is(.n-input .n-input__textarea-el, .n-input .n-input-wrapper, .n-input, textarea) {
+:root[data-theme^='glass-'] .composer-shell {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+:root[data-theme^='glass-'] .n-input .n-input__textarea-el,
+:root[data-theme^='glass-'] .n-input .n-input-wrapper,
+:root[data-theme^='glass-'] .n-input,
+:root[data-theme^='glass-'] textarea {
   background-color: var(--bg-elevate) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-:is(
-  :root[data-theme^='glass-'],
-  :root[data-theme='minimal-glass']
-) :is(.shadow-\[var\(--shadow-1\)\], .shadow-\[var\(--shadow-2\)\]) {
+:root[data-theme^='glass-'] .shadow-\[var\(--shadow-1\)\],
+:root[data-theme^='glass-'] .shadow-\[var\(--shadow-2\)\] {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
@@ -334,6 +332,136 @@ body {
 :root[data-theme='glass-tokyo'] .n-base-selection,
 :root[data-theme='glass-tokyo'] .n-input-wrapper {
   background-color: rgba(26, 27, 38, 0.6) !important;
+}
+
+/* =================================================================
+   Per-theme component refinements
+   Each block below tunes the *components* (composer, buttons, inputs,
+   tabs) so they feel native to the chosen theme — not just a recolored
+   default. The CSS variables above already cover background and text
+   color; these rules add the personality (radii, hover affordances,
+   send-button fill, etc.).
+   ================================================================= */
+
+/* Codex Light: flat, near-monochrome. Composer feels like a Mac
+ * native search field; send button is solid black with white arrow. */
+:root[data-theme='codex-light'] .composer-shell {
+  border-radius: 24px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+:root[data-theme='codex-light'] .composer-shell:focus-within {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+:root[data-theme='codex-light'] .composer-send-btn {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+:root[data-theme='codex-light'] .composer-send-btn:hover:not(:disabled) {
+  background: #000;
+}
+:root[data-theme='codex-light'] .topbar-icon-button:hover {
+  background: #f4f4f5;
+}
+:root[data-theme='codex-light'] .n-input,
+:root[data-theme='codex-light'] .n-base-selection {
+  --n-border-radius: 10px;
+}
+:root[data-theme='codex-light'] .n-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Codex Dark: composer sits on near-black with a soft halo; chips
+ * use slightly elevated bg. Inputs blend into the background. */
+:root[data-theme='codex-dark'] .composer-shell {
+  border-radius: 24px;
+  background: #1a1a1a;
+  border-color: #2a2a2a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+:root[data-theme='codex-dark'] .composer-shell:focus-within {
+  border-color: #3a3a3a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+:root[data-theme='codex-dark'] .composer-send-btn {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+:root[data-theme='codex-dark'] .composer-send-btn:hover:not(:disabled) {
+  background: #e5e5e5;
+}
+:root[data-theme='codex-dark'] .composer-icon-btn:hover,
+:root[data-theme='codex-dark'] .topbar-icon-button:hover {
+  background: #262626;
+}
+:root[data-theme='codex-dark'] .strategy-chip:hover,
+:root[data-theme='codex-dark'] .strategy-chip.is-active {
+  background: #262626;
+}
+:root[data-theme='codex-dark'] .n-card,
+:root[data-theme='codex-dark'] .n-modal {
+  background-color: #171717 !important;
+  border-color: #2a2a2a !important;
+}
+
+/* GitHub Primer: blue-accented light theme. Composer/cards have a
+ * 1px Primer border; primary buttons use the GH blue. */
+:root[data-theme='github-primer'] .composer-shell {
+  border-radius: 12px;
+  border-color: #d0d7de;
+  box-shadow: none;
+}
+:root[data-theme='github-primer'] .composer-shell:focus-within {
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+}
+:root[data-theme='github-primer'] .composer-send-btn {
+  background: #0969da;
+  color: #ffffff;
+}
+:root[data-theme='github-primer'] .composer-send-btn:hover:not(:disabled) {
+  background: #0860c7;
+}
+:root[data-theme='github-primer'] .composer-icon-btn:hover,
+:root[data-theme='github-primer'] .topbar-icon-button:hover {
+  background: rgba(208, 215, 222, 0.32);
+}
+:root[data-theme='github-primer'] .strategy-chip:hover {
+  background: rgba(9, 105, 218, 0.08);
+}
+:root[data-theme='github-primer'] .strategy-chip.is-active {
+  background: rgba(9, 105, 218, 0.12);
+  color: #0969da;
+}
+:root[data-theme='github-primer'] .n-card {
+  border-radius: 6px;
+  border-color: #d0d7de !important;
+}
+
+/* Glass Minimal: composer floats on the wallpaper with a soft glow;
+ * everything is translucent white. */
+:root[data-theme='glass-minimal'] .composer-shell {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+}
+:root[data-theme='glass-minimal'] .composer-shell:focus-within {
+  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+}
+:root[data-theme='glass-minimal'] .composer-send-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
+:root[data-theme='glass-minimal'] .composer-icon-btn:hover,
+:root[data-theme='glass-minimal'] .topbar-icon-button:hover,
+:root[data-theme='glass-minimal'] .strategy-chip:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+:root[data-theme='glass-minimal'] .strategy-chip.is-active {
+  background: rgba(255, 255, 255, 0.75);
+  color: #0f172a;
 }
 
 .skip-main {
