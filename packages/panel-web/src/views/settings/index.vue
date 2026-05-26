@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { NTabs, NTab } from 'naive-ui';
 import SectionAppearance from '@/components/settings/SectionAppearance.vue';
+import SectionProviders from '@/components/settings/SectionProviders.vue';
 import SectionLanguage from '@/components/settings/SectionLanguage.vue';
 import SectionHotkeys from '@/components/settings/SectionHotkeys.vue';
 import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
@@ -11,11 +13,13 @@ import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
 const { isMobile } = useBreakpoint();
+const route = useRoute();
 
 interface AnchorItem { key: string; label: string }
 
 const anchors: AnchorItem[] = [
   { key: 'appearance', label: 'settings.anchor.appearance' },
+  { key: 'providers', label: 'settings.anchor.providers' },
   { key: 'language', label: 'settings.anchor.language' },
   { key: 'hotkeys', label: 'settings.anchor.hotkeys' },
   { key: 'advanced', label: 'settings.anchor.advanced' },
@@ -60,6 +64,12 @@ onMounted(() => {
   for (const a of anchors) {
     const el = document.getElementById(`settings-section-${a.key}`);
     if (el) observer.observe(el);
+  }
+
+  // Jump to anchor if route hash points at a known section, e.g. /settings#providers
+  const hash = route.hash.replace(/^#/, '');
+  if (hash && anchors.some(a => a.key === hash)) {
+    void nextTick(() => goTo(hash));
   }
 });
 
@@ -131,6 +141,9 @@ onBeforeUnmount(() => {
       >
         <section id="settings-section-appearance" class="scroll-mt-24">
           <SectionAppearance />
+        </section>
+        <section id="settings-section-providers" class="scroll-mt-24">
+          <SectionProviders />
         </section>
         <section id="settings-section-language" class="scroll-mt-24">
           <SectionLanguage />

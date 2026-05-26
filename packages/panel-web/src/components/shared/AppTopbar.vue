@@ -7,6 +7,7 @@ import { useSystemStore } from '@/stores/system';
 import { setLocale } from '@/locales';
 import StatusBadge from './StatusBadge.vue';
 import NotificationBell from './NotificationBell.vue';
+import ModelSwitcher from './ModelSwitcher.vue';
 
 // Backwards-compat emit; no longer wired now that the sidebar is always
 // rendered as a fixed left rail.
@@ -61,17 +62,17 @@ const pageTitle = computed(() => {
 
 const pageSubtitle = computed(() => {
   const map: Record<string, string> = {
-    '/dashboard': 'Overview',
-    '/chat': 'Conversation',
-    '/sessions': 'History',
-    '/workspaces': 'Profiles',
-    '/cron': 'Automation',
-    '/memory': 'Knowledge',
-    '/tools': 'Integrations',
-    '/developer': 'Diagnostics',
-    '/settings': 'Preferences',
+    '/dashboard': t('nav.subtitle.dashboard'),
+    '/chat': t('nav.subtitle.chat'),
+    '/sessions': t('nav.subtitle.sessions'),
+    '/workspaces': t('nav.subtitle.workspaces'),
+    '/cron': t('nav.subtitle.cron'),
+    '/memory': t('nav.subtitle.memory'),
+    '/tools': t('nav.subtitle.tools'),
+    '/developer': t('nav.subtitle.developer'),
+    '/settings': t('nav.subtitle.settings'),
   };
-  return map[route.path] ?? 'Console';
+  return map[route.path] ?? t('nav.subtitle.console');
 });
 
 function toggleLocale(): void {
@@ -90,6 +91,7 @@ function toggleLocale(): void {
       <h1 v-if="pageTitle" class="text-[15px] font-semibold leading-5 truncate text-[var(--text-1)]">{{ pageTitle }}</h1>
     </div>
     <div class="flex-1" />
+    <ModelSwitcher />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />
     <button
