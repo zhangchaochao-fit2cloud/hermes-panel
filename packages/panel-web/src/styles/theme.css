@@ -826,3 +826,168 @@ body {
     transform: none;
   }
 }
+
+/* =================================================================
+   Prose typography for markdown-rendered assistant messages
+   Class: .prose-md
+   ================================================================= */
+.prose-md {
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.65;
+  word-wrap: break-word;
+}
+.prose-md > :first-child { margin-top: 0; }
+.prose-md > :last-child  { margin-bottom: 0; }
+
+.prose-md p {
+  margin: 0.7em 0;
+}
+
+.prose-md h1, .prose-md h2, .prose-md h3,
+.prose-md h4, .prose-md h5, .prose-md h6 {
+  color: var(--text-1);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.2em 0 0.5em;
+}
+.prose-md h1 { font-size: 1.5em; }
+.prose-md h2 { font-size: 1.3em; padding-bottom: 0.25em; border-bottom: 1px solid var(--border); }
+.prose-md h3 { font-size: 1.15em; }
+.prose-md h4 { font-size: 1.05em; }
+.prose-md h5 { font-size: 1em; }
+.prose-md h6 { font-size: 0.9em; color: var(--text-2); }
+
+.prose-md a {
+  color: var(--brand-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-md a:hover { color: var(--brand-500); }
+
+/* Inline code: tinted bg, slightly smaller, no line break. */
+.prose-md code:not(pre code) {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.88em;
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--text-1) 8%, transparent);
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+/* Fenced code blocks: own background, scrollable, monospaced. */
+.prose-md pre {
+  margin: 0.9em 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg-elevate);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-1);
+}
+.prose-md pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.prose-md pre.hljs {
+  /* hljs writes its own tokens but we own the container */
+}
+
+/* Lists */
+.prose-md ul, .prose-md ol {
+  margin: 0.6em 0;
+  padding-left: 1.5em;
+}
+.prose-md ul { list-style: disc; }
+.prose-md ol { list-style: decimal; }
+.prose-md li { margin: 0.2em 0; }
+.prose-md li > p { margin: 0.2em 0; }
+.prose-md li > ul, .prose-md li > ol { margin: 0.2em 0; }
+
+.prose-md blockquote {
+  margin: 0.8em 0;
+  padding: 0.4em 1em;
+  border-left: 3px solid var(--border);
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+.prose-md blockquote p:first-child { margin-top: 0; }
+.prose-md blockquote p:last-child  { margin-bottom: 0; }
+
+.prose-md hr {
+  margin: 1.2em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Tables — scrollable wrapper added by markdown.ts; bare table here. */
+.md-table-scroll {
+  overflow-x: auto;
+  margin: 0.9em 0;
+}
+.prose-md table {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: max-content;
+  min-width: 60%;
+}
+.prose-md th, .prose-md td {
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  text-align: left;
+}
+.prose-md th {
+  background: var(--bg-elevate);
+  font-weight: 600;
+  color: var(--text-1);
+}
+.prose-md tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--text-1) 3%, transparent);
+}
+
+/* Images stay within bubble. */
+.prose-md img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+/* strong / em — explicit so the model-output palette stays consistent. */
+.prose-md strong { color: var(--text-1); font-weight: 600; }
+.prose-md em     { color: var(--text-1); font-style: italic; }
+
+/* hljs token palette — uses theme variables so it adapts to dark/light. */
+.hljs { color: var(--text-1); background: transparent; }
+.hljs-comment, .hljs-quote { color: var(--text-3); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-section, .hljs-link,
+.hljs-meta, .hljs-doctag { color: color-mix(in srgb, var(--brand-500) 70%, var(--text-1)); }
+.hljs-string, .hljs-attr, .hljs-attribute, .hljs-symbol, .hljs-bullet,
+.hljs-addition { color: #22c55e; }
+.hljs-number, .hljs-literal, .hljs-built_in, .hljs-builtin-name,
+.hljs-variable, .hljs-template-variable, .hljs-type {
+  color: #f59e0b;
+}
+.hljs-title, .hljs-name, .hljs-selector-id, .hljs-selector-class,
+.hljs-class .hljs-title, .hljs-function .hljs-title, .hljs-strong {
+  color: color-mix(in srgb, var(--brand-500) 80%, var(--text-1));
+  font-weight: 600;
+}
+.hljs-tag, .hljs-tag .hljs-name { color: #ec4899; }
+.hljs-deletion { color: #ef4444; }
+.hljs-regexp { color: #f59e0b; }
+
+/* Dark-mode hljs adjustments — slightly brighter strings, milder
+ * comments so they don't disappear against #0d0d0d. */
+:root[data-theme='dark'] .hljs-comment,
+:root[data-theme='codex-dark'] .hljs-comment,
+:root[data-theme='glass-tokyo'] .hljs-comment {
+  color: #6b7280;
+}
+

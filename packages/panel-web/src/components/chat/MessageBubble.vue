@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import { NButton, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useBreakpoint } from '@/composables/use-breakpoint';
+import { renderMarkdown } from '@/utils/markdown';
 import ToolCallCard from './ToolCallCard.vue';
 
 const props = defineProps<{ message: ChatMessage }>();
@@ -24,6 +25,18 @@ const showLocalMetrics = false as const;
 
 const isUser = computed(() => props.message.role === 'user');
 const isAssistant = computed(() => props.message.role === 'assistant');
+
+/**
+ * Render assistant content through markdown-it; leave user content as
+ * plain text. User input rendering would mean a stray "# foo" turns
+ * into a giant heading — surprising and rarely intended.
+ *
+ * markdown-it is robust against partial input, so streaming half-formed
+ * fences still render gracefully (the unclosed token shows as text).
+ */
+const renderedHtml = computed(() =>
+  isAssistant.value ? renderMarkdown(props.message.content) : '',
+);
 // Treat truthy `edited` as the marker. Field isn't on ChatMessage yet — soft read.
 const isEdited = computed(
   () => (props.message as unknown as { edited?: boolean }).edited === true,
@@ -164,9 +177,21 @@ function onFeedback(kind: 'up' | 'down'): void {
         </div>
 
         <!-- content -->
-        <div class="whitespace-pre-wrap text-sm leading-relaxed">
-          {{ message.content }}<span
-            v-if="isAssistant && !message.completed"
+        <!--
+          User text stays plain (whitespace-pre-wrap) so their literal
+          input is preserved without accidental markdown rendering.
+          Assistant content is markdown — rendered via markdown-it which
+          handles partial / streaming input gracefully.
+        -->
+        <div v-if="isUser" class="whitespace-pre-wrap text-sm leading-relaxed">
+          {{ message.content }}
+        </div>
+        <div v-else class="prose-md text-sm leading-relaxed">
+          <!-- eslint-disable vue/no-v-html -->
+          <div v-html="renderedHtml" />
+          <!-- eslint-enable vue/no-v-html -->
+          <span
+            v-if="!message.completed"
             class="cursor-blink inline-block w-[2px] h-[1em] align-middle bg-current opacity-70 ml-0.5"
           />
         </div>
