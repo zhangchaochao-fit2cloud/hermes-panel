@@ -1,9 +1,33 @@
 import Router from '@koa/router';
-import { listProfiles, profileUse, listCron, cronAction, createCron } from '../services/hermes-profile-cron.js';
+import { listProfiles, profileUse, createProfile, listCron, cronAction, createCron, type CloneMode } from '../services/hermes-profile-cron.js';
 
 export const profileCronRouter = new Router();
 
 profileCronRouter.get('/profiles', async ctx => { ctx.body = await listProfiles(); });
+
+profileCronRouter.post('/profiles', async ctx => {
+  const body = ctx.request.body as {
+    name?: string; cloneMode?: CloneMode; cloneFrom?: string; noAlias?: boolean;
+  } | undefined;
+  if (!body?.name) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'BAD_REQUEST', message: 'name is required' } };
+    return;
+  }
+  const r = await createProfile({
+    name: body.name,
+    cloneMode: body.cloneMode,
+    cloneFrom: body.cloneFrom,
+    noAlias: body.noAlias,
+  });
+  if (!r.ok) {
+    const userErrors = new Set(['NAME_REQUIRED', 'INVALID_NAME', 'CLONE_FROM_REQUIRED']);
+    ctx.status = userErrors.has(r.error ?? '') ? 400 : 502;
+    ctx.body = { error: { code: r.error ?? 'PROFILE_CREATE_FAILED', message: 'failed' } };
+    return;
+  }
+  ctx.body = { ok: true };
+});
 
 profileCronRouter.post('/profiles/:name/use', async ctx => {
   const r = await profileUse(ctx.params.name);

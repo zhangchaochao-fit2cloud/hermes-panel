@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { NButton, NTag, NSkeleton, NTooltip, useMessage } from 'naive-ui';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { useWorkspacesStore, type ProfileInfo } from '@/stores/workspaces';
+import CreateProfileModal from './CreateProfileModal.vue';
 
+const { t } = useI18n();
 const store = useWorkspacesStore();
 const message = useMessage();
 const {
@@ -17,20 +20,18 @@ const otherProfiles = computed<ProfileInfo[]>(() =>
   profiles.value.filter(p => !p.current),
 );
 
+const createOpen = ref(false);
+
 async function switchTo(name: string): Promise<void> {
   const ok = await store.useProfile(name);
   if (ok) {
-    message.success(`已切换到 Profile: ${name}`, { duration: 2500 });
+    message.success(t('workspaces.profile.switched', { name }), { duration: 2500 });
   } else {
-    message.error(`切换 Profile 失败: ${store.error ?? '未知错误'}`, {
+    message.error(t('workspaces.profile.switchFailed', { error: store.error ?? '' }), {
       duration: 4000,
       closable: true,
     });
   }
-}
-
-function comingSoon(): void {
-  message.info('新建 Profile 功能将在 v0.2 提供', { duration: 2000 });
 }
 </script>
 
@@ -39,9 +40,9 @@ function comingSoon(): void {
     class="rounded-[12px] border border-[var(--border)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-1)]"
   >
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold text-[var(--text-1)]">Hermes Profile</h2>
-      <NButton size="small" quaternary @click="comingSoon">
-        + 新建 Profile
+      <h2 class="text-sm font-semibold text-[var(--text-1)]">{{ t('workspaces.profile.title') }}</h2>
+      <NButton size="small" quaternary @click="createOpen = true">
+        {{ t('workspaces.profile.createBtn') }}
       </NButton>
     </div>
 
@@ -54,7 +55,7 @@ function comingSoon(): void {
     <template v-else>
       <!-- Current profile -->
       <div v-if="currentProfile" class="flex items-center gap-2 flex-wrap">
-        <span class="text-xs text-[var(--text-3)]">当前：</span>
+        <span class="text-xs text-[var(--text-3)]">{{ t('workspaces.profile.current') }}</span>
         <span class="inline-flex items-center gap-1.5 font-mono text-sm font-medium">
           <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
           {{ currentProfile.name }}
@@ -76,12 +77,12 @@ function comingSoon(): void {
         </NTag>
       </div>
       <div v-else class="text-xs text-[var(--text-3)]">
-        未检测到激活的 profile
+        {{ t('workspaces.profile.none') }}
       </div>
 
       <!-- Other profiles -->
       <div v-if="otherProfiles.length > 0" class="mt-3 flex items-center gap-2 flex-wrap">
-        <span class="text-xs text-[var(--text-3)]">其他：</span>
+        <span class="text-xs text-[var(--text-3)]">{{ t('workspaces.profile.others') }}</span>
         <NTooltip
           v-for="p in otherProfiles"
           :key="p.name"
@@ -100,9 +101,11 @@ function comingSoon(): void {
               </span>
             </NButton>
           </template>
-          点击切换到该 Profile
+          {{ t('workspaces.profile.switchTooltip') }}
         </NTooltip>
       </div>
     </template>
+
+    <CreateProfileModal v-model:show="createOpen" />
   </div>
 </template>

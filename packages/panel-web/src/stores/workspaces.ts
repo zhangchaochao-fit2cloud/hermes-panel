@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { bffFetch } from '@/api/bff';
+import { bffFetch, type BffApiError } from '@/api/bff';
 import { BUILT_IN_WORKSPACES, type WorkspaceTemplate } from '@/data/workspaces';
 
 /**
@@ -90,6 +90,27 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     }
   }
 
+  interface CreateProfileInput {
+    name: string;
+    cloneMode?: 'none' | 'config' | 'all' | 'from';
+    cloneFrom?: string;
+    noAlias?: boolean;
+  }
+
+  async function createProfile(input: CreateProfileInput): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await bffFetch<{ ok: boolean }>('/api/profiles', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+      await loadProfiles();
+      return { ok: true };
+    } catch (err) {
+      const e = err as BffApiError;
+      return { ok: false, error: e.code ?? e.message ?? 'PROFILE_CREATE_FAILED' };
+    }
+  }
+
   return {
     // state
     templates,
@@ -106,5 +127,6 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     deactivate,
     loadProfiles,
     useProfile,
+    createProfile,
   };
 });

@@ -166,3 +166,48 @@ export async function profileUse(name: string): Promise<{ ok: boolean; error?: s
     throw err;
   }
 }
+
+export type CloneMode = 'none' | 'config' | 'all' | 'from';
+
+export interface CreateProfileInput {
+  name: string;
+  cloneMode?: CloneMode;
+  cloneFrom?: string;
+  noAlias?: boolean;
+}
+
+/**
+ * Create a new profile via `hermes profile create <name> [flags]`.
+ * cloneMode:
+ *   - 'none'   no clone (default)
+ *   - 'config' --clone        (config.yaml + .env + SOUL.md from active)
+ *   - 'all'    --clone-all    (full state from active)
+ *   - 'from'   --clone-from SRC (requires cloneFrom)
+ */
+export async function createProfile(input: CreateProfileInput): Promise<{ ok: boolean; error?: string }> {
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: 'NAME_REQUIRED' };
+  // hermes constraint: lowercase + alphanumeric (plus dashes/underscores in practice)
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(name)) {
+    return { ok: false, error: 'INVALID_NAME' };
+  }
+  const mode: CloneMode = input.cloneMode ?? 'none';
+  if (mode === 'from' && !input.cloneFrom?.trim()) {
+    return { ok: false, error: 'CLONE_FROM_REQUIRED' };
+  }
+
+  const args: string[] = ['profile', 'create'];
+  if (mode === 'config') args.push('--clone');
+  else if (mode === 'all') args.push('--clone-all');
+  else if (mode === 'from') args.push('--clone-from', input.cloneFrom!.trim());
+  if (input.noAlias) args.push('--no-alias');
+  args.push(name);
+
+  try {
+    await runHermesCli(args, { timeoutMs: 15_000 });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof HermesCliError) return { ok: false, error: err.code };
+    throw err;
+  }
+}
