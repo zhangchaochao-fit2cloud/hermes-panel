@@ -56,19 +56,21 @@ function go(item: MenuItem): void {
 
 <template>
   <aside
-    class="h-full border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col transition-all duration-200 flex-shrink-0"
+    class="h-full border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col transition-all duration-200 flex-shrink-0 overflow-hidden"
     :class="collapsed ? 'w-[64px]' : 'w-[220px]'"
   >
     <!-- Logo area -->
-    <div class="h-16 flex items-center px-4 border-b border-[var(--border)] gap-2">
+    <div class="h-16 flex items-center px-4 border-b border-[var(--border)] gap-2 flex-shrink-0">
       <div class="w-7 h-7 rounded-md bg-gradient-to-br from-[var(--brand-500)] to-[var(--brand-700)] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
         H
       </div>
       <div v-if="!collapsed" class="text-sm font-semibold whitespace-nowrap">Hermes Panel</div>
     </div>
 
-    <!-- Menu — fixed (no overflow), 9 items fit in any sane viewport -->
-    <nav class="flex-1 min-h-0 py-3">
+    <!-- Menu — explicitly non-scrolling. 9 items fit in any sane viewport,
+         and if a future menu grows we want it to be obvious (overflow-clip)
+         rather than silently scrolling. -->
+    <nav class="flex-1 min-h-0 py-3 overflow-hidden">
       <button
         v-for="item in items"
         :key="item.key"
@@ -90,9 +92,9 @@ function go(item: MenuItem): void {
       </button>
     </nav>
 
-    <!-- Collapse toggle (icon only when collapsed) -->
+    <!-- Collapse toggle (pinned to bottom, doesn't shrink) -->
     <button
-      class="h-10 border-t border-[var(--border)] flex items-center justify-center text-xs opacity-60 hover:opacity-100 hover:bg-[var(--bg-elevate)]"
+      class="h-10 border-t border-[var(--border)] flex items-center justify-center text-xs opacity-60 hover:opacity-100 hover:bg-[var(--bg-elevate)] flex-shrink-0"
       :title="collapsed ? 'Expand' : 'Collapse'"
       @click="collapsed = !collapsed"
     >
