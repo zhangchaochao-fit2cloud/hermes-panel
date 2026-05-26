@@ -708,6 +708,8 @@ export default {
       apply: 'Apply',
       manage: 'Manage providers & API keys',
       providerConfigured: 'Credentials configured for this provider',
+      gatewayRestarted: 'Gateway restarted — new model is live',
+      gatewayRestartFailed: 'Gateway restart failed. Restart it from the Dashboard for the new model to take effect.',
     },
   },
   status: {

@@ -1,5 +1,7 @@
 import Router from '@koa/router';
 import { readProvidersState, setModel, addCredential } from '../services/hermes-providers.js';
+import { startGateway } from '../services/hermes-gateway.js';
+import { logger } from '../lib/logger.js';
 
 export const providersRouter = new Router();
 
@@ -28,7 +30,20 @@ providersRouter.post('/model', async ctx => {
     ctx.body = { error: { code: r.error ?? 'SET_MODEL_FAILED', message: 'failed' } };
     return;
   }
-  ctx.body = { ok: true };
+
+  // Config change only takes effect when the gateway reloads. `hermes gateway
+  // run --replace` swaps the running process in-place; without this the next
+  // chat would still hit the old provider/key and 401.
+  let restartedGateway = false;
+  let restartError: string | undefined;
+  try {
+    await startGateway();
+    restartedGateway = true;
+  } catch (err) {
+    restartError = err instanceof Error ? err.message : String(err);
+    logger.warn({ err }, 'gateway restart after model change failed');
+  }
+  ctx.body = { ok: true, restartedGateway, restartError };
 });
 
 providersRouter.post('/providers/credentials', async ctx => {

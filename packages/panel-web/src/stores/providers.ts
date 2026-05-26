@@ -69,15 +69,28 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
-  async function setModel(input: SetModelInput): Promise<{ ok: boolean; error?: string }> {
+  async function setModel(input: SetModelInput): Promise<{
+    ok: boolean;
+    error?: string;
+    restartedGateway?: boolean;
+    restartError?: string;
+  }> {
     settingModel.value = true;
     try {
-      await bffFetch<{ ok: boolean }>('/api/model', {
+      const r = await bffFetch<{
+        ok: boolean;
+        restartedGateway?: boolean;
+        restartError?: string;
+      }>('/api/model', {
         method: 'POST',
         body: JSON.stringify(input),
       });
       await load();
-      return { ok: true };
+      return {
+        ok: true,
+        restartedGateway: r.restartedGateway,
+        restartError: r.restartError,
+      };
     } catch (err) {
       const e = err as BffApiError;
       return { ok: false, error: e.code ?? e.message ?? 'SET_MODEL_FAILED' };

@@ -51,6 +51,22 @@ function isCurrent(m: KnownModel): boolean {
   return model.value?.default === m.id;
 }
 
+function notifyResult(
+  r: { ok: boolean; error?: string; restartedGateway?: boolean; restartError?: string },
+  label: string,
+): void {
+  if (!r.ok) {
+    message.error(`${t('model.switcher.failed')}: ${r.error ?? ''}`);
+    return;
+  }
+  message.success(t('model.switcher.switched', { name: label }));
+  if (r.restartedGateway) {
+    message.info(t('model.switcher.gatewayRestarted'), { duration: 3500 });
+  } else if (r.restartError) {
+    message.warning(t('model.switcher.gatewayRestartFailed'), { duration: 6000, closable: true });
+  }
+}
+
 async function pickModel(m: KnownModel): Promise<void> {
   if (isCurrent(m)) {
     popoverOpen.value = false;
@@ -61,24 +77,18 @@ async function pickModel(m: KnownModel): Promise<void> {
     provider: m.provider,
     baseUrl: m.baseUrl,
   });
-  if (r.ok) {
-    message.success(t('model.switcher.switched', { name: m.label }));
-    popoverOpen.value = false;
-  } else {
-    message.error(`${t('model.switcher.failed')}: ${r.error ?? ''}`);
-  }
+  notifyResult(r, m.label);
+  if (r.ok) popoverOpen.value = false;
 }
 
 async function applyCustom(): Promise<void> {
   const name = customInput.value.trim();
   if (!name) return;
   const r = await store.setModel({ name });
+  notifyResult(r, name);
   if (r.ok) {
-    message.success(t('model.switcher.switched', { name }));
     customInput.value = '';
     popoverOpen.value = false;
-  } else {
-    message.error(`${t('model.switcher.failed')}: ${r.error ?? ''}`);
   }
 }
 

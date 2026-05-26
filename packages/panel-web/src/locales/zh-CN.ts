@@ -692,6 +692,8 @@ export default {
       apply: '切换',
       manage: '管理供应商与 API Key',
       providerConfigured: '该供应商已配置凭据',
+      gatewayRestarted: '已重启 gateway，新配置已生效',
+      gatewayRestartFailed: 'Gateway 重启失败，请在 Dashboard 手动重启使新模型生效',
     },
   },
   status: {
