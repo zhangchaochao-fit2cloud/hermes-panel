@@ -137,7 +137,7 @@ function onFeedback(kind: 'up' | 'down'): void {
       </div>
 
       <div class="rounded-2xl px-4 py-2.5 bg-[var(--bg-elevate)] border border-[var(--border)] text-[var(--text-1)]">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed">{{ message.content }}</div>
+        <div class="whitespace-pre-wrap text-[14px] font-normal leading-[1.55]">{{ message.content }}</div>
         <div
           v-if="isEdited"
           class="mt-1 text-[11px] opacity-50 italic"
