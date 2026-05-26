@@ -17,10 +17,12 @@ const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
 const STORAGE_MODE = 'panel.themeMode';
 const STORAGE_COLOR = 'panel.themeColor';
 const STORAGE_FONT = 'panel.fontSize';
+const STORAGE_ROUTE_TABS = 'panel.routeTabsEnabled';
 
 const DEFAULT_MODE: ThemeMode = 'auto';
 const DEFAULT_COLOR = '#1677ff';
 const DEFAULT_FONT: FontSize = 'medium';
+const DEFAULT_ROUTE_TABS = true;
 
 const FONT_PX: Record<FontSize, string> = {
   small: '13px',
@@ -48,6 +50,13 @@ function readColor(): string {
 function readFont(): FontSize {
   const v = localStorage.getItem(STORAGE_FONT);
   return v === 'small' || v === 'medium' || v === 'large' ? v : DEFAULT_FONT;
+}
+
+function readRouteTabs(): boolean {
+  const v = localStorage.getItem(STORAGE_ROUTE_TABS);
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  return DEFAULT_ROUTE_TABS;
 }
 
 function prefersDark(): boolean {
@@ -84,6 +93,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
   const mode = ref<ThemeMode>(readMode());
   const color = ref<string>(readColor());
   const fontSize = ref<FontSize>(readFont());
+  const routeTabsEnabled = ref<boolean>(readRouteTabs());
 
   // Tracks the current OS color-scheme preference so `effectiveDark` is reactive
   // when the user picks "auto".
@@ -131,6 +141,11 @@ export const useAppearanceStore = defineStore('appearance', () => {
     applyFontSize(v);
   }
 
+  function setRouteTabsEnabled(v: boolean): void {
+    routeTabsEnabled.value = v;
+    localStorage.setItem(STORAGE_ROUTE_TABS, String(v));
+  }
+
   /**
    * Initialise: read from localStorage, apply to DOM, bind OS listener.
    * Safe to call multiple times.
@@ -151,11 +166,13 @@ export const useAppearanceStore = defineStore('appearance', () => {
     mode,
     color,
     fontSize,
+    routeTabsEnabled,
     effectiveDark,
     isGlass,
     setMode,
     setColor,
     setFontSize,
+    setRouteTabsEnabled,
     init,
   };
 });

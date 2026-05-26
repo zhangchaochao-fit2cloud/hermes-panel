@@ -296,6 +296,10 @@ export default {
       },
       color: { label: '主题色' },
       font: { label: '字号', small: '小', medium: '中', large: '大' },
+      routeTabs: {
+        label: '路由标签栏',
+        hint: '在顶栏下方显示页面标签栏，可快速切换页面',
+      },
     },
     language: { title: '语言', desc: '选择界面显示语言' },
     hotkeys: {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
+import { NSwitch } from 'naive-ui';
 import { useAppearanceStore, type FontSize, type ThemeMode } from '@/stores/appearance';
 
 const { t } = useI18n();
 const store = useAppearanceStore();
-const { mode, color, fontSize } = storeToRefs(store);
+const { mode, color, fontSize, routeTabsEnabled } = storeToRefs(store);
 
 interface ModeOption {
   value: ThemeMode;
@@ -119,7 +120,7 @@ const fontOptions: FontOption[] = [
     </div>
 
     <!-- Font size -->
-    <div>
+    <div class="mb-8">
       <div class="text-sm font-medium mb-3">{{ t('settings.appearance.font.label') }}</div>
       <div class="inline-flex border border-[var(--border)] rounded-md overflow-hidden">
         <button
@@ -137,6 +138,20 @@ const fontOptions: FontOption[] = [
           {{ t(opt.labelKey) }}
           <span class="opacity-60 ml-1 text-xs">{{ opt.px }}px</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Route tabs toggle -->
+    <div>
+      <div class="text-sm font-medium mb-1">{{ t('settings.appearance.routeTabs.label') }}</div>
+      <div class="flex items-center gap-3">
+        <NSwitch
+          :value="routeTabsEnabled"
+          @update:value="(v: boolean) => store.setRouteTabsEnabled(v)"
+        />
+        <span class="text-xs text-[var(--text-3)]">
+          {{ t('settings.appearance.routeTabs.hint') }}
+        </span>
       </div>
     </div>
   </div>

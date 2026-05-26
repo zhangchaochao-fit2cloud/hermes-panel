@@ -297,6 +297,10 @@ export default {
       },
       color: { label: 'Theme color' },
       font: { label: 'Font size', small: 'Small', medium: 'Medium', large: 'Large' },
+      routeTabs: {
+        label: 'Route tabs bar',
+        hint: 'Show a page tabs bar under the topbar for quick switching',
+      },
     },
     language: { title: 'Language', desc: 'Interface language' },
     hotkeys: {
