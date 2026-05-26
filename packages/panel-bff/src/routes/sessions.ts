@@ -103,7 +103,7 @@ sessionsRouter.get('/sessions/:id', ctx => {
 
 sessionsRouter.delete('/sessions/:id', async ctx => {
   try {
-    const result = await runHermesCli(['sessions', 'delete', ctx.params.id, '--force'], { timeoutMs: 5000 });
+    const result = await runHermesCli(['sessions', 'delete', ctx.params.id, '--yes'], { timeoutMs: 5000 });
     ctx.body = { deleted: true, output: result.stdout.trim() };
   } catch (err) {
     if (err instanceof HermesCliError) {
