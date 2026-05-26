@@ -153,16 +153,20 @@
    Codex · Dark — near-black background, soft white text
    ================================================================= */
 :root[data-theme='codex-dark'] {
-  --brand-500: #fafafa;
-  --brand-600: #ffffff;
-  --brand-700: #e5e5e5;
+  /* brand kept as a real accent color (not white) so components that
+   * use `bg-[var(--brand-500)] text-white` stay legible. The page chrome
+   * is still near-black and the accent is reserved for selection
+   * highlights / active states. */
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
   --bg-page: #0d0d0d;
   --bg-card: #171717;
   --bg-elevate: #1f1f1f;
   --border: #2a2a2a;
   --text-1: #fafafa;
-  --text-2: #a3a3a3;
-  --text-3: #737373;
+  --text-2: #d4d4d4;
+  --text-3: #a3a3a3;
   --body-bg: #0d0d0d;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
