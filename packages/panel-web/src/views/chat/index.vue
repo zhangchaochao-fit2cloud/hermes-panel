@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onMounted, ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
@@ -17,6 +17,7 @@ import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
 import { useSessionsStore } from '@/stores/sessions';
 import { detectMention, type RoleDef } from '@/data/roles';
 import { useWorkspacesStore } from '@/stores/workspaces';
+import { chatToMarkdown } from '@/utils/chat-to-md';
 
 const { t } = useI18n();
 const session = useSessionStore();
@@ -102,7 +103,7 @@ async function loadSession(id: string): Promise<void> {
     }
     message.success(t('chat.resumed', { id: id.slice(0, 8) }), { duration: 2000 });
   } catch (err) {
-    message.error(`恢复会话失败: ${(err as Error).message}`, { duration: 5000 });
+    message.error(t('chat.resumeFailed', { error: (err as Error).message }), { duration: 5000 });
   } finally {
     resumingSession.value = false;
   }
@@ -118,7 +119,7 @@ async function pickUpDraft(): Promise<void> {
     if (r.draft?.prompt) {
       const c = composerRef.value as { setText?: (v: string) => void } | null;
       c?.setText?.(r.draft.prompt);
-      message.info(`Loaded draft from ${r.draft.source}`, { duration: 2500 });
+      message.info(t('chat.draftLoaded', { source: r.draft.source }), { duration: 2500 });
       // Consume so we don't re-fill on the next mount
       await bffFetch('/api/draft', { method: 'DELETE', silent: true }).catch(() => { /* ignore */ });
     }
@@ -131,7 +132,7 @@ onMounted(async () => {
   await system.refresh();
   await system.loadToken();
   if (system.error) {
-    message.error(`Init failed: ${system.error}`, { duration: 0, closable: true });
+    message.error(t('chat.initFailed', { error: system.error }), { duration: 0, closable: true });
   }
 
   const resumeId = route.query.resume as string | undefined;
@@ -176,12 +177,12 @@ watch(state, (s, prev) => {
     const detail = lastError.value ?? t('error.unknown');
     const headline = {
       HERMES_API_UNREACHABLE: t('error.hermes_not_found'),
-      HERMES_API_UNAUTHORIZED: '认证失败：API key 无效或缺失',
-      HERMES_API_SERVER_ERROR: 'Hermes 内部错误',
-      HERMES_API_BAD_REQUEST: '请求被拒绝',
-      HERMES_RUN_ERROR: '运行失败',
-      UNKNOWN: '出错了',
-    }[code] ?? '出错了';
+      HERMES_API_UNAUTHORIZED: t('chat.errors.unauthorized'),
+      HERMES_API_SERVER_ERROR: t('chat.errors.serverError'),
+      HERMES_API_BAD_REQUEST: t('chat.errors.badRequest'),
+      HERMES_RUN_ERROR: t('chat.errors.runError'),
+      UNKNOWN: t('error.boundaryTitle'),
+    }[code] ?? t('error.boundaryTitle');
 
     // Show the raw error detail so users can self-diagnose (dev-friendly).
     const full = `${headline}\n${detail}`;
@@ -190,15 +191,15 @@ watch(state, (s, prev) => {
   }
 });
 
-const sampleQuestions = [
-  '帮我查下今天的天气',
-  '用 Vue 3 写一个 todo 组件',
-  '解释一下 Tauri 和 Electron 的区别',
-];
+const sampleQuestions = computed(() => [
+  t('chat.samples.weather'),
+  t('chat.samples.todo'),
+  t('chat.samples.tauri'),
+]);
 
 async function onSend(text: string): Promise<void> {
   if (!system.health?.hermes.running) {
-    message.warning('Hermes 还没准备好，请稍等几秒...', { duration: 3000 });
+    message.warning(t('chat.hermesNotReady'), { duration: 3000 });
     void system.refresh();
     return;
   }
@@ -218,6 +219,37 @@ function onStop(): void {
 function trySample(q: string): void {
   void onSend(q);
 }
+
+// Export the current chat as a self-contained Markdown file. Generated
+// client-side from the session store — no BFF round-trip — so it works
+// offline and never leaks message text past the browser.
+function exportMarkdown(): void {
+  if (messages.value.length === 0) {
+    message.warning(t('chat.export.empty'), { duration: 2500 });
+    return;
+  }
+  // Title preference: the sidebar's row for the current session, falling back
+  // to "Untitled session" handled inside chatToMarkdown().
+  const title = sessionsList.items.find(s => s.id === session.sessionId)?.title;
+  const md = chatToMarkdown(messages.value, title);
+  // Filename: prefer the 8-char session-id prefix for traceability; otherwise
+  // a timestamp keeps multi-export sessions from clobbering each other.
+  const slug = session.sessionId
+    ? session.sessionId.slice(0, 8)
+    : new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = `hermes-chat-${slug}.md`;
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Revoke on next tick so Safari has time to start the download.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  message.success(t('chat.export.success', { filename }), { duration: 2500 });
+}
 </script>
 
 <template>
@@ -234,6 +266,22 @@ function trySample(q: string): void {
     />
     <main class="relative flex-1 flex flex-col min-w-0 min-h-0">
       <div ref="scroller" class="relative flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        <!-- Export pill: sits in the top-right of the scroller, just above the
+             ChatNavigator track. Hidden when there are no messages so we
+             don't show a disabled-looking button on the empty state. -->
+        <button
+          v-if="messages.length > 0"
+          type="button"
+          class="absolute right-3 top-3 z-20 inline-flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] text-xs text-[var(--text-1)] hover:bg-[var(--bg-elevate)] cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="messages.length === 0"
+          :title="t('chat.export.label')"
+          @click="exportMarkdown"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 11V3M4 7l4 4 4-4M3 13h10" />
+          </svg>
+          <span>{{ t('chat.export.label') }}</span>
+        </button>
         <div
           v-if="resumingSession"
           class="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-page)]/70 backdrop-blur-[1px]"

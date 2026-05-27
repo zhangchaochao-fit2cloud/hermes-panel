@@ -13,7 +13,7 @@ const { t } = useI18n();
 const router = useRouter();
 const store = useProvidersStore();
 const message = useMessage();
-const { model, providers, loading, initialized, settingModel } = storeToRefs(store);
+const { model, providers, loading, initialized, settingModel, activeCredentialLabel } = storeToRefs(store);
 
 const popoverOpen = ref(false);
 const customInput = ref('');
@@ -135,14 +135,26 @@ function shortHost(url: string): string {
   >
     <template #trigger>
       <button
-        class="h-8 px-3 inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] text-xs font-medium text-[var(--text-2)] hover:text-[var(--brand-600)] hover:border-[var(--brand-500)] transition-colors max-w-[260px]"
+        class="w-[260px] px-3 py-1 inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] text-xs font-medium text-[var(--text-2)] hover:text-[var(--brand-600)] hover:border-[var(--brand-500)] transition-colors"
+        :class="activeCredentialLabel ? 'max-h-14' : 'h-8'"
         :title="t('model.switcher.tooltip')"
       >
-        <span class="text-[var(--text-3)] text-[10px] uppercase tracking-wider flex-shrink-0">
-          {{ providerLabel }}
-        </span>
-        <span class="text-[var(--text-3)] flex-shrink-0">·</span>
-        <span class="truncate font-mono">{{ currentLabel }}</span>
+        <div class="min-w-0 flex-1 flex flex-col items-start gap-0.5">
+          <div class="w-full inline-flex items-center gap-2 min-w-0">
+            <span class="text-[var(--text-3)] text-[10px] uppercase tracking-wider flex-shrink-0">
+              {{ providerLabel }}
+            </span>
+            <span class="text-[var(--text-3)] flex-shrink-0">·</span>
+            <span class="truncate font-mono">{{ currentLabel }}</span>
+          </div>
+          <div
+            v-if="activeCredentialLabel"
+            class="w-full truncate text-[10px] text-[var(--text-3)] font-normal leading-tight"
+            :title="activeCredentialLabel"
+          >
+            {{ activeCredentialLabel }}
+          </div>
+        </div>
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" class="flex-shrink-0 opacity-60">
           <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>

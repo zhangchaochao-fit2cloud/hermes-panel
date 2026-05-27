@@ -13,6 +13,8 @@ import ModelPieChart, { type ModelStatPoint } from '@/components/dashboard/Model
 import RecentSessions from '@/components/dashboard/RecentSessions.vue';
 import CacheCard from '@/components/dashboard/CacheCard.vue';
 import MonthlyPaceCard from '@/components/dashboard/MonthlyPaceCard.vue';
+import UsageCard from '@/components/dashboard/UsageCard.vue';
+import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
 
 interface OverallStats {
   total_sessions: number;
@@ -152,10 +154,14 @@ const todayUsdLabel = computed(() => {
         />
       </section>
 
-      <!-- Token optimization row (spec §11) -->
-      <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <!-- Persistent usage ledger (today / this month / all time) -->
+      <UsageCard />
+
+      <!-- Token optimization row (spec §11) + at-a-glance system health -->
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <CacheCard />
         <MonthlyPaceCard />
+        <SystemHealthCard />
       </section>
 
       <!-- Charts: 2:1 on lg, stacked on md -->

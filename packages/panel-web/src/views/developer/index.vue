@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { NTabs, NTabPane } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import ApiPlayground from '@/components/developer/ApiPlayground.vue';
 import SSEInspector from '@/components/developer/SSEInspector.vue';
 import CodeGen from '@/components/developer/CodeGen.vue';
@@ -10,7 +11,27 @@ import LogsViewer from '@/components/developer/LogsViewer.vue';
 import DoctorPanel from '@/components/developer/DoctorPanel.vue';
 
 const { t } = useI18n();
-const tab = ref<string>('playground');
+const route = useRoute();
+
+const VALID_TABS = ['playground', 'sse', 'codegen', 'webhook', 'logs', 'doctor'] as const;
+type DevTab = (typeof VALID_TABS)[number];
+
+function tabFromHash(hash: string): DevTab | null {
+  const key = hash.replace(/^#/, '');
+  return (VALID_TABS as readonly string[]).includes(key) ? (key as DevTab) : null;
+}
+
+const tab = ref<DevTab>(tabFromHash(route.hash) ?? 'playground');
+
+onMounted(() => {
+  const fromHash = tabFromHash(route.hash);
+  if (fromHash) tab.value = fromHash;
+});
+
+watch(() => route.hash, h => {
+  const next = tabFromHash(h);
+  if (next) tab.value = next;
+});
 </script>
 
 <template>

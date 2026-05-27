@@ -78,8 +78,15 @@ export function listSessions(opts: { limit?: number; search?: string; source?: s
   const where: string[] = [];
   const params: Record<string, unknown> = {};
   if (opts.search) {
-    where.push('(title LIKE @search OR id LIKE @search)');
-    params.search = `%${opts.search}%`;
+    // Escape LIKE wildcards so queries containing literal `%` or `_`
+    // (e.g. run_xxx ids) match only their literal characters.
+    const escaped = opts.search.replace(/[\\%_]/g, c => `\\${c}`);
+    where.push(
+      "(title LIKE @search ESCAPE '\\' OR id LIKE @search ESCAPE '\\' " +
+      "OR EXISTS (SELECT 1 FROM messages WHERE session_id = sessions.id AND content LIKE @search_like ESCAPE '\\' LIMIT 1))",
+    );
+    params.search = `%${escaped}%`;
+    params.search_like = `%${escaped}%`;
   }
   if (opts.source) {
     where.push('source = @source');

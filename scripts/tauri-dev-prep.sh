@@ -13,10 +13,17 @@ BFF_PORT="${BFF_PORT:-5667}"
 
 REAL_HERMES_PORT=8642
 FAKE_HERMES_PORT="${FAKE_HERMES_PORT:-18642}"
+WEB_PORT=5666
 
-# Reset our dev ports so reloads don't leak processes
-lsof -ti tcp:"$BFF_PORT" 2>/dev/null | xargs -r kill -9 2>/dev/null || true
-lsof -ti tcp:"$FAKE_HERMES_PORT" 2>/dev/null | xargs -r kill -9 2>/dev/null || true
+# Pre-flight: kill stale panel-managed dev processes (web :5666, bff,
+# fake-hermes) plus any orphan tsx watchers from a previous run.
+# Note: we do NOT touch :8642 — that's the production hermes gateway and
+# is managed separately below (reused if up, otherwise started fresh).
+echo "[dev-prep] cleaning up stale dev processes"
+lsof -i:"$WEB_PORT" -i:"$BFF_PORT" -i:"$FAKE_HERMES_PORT" -t 2>/dev/null | xargs kill 2>/dev/null || true
+pkill -f "tsx watch src/server.ts" 2>/dev/null || true
+pkill -f "fake-hermes" 2>/dev/null || true
+sleep 1
 
 HERMES_API_BASE=""
 

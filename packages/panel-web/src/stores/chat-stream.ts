@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { startRun, consumeSSE, type SSEHandle } from '@/api/hermes';
 import { useSessionStore } from './session';
+import { useUsageStore } from './usage';
 
 export type StreamState = 'idle' | 'creating' | 'streaming' | 'done' | 'error' | 'reconnecting';
 
@@ -15,9 +16,14 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
 
   let handle: SSEHandle | null = null;
 
+  // Keep the last `send()` model around so run.completed can attribute
+  // the usage entry to the right model without threading state through dispatch().
+  const lastModel = ref<string>('');
+
   async function send(input: string, model: string): Promise<void> {
     const session = useSessionStore();
 
+    lastModel.value = model;
     session.appendUserMessage(input);
     session.startAssistantMessage();
 
@@ -90,6 +96,20 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
           output: e.usage.output_tokens,
           total: e.usage.total_tokens,
         } : undefined);
+        // Persist this run to the usage ledger. Fire-and-forget — the store
+        // swallows errors and we never want to fail the stream over telemetry.
+        if (e.usage && lastModel.value) {
+          const input = e.usage.input_tokens ?? 0;
+          const output = e.usage.output_tokens ?? 0;
+          const total = e.usage.total_tokens ?? input + output;
+          if (total > 0) {
+            void useUsageStore().record({
+              model: lastModel.value,
+              sessionId: session.sessionId ?? undefined,
+              input, output, total,
+            });
+          }
+        }
         state.value = 'done';
         break;
       }

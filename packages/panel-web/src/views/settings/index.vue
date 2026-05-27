@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 import { NTabs, NTab } from 'naive-ui';
 import SectionAppearance from '@/components/settings/SectionAppearance.vue';
 import SectionProviders from '@/components/settings/SectionProviders.vue';
+import SectionHermesEndpoints from '@/components/settings/SectionHermesEndpoints.vue';
 import SectionLanguage from '@/components/settings/SectionLanguage.vue';
 import SectionHotkeys from '@/components/settings/SectionHotkeys.vue';
 import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
@@ -21,6 +22,7 @@ interface AnchorItem { key: string; label: string }
 const anchors: AnchorItem[] = [
   { key: 'appearance', label: 'settings.anchor.appearance' },
   { key: 'providers', label: 'settings.anchor.providers' },
+  { key: 'hermes-endpoints', label: 'settings.anchor.hermesEndpoints' },
   { key: 'language', label: 'settings.anchor.language' },
   { key: 'hotkeys', label: 'settings.anchor.hotkeys' },
   { key: 'advanced', label: 'settings.anchor.advanced' },
@@ -146,6 +148,9 @@ onBeforeUnmount(() => {
         </section>
         <section id="settings-section-providers" class="scroll-mt-24">
           <SectionProviders />
+        </section>
+        <section id="settings-section-hermes-endpoints" class="scroll-mt-24">
+          <SectionHermesEndpoints />
         </section>
         <section id="settings-section-language" class="scroll-mt-24">
           <SectionLanguage />

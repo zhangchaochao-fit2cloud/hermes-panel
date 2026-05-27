@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { NInput, NSpin, NButton } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import { useBreakpoint } from '@/composables/use-breakpoint';
+import { renderMarkdown } from '@/utils/markdown';
 
 const props = defineProps<{
   path: string | null;
@@ -18,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { isMobile } = useBreakpoint();
 
 const value = computed({
   get: () => props.content,
@@ -36,6 +39,57 @@ const segments = computed<string[]>(() => {
   return props.path.split(/[/\\]/).filter(Boolean);
 });
 
+// Preview toggle. Default ON for desktop, OFF for mobile. Persisted to
+// localStorage so the user's preference survives reloads.
+const STORAGE_KEY = 'panel.memory.editorSplit';
+const previewOn = ref(true);
+
+function readStored(): boolean | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return null;
+    return raw === '1' || raw === 'true';
+  } catch {
+    return null;
+  }
+}
+
+onMounted(() => {
+  const stored = readStored();
+  if (stored !== null) {
+    previewOn.value = stored;
+  } else {
+    // First-run default: ON for desktop, OFF for mobile.
+    previewOn.value = !isMobile.value;
+  }
+});
+
+// Persist user choice.
+watch(previewOn, v => {
+  try {
+    localStorage.setItem(STORAGE_KEY, v ? '1' : '0');
+  } catch {
+    /* ignore quota / privacy mode */
+  }
+});
+
+// On mobile we never render side-by-side; the toggle swaps the visible
+// pane instead. `showPreviewPane` is the rendered state; `showEditorPane`
+// is the inverse on mobile. On desktop both can be visible.
+const showPreviewPane = computed(() => previewOn.value);
+const showEditorPane = computed(() => isMobile.value ? !previewOn.value : true);
+
+// Layout columns: side-by-side on desktop when preview on, single column
+// otherwise. Mobile always single column.
+const bodyGridStyle = computed<Record<string, string>>(() => {
+  if (isMobile.value) return { gridTemplateColumns: '1fr', gap: '0' };
+  if (previewOn.value) return { gridTemplateColumns: '1fr 1fr', gap: '12px' };
+  return { gridTemplateColumns: '1fr', gap: '0' };
+});
+
+const renderedPreview = computed(() => renderMarkdown(props.content));
+const previewIsEmpty = computed(() => !props.content || !props.content.trim());
+
 // Ctrl/Cmd+S handler on the textarea wrapper. NInput passes through keydown.
 const wrapperRef = ref<HTMLElement | null>(null);
 function onKeydown(e: KeyboardEvent): void {
@@ -44,11 +98,24 @@ function onKeydown(e: KeyboardEvent): void {
     if (!props.saving && props.dirty) emit('save');
   }
 }
+
+function togglePreview(): void {
+  previewOn.value = !previewOn.value;
+}
+
+// Toggle label: on mobile the toggle swaps panes so the label describes
+// the swap action; on desktop it describes show/hide.
+const toggleLabel = computed(() => {
+  if (isMobile.value) {
+    return previewOn.value ? t('memory.preview.hide') : t('memory.preview.show');
+  }
+  return previewOn.value ? t('memory.preview.hide') : t('memory.preview.show');
+});
 </script>
 
 <template>
   <div ref="wrapperRef" class="h-full flex flex-col bg-[var(--bg-page)]" @keydown="onKeydown">
-    <!-- Header: breadcrumb + meta -->
+    <!-- Header: breadcrumb + meta + preview toggle -->
     <div class="flex items-center justify-between gap-4 px-5 h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex-shrink-0">
       <div v-if="path" class="flex items-center gap-1 text-sm font-mono min-w-0 overflow-hidden">
         <template v-for="(seg, idx) in segments" :key="idx">
@@ -72,6 +139,15 @@ function onKeydown(e: KeyboardEvent): void {
         <span v-if="dirty && path" class="text-amber-500">
           ● {{ t('memory.unsaved') }}
         </span>
+        <NButton
+          v-if="path"
+          size="tiny"
+          quaternary
+          :type="previewOn ? 'primary' : 'default'"
+          @click="togglePreview"
+        >
+          {{ toggleLabel }}
+        </NButton>
       </div>
     </div>
 
@@ -96,16 +172,37 @@ function onKeydown(e: KeyboardEvent): void {
         </p>
       </div>
 
-      <!-- Editor -->
-      <NInput
+      <!-- Split / single-pane grid -->
+      <div
         v-if="path"
-        v-model:value="value"
-        type="textarea"
-        :placeholder="t('memory.editorPlaceholder')"
-        class="memory-editor h-full"
-        :autosize="false"
-        :input-props="{ spellcheck: false }"
-      />
+        class="absolute inset-0 grid"
+        :style="bodyGridStyle"
+      >
+        <!-- Editor -->
+        <NInput
+          v-if="showEditorPane"
+          v-model:value="value"
+          type="textarea"
+          :placeholder="t('memory.editorPlaceholder')"
+          class="memory-editor h-full min-h-0"
+          :autosize="false"
+          :input-props="{ spellcheck: false }"
+        />
+
+        <!-- Preview -->
+        <div
+          v-if="showPreviewPane"
+          class="memory-preview h-full min-h-0 overflow-auto bg-[var(--bg-card)] border-l border-[var(--border)] px-5 py-4"
+          :class="{ 'border-l-0': isMobile }"
+        >
+          <div v-if="previewIsEmpty" class="text-sm text-[var(--text-3)] italic">
+            {{ t('memory.preview.empty') }}
+          </div>
+          <!-- eslint-disable vue/no-v-html -->
+          <div v-else class="prose-md" v-html="renderedPreview" />
+          <!-- eslint-enable vue/no-v-html -->
+        </div>
+      </div>
 
       <!-- Error banner -->
       <div

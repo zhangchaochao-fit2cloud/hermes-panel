@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { i18n } from '@/locales';
 import { bffFetch, type BffApiError } from '@/api/bff';
 
 export interface ModelState {
@@ -7,6 +8,8 @@ export interface ModelState {
   provider: string;
   baseUrl?: string;
   hasApiKey: boolean;
+  /** Mirrors BFF ModelState.activeCredential. Undefined when not derivable. */
+  activeCredential?: { label: string; type: string; source: string };
 }
 
 export interface ProviderCredential {
@@ -52,6 +55,39 @@ export const useProvidersStore = defineStore('providers', () => {
 
   const currentModelId = computed(() => model.value?.default ?? '');
   const currentProvider = computed(() => model.value?.provider ?? '');
+
+  /**
+   * Short user-facing string for the active credential, suitable for the
+   * ModelSwitcher trigger. Returns an empty string when no credential info
+   * is available so callers can `v-if` it out.
+   *
+   * Source format from the BFF mirrors `hermes auth list`:
+   *   "env:OPENROUTER_API_KEY"    → "OPENROUTER_API_KEY (env)"
+   *   "config:Api.deepseek.com"   → "Api.deepseek.com (config)"
+   *   "oauth"                     → "OAuth"
+   *   anything else               → "<source> (unknown)" as a safe fallback
+   * The "(env)" / "(config)" / "OAuth" / "unknown" tokens are i18n'd via the
+   * model.switcher.credential.{env,config,oauth,unknown} keys.
+   */
+  const activeCredentialLabel = computed(() => {
+    const cred = model.value?.activeCredential;
+    if (!cred) return '';
+    const src = cred.source.trim();
+    if (!src) return '';
+    const t = i18n.global.t;
+    // OAuth is a type, not a prefixed source — surface it on either signal.
+    if (cred.type === 'oauth' || src.toLowerCase() === 'oauth') {
+      return t('model.switcher.credential.oauth');
+    }
+    const colon = src.indexOf(':');
+    if (colon > 0) {
+      const prefix = src.slice(0, colon).toLowerCase();
+      const rest = src.slice(colon + 1);
+      if (prefix === 'env') return `${rest} (${t('model.switcher.credential.env')})`;
+      if (prefix === 'config') return `${rest} (${t('model.switcher.credential.config')})`;
+    }
+    return `${src} (${t('model.switcher.credential.unknown')})`;
+  });
 
   async function load(opts: { initial?: boolean } = {}): Promise<void> {
     if (opts.initial) loading.value = true;
@@ -118,7 +154,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
   return {
     model, providers, loading, initialized, settingModel, addingCredential, error,
-    currentModelId, currentProvider,
+    currentModelId, currentProvider, activeCredentialLabel,
     load, setModel, addCredential,
   };
 });

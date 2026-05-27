@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import { PassThrough } from 'node:stream';
 import { logger } from '../lib/logger.js';
-import { PORTS } from '@hermes-panel/shared';
+import { HEADERS, PORTS } from '@hermes-panel/shared';
 import { getHermesApiKey } from '../services/hermes-api-key.js';
 
 /**
@@ -15,8 +15,43 @@ import { getHermesApiKey } from '../services/hermes-api-key.js';
  */
 export const hermesProxyRouter = new Router();
 
-function getHermesBase(): string {
+function getDefaultHermesBase(): string {
   return process.env.HERMES_API_BASE ?? `http://127.0.0.1:${PORTS.HERMES_API}`;
+}
+
+/**
+ * Resolve the upstream base URL for this request.
+ *
+ * Precedence:
+ *   1. X-Hermes-Endpoint header (set by the frontend per active endpoint).
+ *   2. process.env.HERMES_API_BASE.
+ *   3. http://127.0.0.1:{HERMES_API}.
+ *
+ * Allowlist (defense in depth): only http://127.0.0.1:*, http://localhost:*,
+ * or any https:// URL is accepted. Anything else (file:, javascript:, plain
+ * http on a non-loopback host) falls through to the default. The BFF is
+ * single-user and already gated by X-Panel-Token, so we trust the panel
+ * itself to pick the right endpoint; this allowlist exists so that a leaked
+ * token + crafted header can't trick the BFF into hitting an arbitrary
+ * internal HTTP host.
+ */
+function resolveUpstreamBase(headerValue: string | string[] | undefined): string {
+  const raw = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  if (!raw) return getDefaultHermesBase();
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return getDefaultHermesBase();
+  }
+  if (url.protocol === 'https:') return raw.replace(/\/+$/, '');
+  if (url.protocol === 'http:') {
+    const host = url.hostname;
+    if (host === '127.0.0.1' || host === 'localhost' || host === '::1') {
+      return raw.replace(/\/+$/, '');
+    }
+  }
+  return getDefaultHermesBase();
 }
 
 hermesProxyRouter.all('/hermes/(.*)', async ctx => {
@@ -24,7 +59,8 @@ hermesProxyRouter.all('/hermes/(.*)', async ctx => {
   const rawPath = ctx.path;  // includes /api prefix? no — the proxy router is mounted under /api
   // Strip the leading '/hermes/' (or '/api/hermes/' if router prefix nests)
   const subpath = rawPath.replace(/^\/api\/hermes\/?/, '').replace(/^\/hermes\/?/, '');
-  const upstream = `${getHermesBase()}/${subpath}${ctx.querystring ? '?' + ctx.querystring : ''}`;
+  const base = resolveUpstreamBase(ctx.headers[HEADERS.HERMES_ENDPOINT.toLowerCase()]);
+  const upstream = `${base}/${subpath}${ctx.querystring ? '?' + ctx.querystring : ''}`;
 
   // Build forwarded headers
   const headers: Record<string, string> = {};
@@ -33,7 +69,7 @@ hermesProxyRouter.all('/hermes/(.*)', async ctx => {
     const lower = k.toLowerCase();
     // Strip hop-by-hop and origin-sensitive headers
     if (['host', 'origin', 'connection', 'content-length', 'cookie',
-         'x-panel-token', 'referer'].includes(lower)) continue;
+         'x-panel-token', 'x-hermes-endpoint', 'referer'].includes(lower)) continue;
     headers[k] = v;
   }
   const key = await getHermesApiKey();

@@ -1,5 +1,6 @@
 import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { HEADERS } from '@hermes-panel/shared';
+import { useHermesEndpointStore } from '@/stores/hermes-endpoint';
 import { getBffBase, getPanelToken } from './token.js';
 
 interface RunStartPayload {
@@ -25,10 +26,19 @@ function bffUrl(path: string): string {
 }
 
 function authHeaders(): Record<string, string> {
-  return {
+  const h: Record<string, string> = {
     'Content-Type': 'application/json',
     [HEADERS.PANEL_TOKEN]: getPanelToken(),
   };
+  // Read the active endpoint lazily so changes to the active URL apply
+  // to the next request without needing to rebuild any client.
+  try {
+    const ep = useHermesEndpointStore();
+    if (ep.active?.baseUrl) h[HEADERS.HERMES_ENDPOINT] = ep.active.baseUrl;
+  } catch {
+    // Store not initialised (e.g. SSR/tests) — fall back to BFF default.
+  }
+  return h;
 }
 
 export async function startRun(
@@ -96,12 +106,19 @@ export function consumeSSE(
 
   void (async () => {
     try {
+      const sseHeaders: Record<string, string> = {
+        'Accept': 'text/event-stream',
+        [HEADERS.PANEL_TOKEN]: getPanelToken(),
+      };
+      try {
+        const ep = useHermesEndpointStore();
+        if (ep.active?.baseUrl) sseHeaders[HEADERS.HERMES_ENDPOINT] = ep.active.baseUrl;
+      } catch {
+        // ignore — fall back to BFF default
+      }
       const res = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'text/event-stream',
-          [HEADERS.PANEL_TOKEN]: getPanelToken(),
-        },
+        headers: sseHeaders,
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {

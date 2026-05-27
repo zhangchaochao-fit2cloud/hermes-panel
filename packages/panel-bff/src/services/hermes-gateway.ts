@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, exec } from 'node:child_process';
 import { runHermesCli, HermesCliError } from './hermes-cli.js';
 import { logger } from '../lib/logger.js';
 
@@ -69,7 +69,89 @@ function gatewayEnv(): NodeJS.ProcessEnv {
   };
 }
 
-export function startGateway(): Promise<StartGatewayResult> {
+/**
+ * Best-effort: kill anything still bound to `port`. Uses `lsof -i:PORT -t`
+ * to list PIDs, SIGTERMs them, waits 1s, then SIGKILLs anything that's
+ * still alive. All errors are swallowed — this is purely a safety net for
+ * the case where `hermes gateway stop` couldn't talk to the running
+ * process (e.g. PID file mismatch, crashed CLI).
+ */
+function forceKillPort(port: number): Promise<void> {
+  return new Promise<void>(resolve => {
+    exec(`lsof -i:${port} -t`, { timeout: 2_000 }, (_err, stdout) => {
+      const pids = (stdout || '')
+        .split(/\s+/)
+        .map(s => Number(s.trim()))
+        .filter(n => Number.isInteger(n) && n > 0);
+
+      if (pids.length === 0) {
+        resolve();
+        return;
+      }
+
+      for (const pid of pids) {
+        try {
+          process.kill(pid, 'SIGTERM');
+        } catch {
+          /* already gone — ignore */
+        }
+      }
+
+      // After 1s, anything still bound gets SIGKILL.
+      setTimeout(() => {
+        exec(`lsof -i:${port} -t`, { timeout: 2_000 }, (_err2, stdout2) => {
+          const stragglers = (stdout2 || '')
+            .split(/\s+/)
+            .map(s => Number(s.trim()))
+            .filter(n => Number.isInteger(n) && n > 0);
+          for (const pid of stragglers) {
+            try {
+              process.kill(pid, 'SIGKILL');
+            } catch {
+              /* ignore */
+            }
+          }
+          resolve();
+        });
+      }, 1_000);
+    });
+  });
+}
+
+/**
+ * Restart hermes gateway by first stopping the existing one (if any),
+ * then starting fresh. We tried `hermes gateway run --replace` first
+ * but on the current hermes-cli that flag does NOT actually swap a
+ * detached background gateway in-place — the old process keeps
+ * running on :8642 and the new spawn either fails to bind or exits.
+ *
+ * Explicit stop → start sidesteps that. We swallow errors from the
+ * stop call because "no running gateway" is the most common reason
+ * it fails and is exactly what we want to recover from.
+ *
+ * As a belt-and-braces guard, we also `forceKillPort(8642)` after the
+ * CLI stop — this catches the case where the gateway's PID file is
+ * out of sync with the live process and `hermes gateway stop`
+ * silently no-ops.
+ */
+async function stopGatewayBestEffort(): Promise<void> {
+  try {
+    await runHermesCli(['gateway', 'stop'], { timeoutMs: 5_000 });
+  } catch {
+    /* no-op: nothing was running */
+  }
+  // Give the OS a beat to release :8642.
+  await new Promise(r => setTimeout(r, 500));
+  // Belt-and-braces: kill anything still bound to :8642.
+  try {
+    await forceKillPort(8642);
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function startGateway(): Promise<StartGatewayResult> {
+  await stopGatewayBestEffort();
   const bin = resolveBin();
   return new Promise<StartGatewayResult>((resolve, reject) => {
     let settled = false;

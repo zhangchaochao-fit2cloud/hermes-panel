@@ -8,6 +8,12 @@ export const PORTS = {
 export const HEADERS = {
   PANEL_TOKEN: 'X-Panel-Token',
   HERMES_SESSION: 'X-Hermes-Session-Id',
+  /**
+   * Client-supplied Hermes base URL. When present and well-formed, the BFF
+   * proxy uses it as the upstream instead of process.env.HERMES_API_BASE.
+   * See packages/panel-bff/src/routes/hermes-proxy.ts for the allowlist.
+   */
+  HERMES_ENDPOINT: 'X-Hermes-Endpoint',
 } as const;
 
 export const ENV = {
