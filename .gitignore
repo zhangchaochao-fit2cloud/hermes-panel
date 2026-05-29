@@ -13,3 +13,8 @@ coverage/
 .tauri/
 src-tauri/target/
 src-tauri/gen/
+
+# Tmp / 备份目录 — 本地试色生成的图标 + 旧 icons 快照不应入仓
+.tmp/
+**/icons.*.bak/
+**/icons.old.*/

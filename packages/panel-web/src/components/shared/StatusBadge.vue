@@ -8,10 +8,10 @@ const props = defineProps<{
 }>();
 
 const color = computed(() => ({
-  connected: 'bg-green-500',
-  connecting: 'bg-yellow-500 animate-pulse',
-  disconnected: 'bg-red-500',
-  unknown: 'bg-zinc-400',
+  connected: 'status-dot-success',
+  connecting: 'status-dot-warning animate-pulse',
+  disconnected: 'status-dot-error',
+  unknown: 'status-dot-neutral opacity-70',
 }[props.state]));
 </script>
 

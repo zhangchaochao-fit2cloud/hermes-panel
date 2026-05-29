@@ -25,10 +25,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const unread = computed(() => events.value.filter(e => !e.read));
   const recent = computed(() => events.value.slice(0, 50));
 
-  async function refresh(): Promise<NotificationEvent[]> {
-    loading.value = true;
+  async function refresh(opts: { silent?: boolean } = {}): Promise<NotificationEvent[]> {
+    if (!opts.silent) loading.value = true;
     try {
-      const r = await bffFetch<FetchResponse>('/api/notifications?limit=50');
+      const r = await bffFetch<FetchResponse>('/api/notifications?limit=50', { silent: opts.silent });
       // Detect new events relative to local cache (used by topbar to show toast)
       const known = new Set(events.value.map(e => e.id));
       const fresh = r.events.filter(e => !known.has(e.id));
@@ -36,7 +36,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
       unreadCount.value = r.unreadCount;
       return fresh;
     } finally {
-      loading.value = false;
+      if (!opts.silent) loading.value = false;
     }
   }
 

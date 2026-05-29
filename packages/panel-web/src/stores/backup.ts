@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { HEADERS } from '@hermes-panel/shared';
-import { getBffBase, getPanelToken } from '@/api/token';
+import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 
 /**
  * Backup / restore client store.
@@ -40,9 +40,9 @@ export const useBackupStore = defineStore('backup', () => {
     downloading.value = true;
     downloadError.value = null;
     try {
-      const res = await fetch(`${getBffBase()}/api/backup`, {
+      const res = await fetch(`${await getBffBaseAsync()}/api/backup`, {
         method: 'GET',
-        headers: { [HEADERS.PANEL_TOKEN]: getPanelToken() },
+        headers: { [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync() },
       });
       if (!res.ok) {
         const msg = await readError(res);
@@ -78,11 +78,11 @@ export const useBackupStore = defineStore('backup', () => {
     uploading.value = true;
     uploadError.value = null;
     try {
-      const url = `${getBffBase()}/api/restore?force=${force ? 'true' : 'false'}`;
+      const url = `${await getBffBaseAsync()}/api/restore?force=${force ? 'true' : 'false'}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: {
-          [HEADERS.PANEL_TOKEN]: getPanelToken(),
+          [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync(),
           'Content-Type': 'application/zip',
         },
         body: file,

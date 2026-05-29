@@ -35,7 +35,7 @@ const nextLabel = computed<string>(() => {
       <span class="inline-flex items-center gap-1.5 text-[var(--text-2)]">
         <span
           class="inline-block w-1.5 h-1.5 rounded-full"
-          :class="active > 0 ? 'bg-emerald-500' : 'bg-[var(--text-3)] opacity-60'"
+          :class="active > 0 ? 'status-dot-success' : 'status-dot-neutral opacity-60'"
         />
         {{ t('cron.bar.active', { n: active }) }}
       </span>

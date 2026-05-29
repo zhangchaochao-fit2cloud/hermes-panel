@@ -16,11 +16,61 @@ function classifySource(raw: string | null | undefined): SessionSource {
   }
 }
 
+// 从首条 user message 拼一个短标题：
+//   - 去 markdown 噪声 (```fence、行首 #、*、>、-、列表号)
+//   - 折叠空白到单空格，截 30 字符，末尾省略号
+//   - 拿到空字符串则返回 null，让 normalize() 走最后兜底
+function titleFromMessage(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const cleaned = raw
+    .replace(/```[\s\S]*?```/g, ' ')         // fenced code blocks
+    .replace(/`[^`]*`/g, ' ')                // inline code
+    .replace(/^[\s>#*\-+]+/gm, '')           // markdown line prefixes
+    .replace(/^\d+\.\s+/gm, '')              // ordered-list markers
+    .replace(/^(帮我|请|麻烦|继续|开始|先|再)\s*/u, '')
+    .replace(/^(帮我|请|麻烦)?\s*(优化|调整|处理|分析|看看|看下)(一下|下)\s*/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return null;
+  // 用 Array.from 切，避免 surrogate pair / emoji 切坏
+  const chars = Array.from(cleaned);
+  return chars.length > 30 ? chars.slice(0, 30).join('') + '…' : cleaned;
+}
+
+function looksGeneratedTitle(title: string): boolean {
+  const value = title.trim();
+  if (!value) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) return true;
+  if (/^(run|sess|session|chat|cron|job|task|plan)[_-]?[a-z0-9._:-]{8,}$/i.test(value)) return true;
+  if (/^\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}/.test(value)) return true;
+  if (/^\d{8}([_-]?\d{4,6})?$/.test(value)) return true;
+  if (/^[A-Z0-9][A-Z0-9._:-]{15,}$/i.test(value) && !/\s/.test(value)) return true;
+  return false;
+}
+
+function cleanStoredTitle(title: string): string | null {
+  const cleaned = title
+    .replace(/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}[-_\s]*/g, '')
+    .replace(/\b(plan|run|sess|session|chat|cron|job|task)[_-]?\d+\b/gi, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (/^(run|sess|session|chat|cron|job|task|plan)\s+[a-z0-9\s.:-]{8,}$/i.test(cleaned)) return null;
+  if (/^\d[\d\s.:-]{7,}$/.test(cleaned)) return null;
+  if (!cleaned || looksGeneratedTitle(cleaned)) return null;
+  const chars = Array.from(cleaned);
+  return chars.length > 30 ? chars.slice(0, 30).join('') + '…' : cleaned;
+}
+
 function normalize(row: SessionRow): SessionSummary {
   const trimmed = row.title?.trim();
+  const fromMsg = titleFromMessage(row.first_user_message);
+  const fromTitle = trimmed && !looksGeneratedTitle(trimmed)
+    ? cleanStoredTitle(trimmed) ?? trimmed
+    : null;
   return {
     id: row.id,
-    title: trimmed && trimmed.length > 0 ? trimmed : `(${row.id.slice(0, 12)}…)`,
+    title: fromTitle ?? fromMsg ?? cleanStoredTitle(trimmed ?? '') ?? '',
     model: row.model ?? 'unknown',
     source: classifySource(row.source),
     messageCount: row.message_count ?? 0,

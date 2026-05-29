@@ -97,7 +97,7 @@ const tooltip = computed(() =>
         <span
           v-if="unreadCount > 0"
           class="absolute top-0.5 right-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-semibold leading-none flex items-center justify-center ring-2 ring-[var(--bg-card)]"
-          style="background: color-mix(in srgb, #ef4444 90%, var(--brand-700) 10%);"
+          style="background: color-mix(in srgb, var(--color-error) 90%, var(--brand-700) 10%);"
         >
           {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>

@@ -9,7 +9,7 @@ const { t } = useI18n();
 const store = useCronStore();
 const message = useMessage();
 
-const props = defineProps<{ show: boolean }>();
+const props = defineProps<{ show: boolean; initialPrompt?: string }>();
 const emit = defineEmits<{
   (e: 'update:show', v: boolean): void;
   (e: 'created'): void;
@@ -62,7 +62,10 @@ function reset(): void {
 }
 
 watch(() => props.show, (v) => {
-  if (v) reset();
+  if (v) {
+    reset();
+    if (props.initialPrompt) prompt.value = props.initialPrompt;
+  }
 });
 
 async function submit(): Promise<void> {
@@ -113,7 +116,7 @@ async function submit(): Promise<void> {
             <div
               v-if="scheduleHint"
               class="mt-1 text-xs"
-              :class="parsedSchedule || /^(\d+[mhd]|every)/i.test(schedule) ? 'text-[var(--text-3)]' : 'text-red-500'"
+              :class="parsedSchedule || /^(\d+[mhd]|every)/i.test(schedule) ? 'text-[var(--text-3)]' : 'text-[var(--color-error)]'"
             >
               {{ scheduleHint }}
             </div>

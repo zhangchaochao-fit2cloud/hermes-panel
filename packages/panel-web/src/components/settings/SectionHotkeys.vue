@@ -155,7 +155,7 @@ function conflictLabel(id: HotkeyId): string {
                   recording === row.id
                     ? 'border-[var(--brand-500)] ring-2 ring-[var(--brand-500)]/30 bg-[var(--bg-elevate)]'
                     : hasConflict(row.id)
-                      ? 'border-red-500/60 hover:bg-[var(--bg-elevate)]'
+                      ? 'hotkey-cell--conflict hover:bg-[var(--bg-elevate)]'
                       : 'border-[var(--border)] hover:bg-[var(--bg-elevate)]'
                 "
                 @click="startRecording(row.id)"
@@ -186,7 +186,7 @@ function conflictLabel(id: HotkeyId): string {
               </div>
               <div
                 v-if="hasConflict(row.id)"
-                class="text-xs text-red-500 mt-1"
+                class="text-xs text-[var(--color-error)] mt-1"
               >
                 {{ conflictLabel(row.id) }}
               </div>
@@ -208,3 +208,9 @@ function conflictLabel(id: HotkeyId): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+.hotkey-cell--conflict {
+  border-color: color-mix(in srgb, var(--color-error) 60%, var(--border));
+}
+</style>

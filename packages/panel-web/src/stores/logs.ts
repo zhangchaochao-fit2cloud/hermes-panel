@@ -46,11 +46,11 @@ export const useLogsStore = defineStore('logs', () => {
     return params.toString();
   }
 
-  async function load(): Promise<void> {
-    loading.value = true;
+  async function load(opts: { silent?: boolean } = {}): Promise<void> {
+    if (!opts.silent) loading.value = true;
     error.value = null;
     try {
-      const r = await bffFetch<LogsResponse>(`/api/logs?${buildQuery()}`);
+      const r = await bffFetch<LogsResponse>(`/api/logs?${buildQuery()}`, { silent: opts.silent });
       lines.value = r.lines ?? [];
       if (r.error) error.value = r.error;
       lastLoadedAt.value = Date.now();
@@ -58,7 +58,7 @@ export const useLogsStore = defineStore('logs', () => {
       error.value = (err as Error).message;
       lines.value = [];
     } finally {
-      loading.value = false;
+      if (!opts.silent) loading.value = false;
     }
   }
 
@@ -76,7 +76,7 @@ export const useLogsStore = defineStore('logs', () => {
   function startAutoRefreshTimer(): void {
     clearAutoRefreshTimer();
     timer = setInterval(() => {
-      void load();
+      void load({ silent: true });
     }, AUTO_REFRESH_MS);
   }
 
@@ -84,7 +84,7 @@ export const useLogsStore = defineStore('logs', () => {
     autoRefresh.value = !autoRefresh.value;
     if (autoRefresh.value) {
       startAutoRefreshTimer();
-      void load();
+      void load({ silent: true });
     } else {
       clearAutoRefreshTimer();
     }

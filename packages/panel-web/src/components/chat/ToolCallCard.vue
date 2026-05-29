@@ -15,6 +15,15 @@ import type { ToolCall } from '@hermes-panel/shared';
 import { NButton, NTooltip, useMessage } from 'naive-ui';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import {
+  categorizeTool,
+  getToolEditSummary,
+  getToolCallFacts,
+  pickToolString,
+  shortPath,
+  type EditFileChange,
+  type ToolCategory,
+} from '@/utils/tool-call-facts';
 
 const props = defineProps<{ toolCall: ToolCall }>();
 const { t } = useI18n();
@@ -30,40 +39,11 @@ const durationMs = computed(() =>
 // Summary categorisation
 // ─────────────────────────────────────────────────────────────────────
 
-type Category = 'shell' | 'edit' | 'read' | 'search' | 'write' | 'other';
-
 const name = computed(() => props.toolCall.name);
-
-const category = computed<Category>(() => {
-  const n = name.value.toLowerCase();
-  if (/^(bash|shell|exec|cmd|run_command|run_shell)/.test(n)) return 'shell';
-  if (/^(edit|patch|apply_diff|str_replace|multi_edit)/.test(n)) return 'edit';
-  if (/^(write|create_file|put_file)/.test(n)) return 'write';
-  if (/^(read|view|cat|open)/.test(n)) return 'read';
-  if (/^(search|grep|rg|find_files|glob)/.test(n)) return 'search';
-  return 'other';
-});
-
-/** Pluck a string field from the input bag, ignoring nullish or empty. */
-function pickString(...keys: string[]): string | null {
-  const obj = (props.toolCall.input ?? {}) as Record<string, unknown>;
-  for (const k of keys) {
-    const v = obj[k];
-    if (typeof v === 'string' && v.trim().length > 0) return v;
-  }
-  return null;
-}
-
-/** Short relative path: home → ~, trim to last 60 chars. */
-function shortPath(p: string): string {
-  const home = '/Users/';
-  let s = p;
-  if (s.startsWith(home)) {
-    const slash = s.indexOf('/', home.length);
-    s = '~' + (slash >= 0 ? s.slice(slash) : '');
-  }
-  return s.length > 60 ? '…' + s.slice(-58) : s;
-}
+const category = computed<ToolCategory>(() => categorizeTool(name.value));
+const facts = computed(() => getToolCallFacts(props.toolCall));
+const editSummary = computed(() => getToolEditSummary(props.toolCall));
+const primaryEditFile = computed(() => editSummary.value?.files[0] ?? null);
 
 /**
  * The visible summary text, computed from category + input. Returned in
@@ -81,13 +61,13 @@ interface Summary {
 const summary = computed<Summary>(() => {
   const cat = category.value;
   if (cat === 'shell') {
-    const cmd = pickString('command', 'cmd', 'shell', 'script')
+    const cmd = pickToolString(props.toolCall, 'command', 'cmd', 'shell', 'script')
       ?? props.toolCall.preview
       ?? '';
     return { prefix: '$', body: cmd || name.value, monoBody: true };
   }
   if (cat === 'edit' || cat === 'write') {
-    const path = pickString('path', 'file_path', 'filename', 'file');
+    const path = primaryEditFile.value?.path ?? pickToolString(props.toolCall, 'path', 'file_path', 'filename', 'file');
     if (path) {
       return {
         prefix: t(cat === 'edit' ? 'chat.toolCall.editPrefix' : 'chat.toolCall.writePrefix'),
@@ -97,14 +77,22 @@ const summary = computed<Summary>(() => {
     }
   }
   if (cat === 'read') {
-    const path = pickString('path', 'file_path', 'filename', 'file');
+    const path = pickToolString(props.toolCall, 'path', 'file_path', 'filename', 'file');
     if (path) {
       return { prefix: t('chat.toolCall.readPrefix'), body: shortPath(path), monoBody: true };
     }
   }
   if (cat === 'search') {
-    const q = pickString('pattern', 'query', 'q', 'regex', 'search');
+    const q = pickToolString(props.toolCall, 'pattern', 'query', 'q', 'regex', 'search');
     if (q) return { prefix: t('chat.toolCall.searchPrefix'), body: q, monoBody: true };
+  }
+  if (cat === 'skill') {
+    const skill = facts.value.skills[0] ?? pickToolString(props.toolCall, 'name');
+    return {
+      prefix: t('chat.toolCall.skillPrefix'),
+      body: skill ?? props.toolCall.preview ?? name.value,
+      monoBody: true,
+    };
   }
   // Generic fallback: show preview if available, else "name(first-arg)".
   if (props.toolCall.preview) {
@@ -116,6 +104,26 @@ const summary = computed<Summary>(() => {
   }
   return { body: name.value, monoBody: true };
 });
+
+const actionLabel = computed(() => t(`chat.toolCall.action.${status.value}.${category.value}`));
+const editChangeLabel = computed(() => {
+  const edit = editSummary.value;
+  if (!edit) return null;
+  return { additions: `+${edit.additions}`, deletions: `-${edit.deletions}` };
+});
+
+const detailFacts = computed(() => {
+  const parts: string[] = [];
+  if (facts.value.files.length && !editSummary.value) parts.push(facts.value.files[0]);
+  if (facts.value.skills.length && category.value !== 'skill') {
+    parts.push(t('chat.toolCall.skillMeta', { name: facts.value.skills[0] }));
+  }
+  if (facts.value.lineCount != null && facts.value.lineCount > 0 && !editSummary.value) {
+    parts.push(t('chat.toolCall.lines', { n: facts.value.lineCount }));
+  }
+  return parts;
+});
+const stateLine = computed(() => [actionLabel.value, ...detailFacts.value].join(' · '));
 
 // ─────────────────────────────────────────────────────────────────────
 // Raw input/output (still available on expand)
@@ -132,6 +140,20 @@ const outputText = computed(() => {
 });
 const outputBytes = computed(() => outputText.value.length);
 
+function lineNo(line: EditFileChange['lines'][number]): string {
+  return String(line.kind === 'delete' ? line.oldLine ?? '' : line.newLine ?? '');
+}
+
+function linePrefix(kind: EditFileChange['lines'][number]['kind']): string {
+  if (kind === 'add') return '+';
+  if (kind === 'delete') return '-';
+  return ' ';
+}
+
+function copyPatch(file: EditFileChange): void {
+  void copy(file.patchText || file.lines.map(line => `${linePrefix(line.kind)}${line.content}`).join('\n'));
+}
+
 async function copy(text: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
@@ -144,11 +166,14 @@ async function copy(text: string): Promise<void> {
 
 <template>
   <details
-    class="tool-call rounded-lg border border-[var(--border)] bg-[var(--bg-elevate)] text-xs transition-colors hover:border-[var(--text-3)]"
+    class="tool-call text-xs transition-colors"
   >
-    <summary class="cursor-pointer flex items-center gap-2 px-3 py-2 select-none rounded-lg">
+    <summary
+      class="tool-call__summary cursor-pointer flex items-center gap-2 select-none"
+      :title="`${stateLine} · ${summary.body}`"
+    >
       <!-- Status icon -->
-      <span class="flex-shrink-0 inline-flex items-center justify-center w-4 h-4">
+      <span class="tool-call__icon flex-shrink-0 inline-flex items-center justify-center w-4 h-4">
         <svg
           v-if="status === 'running'"
           class="w-4 h-4 animate-spin text-[var(--brand-500)]"
@@ -161,7 +186,7 @@ async function copy(text: string): Promise<void> {
         </svg>
         <svg
           v-else-if="status === 'done'"
-          class="w-4 h-4 text-emerald-500"
+          class="tool-status-icon tool-status-icon--done w-4 h-4"
           viewBox="0 0 16 16"
           fill="none"
           aria-hidden="true"
@@ -170,7 +195,7 @@ async function copy(text: string): Promise<void> {
         </svg>
         <svg
           v-else-if="status === 'error'"
-          class="w-4 h-4 text-red-500"
+          class="tool-status-icon tool-status-icon--error w-4 h-4"
           viewBox="0 0 16 16"
           fill="none"
           aria-hidden="true"
@@ -190,19 +215,22 @@ async function copy(text: string): Promise<void> {
       </span>
 
       <!-- Semantic summary -->
-      <span
-        v-if="summary.prefix"
-        class="text-[var(--text-3)] flex-shrink-0"
-        :class="summary.monoBody ? 'font-mono' : ''"
-      >{{ summary.prefix }}</span>
-      <span
-        class="min-w-0 flex-1 truncate text-[var(--text-1)]"
-        :class="summary.monoBody ? 'font-mono' : ''"
-        :title="summary.body"
-      >{{ summary.body }}</span>
+      <span class="tool-call__text min-w-0 flex-1 truncate text-[var(--text-2)]">
+        <span class="font-medium text-[var(--text-1)]">{{ actionLabel }}</span>
+        <span v-if="summary.prefix" class="text-[var(--text-3)]"> · {{ summary.prefix }}</span>
+        <span
+          class="text-[var(--text-2)]"
+          :class="summary.monoBody ? 'font-mono' : ''"
+        > · {{ summary.body }}</span>
+        <template v-if="editChangeLabel">
+          <span class="tool-diff-count tool-diff-count--add"> {{ editChangeLabel.additions }}</span>
+          <span class="tool-diff-count tool-diff-count--delete"> {{ editChangeLabel.deletions }}</span>
+        </template>
+        <span v-for="part in detailFacts" :key="part" class="text-[var(--text-3)]"> · {{ part }}</span>
+      </span>
 
       <!-- Duration / status -->
-      <span class="opacity-60 ml-auto flex-shrink-0 tabular-nums text-[var(--text-3)]">
+      <span class="tool-call__meta opacity-60 ml-auto flex-shrink-0 tabular-nums text-[var(--text-3)]">
         <span v-if="durationMs != null">{{ (durationMs / 1000).toFixed(1) }}s</span>
         <span v-else>{{ statusLabel }}</span>
       </span>
@@ -218,26 +246,59 @@ async function copy(text: string): Promise<void> {
       </svg>
     </summary>
 
-    <!--
-      Soft "running" hint: only visible while the card is collapsed AND the
-      tool is still in flight. Re-using <details>'s open/closed state via
-      the :not([open]) selector on the parent .tool-call lets us hide this
-      via CSS only — no extra reactivity. Uses an inline 3-dot CSS
-      animation so the user has continuous feedback that something is
-      happening.
-    -->
-    <div
-      v-if="status === 'running'"
-      class="tool-call__running-hint px-3 pb-2 pt-0 text-[var(--text-3)] text-[11px] flex items-center gap-1.5"
-    >
-      <span>{{ t('chat.toolCall.runningHint') }}</span>
-      <span class="tool-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-    </div>
-
     <!-- Expanded detail: name + raw input + raw output -->
-    <div class="px-3 pb-3 pt-1 space-y-3 border-t border-[var(--border)]">
+    <div class="tool-call__details px-3 pb-3 pt-2 space-y-3 border-t border-[var(--border)]">
       <div class="text-[10px] font-mono text-[var(--text-3)] uppercase tracking-wider">
         {{ name }}
+      </div>
+
+      <div v-if="editSummary" class="edited-files">
+        <div class="edited-files__title">
+          <span>{{ t('chat.toolCall.editedFiles') }}</span>
+          <span class="tool-diff-count tool-diff-count--add">+{{ editSummary.additions }}</span>
+          <span class="tool-diff-count tool-diff-count--delete">-{{ editSummary.deletions }}</span>
+        </div>
+        <details
+          v-for="(file, index) in editSummary.files"
+          :key="file.path"
+          class="edit-preview"
+          :open="index === 0"
+        >
+          <summary class="edit-preview__summary">
+            <span class="min-w-0 truncate font-mono">{{ file.path }}</span>
+            <span class="tool-diff-count tool-diff-count--add">+{{ file.additions }}</span>
+            <span class="tool-diff-count tool-diff-count--delete">-{{ file.deletions }}</span>
+            <button
+              type="button"
+              class="edit-preview__copy"
+              :title="t('chat.toolCall.copyPatch')"
+              @click.prevent="copyPatch(file)"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="5" width="8" height="8" rx="1.5" />
+                <path d="M3 11V4.5A1.5 1.5 0 0 1 4.5 3H11" />
+              </svg>
+            </button>
+            <svg class="edit-preview__chev" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </summary>
+          <div class="diff-view">
+            <div
+              v-for="(line, lineIndex) in file.lines"
+              :key="`${file.path}-${lineIndex}`"
+              class="diff-line"
+              :class="`diff-line--${line.kind}`"
+            >
+              <span class="diff-line__no">{{ lineNo(line) }}</span>
+              <span class="diff-line__mark">{{ linePrefix(line.kind) }}</span>
+              <code>{{ line.content || ' ' }}</code>
+            </div>
+            <div v-if="file.truncated" class="diff-truncated">
+              {{ t('chat.toolCall.diffTruncated') }}
+            </div>
+          </div>
+        </details>
       </div>
 
       <div v-if="hasInput">
@@ -253,7 +314,7 @@ async function copy(text: string): Promise<void> {
           </NTooltip>
         </div>
         <div class="tool-block tool-block--sm">
-          <pre class="tool-pre bg-[var(--bg-card)] p-2 rounded font-mono whitespace-pre-wrap break-words">{{ inputText }}</pre>
+          <pre class="tool-pre font-mono whitespace-pre-wrap break-words">{{ inputText }}</pre>
         </div>
       </div>
 
@@ -273,7 +334,7 @@ async function copy(text: string): Promise<void> {
           </NTooltip>
         </div>
         <div class="tool-block tool-block--lg">
-          <pre class="tool-pre bg-[var(--bg-card)] p-2 rounded font-mono whitespace-pre-wrap break-words">{{ outputText }}</pre>
+          <pre class="tool-pre font-mono whitespace-pre-wrap break-words">{{ outputText }}</pre>
         </div>
       </div>
 
@@ -291,7 +352,7 @@ async function copy(text: string): Promise<void> {
         <span class="tool-dots" aria-hidden="true"><span></span><span></span><span></span></span>
       </div>
 
-      <div v-if="toolCall.errorMessage" class="text-red-600 font-mono text-[11px]">
+      <div v-if="toolCall.errorMessage" class="tool-error-message font-mono text-[11px]">
         {{ toolCall.errorMessage }}
       </div>
     </div>
@@ -299,8 +360,182 @@ async function copy(text: string): Promise<void> {
 </template>
 
 <style scoped>
+.tool-call {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-card) 34%, transparent);
+}
+.tool-call[open] {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-elevate) 48%, transparent),
+      color-mix(in srgb, var(--bg-card) 44%, transparent)
+    );
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--text-1) 5%, transparent);
+}
+.tool-call:not([open]) > .tool-call__summary:hover {
+  background: color-mix(in srgb, var(--bg-elevate) 56%, transparent);
+}
+.tool-call[open] > .tool-call__summary {
+  background: color-mix(in srgb, var(--bg-elevate) 62%, transparent);
+}
 .tool-call[open] > summary .tool-call__chev {
   transform: rotate(180deg);
+}
+.tool-call__summary {
+  list-style: none;
+  min-height: 34px;
+  border-radius: 11px;
+  padding: 6px 9px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.tool-call__summary::-webkit-details-marker {
+  display: none;
+}
+.tool-call__icon {
+  opacity: 0.9;
+}
+.tool-call__text {
+  line-height: 1.45;
+}
+.tool-call__meta {
+  font-size: 11px;
+}
+.tool-status-icon--done {
+  color: var(--color-success);
+}
+.tool-status-icon--error,
+.tool-error-message {
+  color: var(--color-error);
+}
+.tool-diff-count {
+  margin-left: 4px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tool-diff-count--add {
+  color: var(--color-success);
+}
+.tool-diff-count--delete {
+  color: var(--color-error);
+}
+.edited-files {
+  display: grid;
+  gap: 8px;
+}
+.edited-files__title {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+.edit-preview {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+}
+.edit-preview__summary {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  color: var(--text-2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.edit-preview__summary::-webkit-details-marker {
+  display: none;
+}
+.edit-preview[open] .edit-preview__summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  background: color-mix(in srgb, var(--bg-elevate) 54%, transparent);
+}
+.edit-preview__copy {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.edit-preview__copy:hover {
+  background: var(--bg-elevate);
+  color: var(--text-1);
+}
+.edit-preview__chev {
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: transform 160ms var(--ease);
+}
+.edit-preview[open] .edit-preview__chev {
+  transform: rotate(180deg);
+}
+.diff-view {
+  max-height: 320px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.diff-line {
+  display: grid;
+  grid-template-columns: 48px 18px minmax(0, 1fr);
+  min-width: 0;
+}
+.diff-line__no {
+  padding-right: 10px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  color: var(--text-3);
+  text-align: right;
+  user-select: none;
+}
+.diff-line__mark {
+  text-align: center;
+  user-select: none;
+}
+.diff-line code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.diff-line--add {
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+.diff-line--add .diff-line__no,
+.diff-line--add .diff-line__mark {
+  color: var(--color-success);
+}
+.diff-line--delete {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+.diff-line--delete .diff-line__no,
+.diff-line--delete .diff-line__mark {
+  color: var(--color-error);
+}
+.diff-line--context {
+  color: var(--text-2);
+}
+.diff-truncated {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
 }
 .tool-block {
   position: relative;
@@ -317,18 +552,12 @@ async function copy(text: string): Promise<void> {
 }
 .tool-pre {
   margin: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 56%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+  padding: 9px 10px;
   font-size: 11px;
   line-height: 1.5;
-}
-
-/*
- * Running hint: shown next to the summary while the card is closed.
- * <details> sets `open` on the parent .tool-call when expanded, so hiding
- * via :not([open]) means the hint vanishes when the user expands the
- * card (the in-body "Waiting for output…" takes over).
- */
-.tool-call[open] > .tool-call__running-hint {
-  display: none;
 }
 
 /*

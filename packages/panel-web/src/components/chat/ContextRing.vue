@@ -50,12 +50,11 @@ const pct = computed(() =>
   Math.min(100, (props.used / Math.max(1, resolvedLimit.value)) * 100),
 );
 
-/** Tailwind-flavoured color tokens at the four pressure thresholds. */
+/** Theme-aware color tokens at the four pressure thresholds. */
 const barColor = computed(() => {
-  if (pct.value >= 95) return '#ef4444'; // red-500
-  if (pct.value >= 80) return '#f97316'; // orange-500
-  if (pct.value >= 50) return '#f59e0b'; // amber-500
-  return '#10b981'; // emerald-500
+  if (pct.value >= 95) return 'var(--color-error)';
+  if (pct.value >= 50) return 'var(--color-warning)';
+  return 'var(--color-success)';
 });
 
 /** Compact display: 12345 → "12.3K", 1234567 → "1.2M". */

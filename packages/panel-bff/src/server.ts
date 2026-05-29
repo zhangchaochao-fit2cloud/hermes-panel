@@ -29,6 +29,8 @@ import { webhookRouter } from './routes/webhook.js';
 import { pluginsRouter } from './routes/plugins.js';
 import { backupRouter } from './routes/backup.js';
 import { usageRouter } from './routes/usage.js';
+import { preferencesRouter } from './routes/preferences.js';
+import { workspaceStatusRouter } from './routes/workspace-status.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -67,6 +69,8 @@ export function createApp(): Koa {
   router.use(pluginsRouter.routes(), pluginsRouter.allowedMethods());
   router.use(backupRouter.routes(), backupRouter.allowedMethods());
   router.use(usageRouter.routes(), usageRouter.allowedMethods());
+  router.use(preferencesRouter.routes(), preferencesRouter.allowedMethods());
+  router.use(workspaceStatusRouter.routes(), workspaceStatusRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
@@ -77,7 +81,7 @@ export function createApp(): Koa {
     },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', HEADERS.PANEL_TOKEN, HEADERS.HERMES_SESSION],
+    allowHeaders: ['Content-Type', 'Authorization', HEADERS.PANEL_TOKEN, HEADERS.HERMES_SESSION, HEADERS.HERMES_ENDPOINT],
     maxAge: 600,
   }));
   app.use(bodyParser());

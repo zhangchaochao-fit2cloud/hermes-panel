@@ -1,16 +1,24 @@
-name: Release Desktop
+name: Release
 
-# Triggered when a tag matching v* is pushed, or manually via the
-# Actions UI. Builds the Tauri desktop app for macOS, Windows and Linux,
-# then uploads the bundles as a Draft Release.
+# ─────────────────────────────────────────────────────────────────────────────
+# 触发方式：
+#   ① push tag 匹配 v*       → 自动跑全平台并发 Draft Release
+#   ② workflow_dispatch      → 手动跑，需在 inputs 填 release_tag
 #
-# For signed releases:
-#   - macOS: set APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
-#     APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_PASSWORD
-#   - Windows: set WINDOWS_CERTIFICATE (base64 .pfx), WINDOWS_CERTIFICATE_PASSWORD
-#   - Updater: set TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
-# Without signing secrets, the workflow still produces unsigned .app/.dmg/
-# .msi/.deb/.AppImage artifacts.
+# 产物矩阵（全部上传到 Draft Release）：
+#   - macOS arm64 + macOS x86_64 + macOS universal:  .dmg + .app.tar.gz
+#   - Windows x86_64:                                .msi + .exe (NSIS)
+#   - Linux x86_64:                                  .deb + .AppImage + .rpm
+#   - npm 包 (跨平台):                                hermes-panel-VER.tgz
+#   - VS Code 扩展 (跨平台):                          hermes-panel-vscode-VER.vsix
+#   - 校验文件:                                       SHA256SUMS
+#
+# 可选签名 secrets（缺失则跑 unsigned，CI 不会失败）：
+#   macOS:  APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD / APPLE_SIGNING_IDENTITY
+#           APPLE_ID / APPLE_TEAM_ID / APPLE_PASSWORD
+#   Windows: WINDOWS_CERTIFICATE (base64 .pfx) / WINDOWS_CERTIFICATE_PASSWORD
+#   Tauri updater: TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+# ─────────────────────────────────────────────────────────────────────────────
 
 on:
   push:
@@ -23,27 +31,34 @@ on:
         default: 'v0.1.0-alpha.0'
 
 jobs:
-  build:
-    name: Build (${{ matrix.platform }})
+  # ───────────────────────────────────────────────────────────────────────────
+  # Job 1: 桌面构建 — 矩阵：mac arm64 / mac x86_64 / mac universal / linux / win
+  # ───────────────────────────────────────────────────────────────────────────
+  build-desktop:
+    name: Desktop (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14            # arm64
-            platform: macos-aarch64
+          - os: macos-14
+            platform: mac-arm64
             target: aarch64-apple-darwin
             args: --target aarch64-apple-darwin
-          - os: macos-14            # also build x86_64 for Intel users
-            platform: macos-x86_64
+          - os: macos-14
+            platform: mac-x64
             target: x86_64-apple-darwin
             args: --target x86_64-apple-darwin
+          - os: macos-14
+            platform: mac-universal
+            target: universal-apple-darwin
+            args: --target universal-apple-darwin
           - os: ubuntu-22.04
-            platform: linux-x86_64
+            platform: linux-x64
             target: x86_64-unknown-linux-gnu
             args: ''
           - os: windows-latest
-            platform: windows-x86_64
+            platform: win-x64
             target: x86_64-pc-windows-msvc
             args: ''
 
@@ -65,10 +80,16 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      # universal 需要两个 target 都装
+      - name: Add x86_64 target for mac-universal
+        if: matrix.platform == 'mac-universal'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: packages/panel-desktop/src-tauri
+          key: ${{ matrix.platform }}
 
       - name: Install Linux Tauri deps
         if: matrix.os == 'ubuntu-22.04'
@@ -78,17 +99,20 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            rpm
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @hermes-panel/shared build
 
       - name: Build frontend dist
         run: pnpm --filter @hermes-panel/web build
 
       - name: Build Tauri bundle
         env:
-          # Signing — all optional, builds proceed unsigned if absent
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -103,37 +127,173 @@ jobs:
           cd packages/panel-desktop
           npx --yes @tauri-apps/cli@2 build ${{ matrix.args }} --verbose
 
+      # 把产物按 versioned 命名收集到 ./release-artifacts/
+      - name: Collect bundles (Mac)
+        if: startsWith(matrix.platform, 'mac-')
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          VER=$(node -p "require('./packages/panel-desktop/package.json').version")
+          BASE=packages/panel-desktop/src-tauri/target/${{ matrix.target }}/release/bundle
+          DMG=$(find "$BASE/dmg" -name "*.dmg" 2>/dev/null | head -1 || true)
+          APP=$(find "$BASE/macos" -name "*.app" -maxdepth 2 2>/dev/null | head -1 || true)
+          TGZ=$(find "$BASE/macos" -name "*.app.tar.gz" 2>/dev/null | head -1 || true)
+          SIG=$(find "$BASE/macos" -name "*.app.tar.gz.sig" 2>/dev/null | head -1 || true)
+          [ -n "$DMG" ] && cp "$DMG" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.dmg" || true
+          [ -n "$APP" ] && ditto -c -k --sequesterRsrc --keepParent "$APP" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.zip"
+          [ -n "$TGZ" ] && cp "$TGZ" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.tar.gz" || true
+          [ -n "$SIG" ] && cp "$SIG" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.tar.gz.sig" || true
+          ls -lh release-artifacts/
+
+      - name: Collect bundles (Linux)
+        if: matrix.platform == 'linux-x64'
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          VER=$(node -p "require('./packages/panel-desktop/package.json').version")
+          BASE=packages/panel-desktop/src-tauri/target/release/bundle
+          DEB=$(find "$BASE/deb" -name "*.deb" 2>/dev/null | head -1 || true)
+          AI=$(find "$BASE/appimage" -name "*.AppImage" 2>/dev/null | head -1 || true)
+          RPM=$(find "$BASE/rpm" -name "*.rpm" 2>/dev/null | head -1 || true)
+          [ -n "$DEB" ] && cp "$DEB" "release-artifacts/hermes-panel-$VER-linux-x64.deb" || true
+          [ -n "$AI" ]  && cp "$AI"  "release-artifacts/hermes-panel-$VER-linux-x64.AppImage" || true
+          [ -n "$RPM" ] && cp "$RPM" "release-artifacts/hermes-panel-$VER-linux-x64.rpm" || true
+          ls -lh release-artifacts/
+
+      - name: Collect bundles (Windows)
+        if: matrix.platform == 'win-x64'
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          VER=$(node -p "require('./packages/panel-desktop/package.json').version")
+          BASE=packages/panel-desktop/src-tauri/target/release/bundle
+          MSI=$(find "$BASE/msi" -name "*.msi" 2>/dev/null | head -1 || true)
+          EXE=$(find "$BASE/nsis" -name "*.exe" 2>/dev/null | head -1 || true)
+          [ -n "$MSI" ] && cp "$MSI" "release-artifacts/hermes-panel-$VER-win-x64.msi" || true
+          [ -n "$EXE" ] && cp "$EXE" "release-artifacts/hermes-panel-$VER-win-x64-setup.exe" || true
+          ls -lh release-artifacts/
+
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
-          name: hermes-panel-${{ matrix.platform }}
-          path: |
-            packages/panel-desktop/src-tauri/target/**/release/bundle/**/*
+          name: desktop-${{ matrix.platform }}
+          path: release-artifacts/*
           if-no-files-found: error
           retention-days: 30
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # Job 2: 跨平台 — npm tarball + VS Code .vsix (跑一次就够)
+  # ───────────────────────────────────────────────────────────────────────────
+  build-extras:
+    name: Cross-platform (npm + vsix)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with: { version: 10 }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared / bff / web
+        run: |
+          pnpm --filter @hermes-panel/shared build
+          pnpm --filter @hermes-panel/bff build
+          pnpm --filter @hermes-panel/web build
+
+      - name: Pack npm tarball
+        # NOTE: cd 进去再 pack，否则 pnpm 在 monorepo --filter 模式下会
+        # 忽略 files 字段把整个 workspace（含 target/）打进 tarball。
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          DEST="$PWD/release-artifacts"
+          cd packages/panel-npm && pnpm pack --pack-destination "$DEST"
+          ls -lh "$DEST"
+
+      - name: Build VS Code extension
+        run: pnpm --filter hermes-panel-vscode build
+
+      - name: Package VS Code extension (.vsix)
+        shell: bash
+        run: |
+          cd packages/panel-vscode
+          npx --yes @vscode/vsce@3 package --no-dependencies -o ../../release-artifacts/
+          ls -lh ../../release-artifacts/
+
+      - name: Upload extras
+        uses: actions/upload-artifact@v4
+        with:
+          name: extras-npm-vsix
+          path: release-artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Job 3: 汇总 — 下所有 artifact、生成 SHA256SUMS、发 Draft Release
+  # ───────────────────────────────────────────────────────────────────────────
   release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-desktop, build-extras]
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Create draft release
+
+      - name: Flatten & checksum
+        shell: bash
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( \
+            -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.app.tar.gz.sig" -o \
+            -name "*.app.zip" -o -name "*.msi" -o -name "*.exe" -o \
+            -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" -o \
+            -name "*.tgz" -o -name "*.vsix" \
+          \) -exec cp {} dist/ \;
+          cd dist && shasum -a 256 * | tee SHA256SUMS
+          ls -lh
+
+      - name: Determine tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          name: ${{ github.ref_name }}
+          name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
           files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.app.tar.gz
-            artifacts/**/*.msi
-            artifacts/**/*.exe
-            artifacts/**/*.deb
-            artifacts/**/*.AppImage
-            artifacts/**/*.rpm
+            dist/*.dmg
+            dist/*.app.tar.gz
+            dist/*.app.tar.gz.sig
+            dist/*.app.zip
+            dist/*.msi
+            dist/*.exe
+            dist/*.deb
+            dist/*.AppImage
+            dist/*.rpm
+            dist/*.tgz
+            dist/*.vsix
+            dist/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

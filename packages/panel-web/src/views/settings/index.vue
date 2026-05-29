@@ -11,6 +11,7 @@ import SectionHotkeys from '@/components/settings/SectionHotkeys.vue';
 import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
 import SectionBackup from '@/components/settings/SectionBackup.vue';
 import SectionAbout from '@/components/settings/SectionAbout.vue';
+import SectionSystemHealth from '@/components/settings/SectionSystemHealth.vue';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
@@ -20,6 +21,7 @@ const route = useRoute();
 interface AnchorItem { key: string; label: string }
 
 const anchors: AnchorItem[] = [
+  { key: 'system-health', label: 'settings.anchor.systemHealth' },
   { key: 'appearance', label: 'settings.anchor.appearance' },
   { key: 'providers', label: 'settings.anchor.providers' },
   { key: 'hermes-endpoints', label: 'settings.anchor.hermesEndpoints' },
@@ -30,7 +32,7 @@ const anchors: AnchorItem[] = [
   { key: 'about', label: 'settings.anchor.about' },
 ];
 
-const activeKey = ref<string>('appearance');
+const activeKey = ref<string>('system-health');
 const scrollerRef = ref<HTMLElement | null>(null);
 
 let observer: IntersectionObserver | null = null;
@@ -143,6 +145,9 @@ onBeforeUnmount(() => {
         class="mx-auto space-y-8"
         :class="isMobile ? 'max-w-full px-4 py-6' : 'max-w-[800px] px-8 py-8'"
       >
+        <section id="settings-section-system-health" class="scroll-mt-24">
+          <SectionSystemHealth />
+        </section>
         <section id="settings-section-appearance" class="scroll-mt-24">
           <SectionAppearance />
         </section>

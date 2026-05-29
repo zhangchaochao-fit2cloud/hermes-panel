@@ -5,6 +5,7 @@ import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import ControlCenter from '@/components/shared/ControlCenter.vue';
+import HotkeysCheatsheet from '@/components/shared/HotkeysCheatsheet.vue';
 import AppErrorBoundary from '@/components/shared/AppErrorBoundary.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 
@@ -125,6 +126,7 @@ onMounted(() => appearance.init());
               <RouterView />
             </DefaultLayout>
             <ControlCenter />
+            <HotkeysCheatsheet />
           </AppErrorBoundary>
         </NNotificationProvider>
       </NDialogProvider>

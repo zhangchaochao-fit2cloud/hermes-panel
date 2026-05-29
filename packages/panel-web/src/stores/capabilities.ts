@@ -20,7 +20,7 @@ export const useCapabilitiesStore = defineStore('capabilities', () => {
     if (caps.value) return;
     loading.value = true;
     try {
-      caps.value = await bffFetch<Capabilities>('/api/capabilities');
+      caps.value = await bffFetch<Capabilities>('/api/capabilities', { silent: true });
     } catch {
       // Default to "everything available" on error so we don't hide features
       caps.value = {

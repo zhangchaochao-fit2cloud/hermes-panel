@@ -80,7 +80,7 @@ function onAdded(): void {
             <span
               :class="[
                 'w-2 h-2 rounded-full mt-1.5 shrink-0',
-                s.configured ? 'bg-emerald-500' : 'bg-[var(--text-3)]',
+                s.configured ? 'status-dot-success' : 'status-dot-neutral',
               ]"
             />
           </div>

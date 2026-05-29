@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NSkeleton, useMessage } from 'naive-ui';
+import { useMessage } from 'naive-ui';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import CronStatusBar from '@/components/cron/CronStatusBar.vue';
@@ -26,6 +27,16 @@ onMounted(() => {
   pollTimer = setInterval(() => {
     if (!document.hidden) void store.load();
   }, 30_000);
+
+  // 检查是否从 chat 跳过来要求新建任务，是的话打开 modal 并预填 prompt
+  try {
+    const pending = sessionStorage.getItem('panel.pendingCronPrompt');
+    if (pending) {
+      pendingPrompt.value = pending;
+      createModalOpen.value = true;
+      sessionStorage.removeItem('panel.pendingCronPrompt');
+    }
+  } catch { /* ignore */ }
 });
 
 onBeforeUnmount(() => {
@@ -34,6 +45,7 @@ onBeforeUnmount(() => {
 });
 
 const createModalOpen = ref(false);
+const pendingPrompt = ref<string>('');
 
 function onCreate(): void {
   createModalOpen.value = true;
@@ -88,7 +100,7 @@ async function onRemove(job: CronJob): Promise<void> {
 
     <div
       v-if="error"
-      class="px-6 py-2 text-xs bg-red-500/10 text-red-600 border-b border-red-500/30"
+      class="app-error-banner px-6 py-2 text-xs border-b"
     >
       {{ error }}
       <button
@@ -99,9 +111,9 @@ async function onRemove(job: CronJob): Promise<void> {
       </button>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-auto px-6 py-4">
+    <div class="flex-1 min-h-0 px-6 py-4">
       <div v-if="showInitialSkeleton" class="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <NSkeleton v-for="i in 4" :key="i" :height="180" />
+        <ThemedSkeleton :repeat="4" height="180px" />
       </div>
 
       <EmptyState
@@ -129,7 +141,7 @@ async function onRemove(job: CronJob): Promise<void> {
       </div>
     </div>
 
-    <CreateJobModal v-model:show="createModalOpen" />
+    <CreateJobModal v-model:show="createModalOpen" :initial-prompt="pendingPrompt" />
   </div>
 </template>
 

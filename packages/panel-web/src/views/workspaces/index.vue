@@ -31,7 +31,7 @@ function activate(id: string): void {
   const ws = findWorkspace(id);
   if (!ws) return;
   store.activate(id);
-  message.success(`已启用 · ${ws.name}`, { duration: 2200 });
+  message.success(t('workspaces.activated', { name: ws.name }), { duration: 2200 });
 }
 
 function openDrawer(id: string): void {

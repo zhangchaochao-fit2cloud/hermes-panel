@@ -3,7 +3,8 @@ import { ref, computed } from 'vue';
 import { HEADERS } from '@hermes-panel/shared';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
-import { getBffBase, getPanelToken } from '@/api/token';
+import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
+import { triggerDownload } from '@/utils/download';
 
 export type ViewMode = 'table' | 'grid';
 /** Match real DB source values plus 'all'. Legacy 'desktop' / 'web' from older
@@ -125,20 +126,6 @@ export const useSessionsStore = defineStore('sessions', () => {
     if (item) item.title = title;
   }
 
-  /**
-   * Download a Blob to the user's disk via an anchor click. The blob URL is
-   * revoked on the next tick so the click has time to start the download.
-   */
-  function triggerDownload(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
-  }
 
   /**
    * The export endpoints return JSONL (text/plain) — not JSON — so bffFetch
@@ -146,9 +133,9 @@ export const useSessionsStore = defineStore('sessions', () => {
    * panel token header, and stream the response into a Blob.
    */
   async function fetchExport(path: string): Promise<Blob> {
-    const url = `${getBffBase()}${path}`;
+    const url = `${await getBffBaseAsync()}${path}`;
     const headers = new Headers();
-    headers.set(HEADERS.PANEL_TOKEN, getPanelToken());
+    headers.set(HEADERS.PANEL_TOKEN, await getPanelTokenAsync());
     const res = await fetch(url, { headers });
     if (!res.ok) {
       let msg = res.statusText;

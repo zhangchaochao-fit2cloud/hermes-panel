@@ -3,6 +3,7 @@ import { NTag, NDropdown, NButton, type DropdownOption } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { relativeTime, absoluteTime, type Locale } from '@/utils/relative-time';
+import { displaySessionTitle } from '@/utils/session-title';
 
 defineProps<{
   items: SessionSummary[];
@@ -17,10 +18,11 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
+// 统一灰底 — 见 SessionTable.vue 同款注释。
 const SOURCE_META: Record<string, { icon: string; tone: 'info' | 'warning' | 'success' | 'default' }> = {
-  cli:        { icon: '💬', tone: 'success' },
-  cron:       { icon: '⏰', tone: 'warning' },
-  api_server: { icon: '🔌', tone: 'info' },
+  cli:        { icon: '💬', tone: 'default' },
+  cron:       { icon: '⏰', tone: 'default' },
+  api_server: { icon: '🔌', tone: 'default' },
   unknown:    { icon: '❔', tone: 'default' },
 };
 
@@ -51,6 +53,10 @@ function handle(key: string | number, row: SessionSummary): void {
   else if (key === 'export') emit('export', row);
   else if (key === 'delete') emit('delete', row);
 }
+
+function titleOf(row: SessionSummary): string {
+  return displaySessionTitle(row, t('sessions.untitled'));
+}
 </script>
 
 <template>
@@ -65,9 +71,9 @@ function handle(key: string | number, row: SessionSummary): void {
       <div class="flex items-start gap-2 mb-2">
         <h3
           class="flex-1 text-sm font-semibold leading-snug line-clamp-2 text-[var(--text-1)]"
-          :title="row.title"
+          :title="titleOf(row)"
         >
-          {{ row.title }}
+          {{ titleOf(row) }}
         </h3>
         <NDropdown
           trigger="click"
@@ -88,7 +94,7 @@ function handle(key: string | number, row: SessionSummary): void {
 
       <!-- model + source badges -->
       <div class="mb-3 flex items-center gap-1.5 flex-wrap">
-        <NTag size="small" :bordered="false" type="info">{{ row.model }}</NTag>
+        <NTag size="small" :bordered="false">{{ row.model }}</NTag>
         <NTag
           size="small"
           :bordered="false"

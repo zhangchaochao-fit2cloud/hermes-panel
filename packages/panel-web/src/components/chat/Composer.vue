@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { NDropdown } from 'naive-ui';
 import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
 import { useSessionStore } from '@/stores/session';
+import { useWorkspacesStore } from '@/stores/workspaces';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
 const hotkeys = useHotkeysStore();
 const session = useSessionStore();
+const workspaces = useWorkspacesStore();
 const { isMobile } = useBreakpoint();
 
 const props = defineProps<{
@@ -33,7 +36,78 @@ void emit;
 
 const text = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
-const canSend = computed(() => text.value.trim().length > 0 && !props.sending);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+type PermissionMode = 'default' | 'auto-review' | 'full-access';
+
+interface ComposerAttachment {
+  id: string;
+  name: string;
+  size: number;
+  content: string | null;
+  truncated: boolean;
+  error?: string;
+}
+
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_CHARS = 200_000;
+const permissionMode = ref<PermissionMode>('default');
+const attachments = ref<ComposerAttachment[]>([]);
+const canSend = computed(() => (text.value.trim().length > 0 || attachments.value.length > 0) && !props.sending);
+
+// 草稿持久化：按 sessionId 在 localStorage 隔离。新会话用 'new' 作 key。
+// virtual session（cron 合并视图，id 形如 virtual:cron:*）只读，不存草稿。
+const DRAFT_KEY_PREFIX = 'panel.chat.draft.';
+function draftKey(sid: string | null): string | null {
+  if (!sid) return DRAFT_KEY_PREFIX + 'new';
+  if (sid.startsWith('virtual:')) return null;
+  return DRAFT_KEY_PREFIX + sid;
+}
+function loadDraft(sid: string | null): void {
+  const key = draftKey(sid);
+  if (!key) {
+    text.value = '';
+    return;
+  }
+  try {
+    const v = localStorage.getItem(key) ?? '';
+    text.value = v;
+  } catch {
+    text.value = '';
+  }
+}
+let draftTimer: ReturnType<typeof setTimeout> | null = null;
+function persistDraft(): void {
+  const key = draftKey(session.sessionId);
+  if (!key) return;
+  try {
+    if (text.value.trim()) localStorage.setItem(key, text.value);
+    else localStorage.removeItem(key);
+  } catch {
+    /* quota exceeded, ignore */
+  }
+}
+watch(text, () => {
+  if (draftTimer) clearTimeout(draftTimer);
+  draftTimer = setTimeout(persistDraft, 400);
+});
+// session 切换前先 flush 当前草稿；再 load 新 session 的草稿。
+// 注意 watch 拿到的 oldId 是切换前那条，新 sessionId 已经更新了，所以要
+// 用 oldId 临时反推：拿当前 text 写到 oldId 对应的 key。
+watch(() => session.sessionId, (newId, oldId) => {
+  if (draftTimer) {
+    clearTimeout(draftTimer);
+    draftTimer = null;
+  }
+  const oldKey = draftKey(oldId ?? null);
+  if (oldKey) {
+    try {
+      if (text.value.trim()) localStorage.setItem(oldKey, text.value);
+      else localStorage.removeItem(oldKey);
+    } catch { /* quota */ }
+  }
+  loadDraft(newId);
+}, { immediate: false });
 
 /**
  * Auto-grow: starts ~2 rows, grows up to ~8, then scrolls. We measure
@@ -62,10 +136,20 @@ function resize(): void {
 }
 
 watch(text, () => { void nextTick(resize); });
-onMounted(() => { resize(); });
+onMounted(() => {
+  loadDraft(session.sessionId);
+  resize();
+});
 
 const charCount = computed(() => text.value.length);
 const showCharCount = computed(() => charCount.value > 50);
+const promptPlaceholder = computed(() => {
+  const workspace = workspaces.activeWorkspace?.name;
+  if (workspace) {
+    return t('chat.composer.placeholderWithWorkspace', { workspace });
+  }
+  return t('chat.composer.placeholder');
+});
 
 const sendChord = computed(() => hotkeys.bindings.send);
 const sendChordTokens = computed(() => chordToDisplayTokens(sendChord.value));
@@ -87,8 +171,9 @@ function onKeydown(e: KeyboardEvent): void {
 
 function submit(): void {
   if (!canSend.value) return;
-  emit('send', text.value.trim());
+  emit('send', composeOutgoingText());
   text.value = '';
+  attachments.value = [];
   void nextTick(resize);
 }
 
@@ -109,6 +194,15 @@ function setText(v: string): void {
   focus();
 }
 
+/** Append selected context without replacing the user's current draft. */
+function appendText(v: string): void {
+  const selected = v.trim();
+  if (!selected) return;
+  const prefix = text.value.trim().length > 0 ? '\n\n' : '';
+  text.value = `${text.value}${prefix}${selected}`;
+  focus();
+}
+
 function focus(): void {
   // Wait a tick so the new value is rendered before we move the cursor
   setTimeout(() => {
@@ -121,7 +215,107 @@ function focus(): void {
   }, 0);
 }
 
-defineExpose({ prependMention, setText, focus });
+const permissionOptions = computed(() => [
+  { key: 'default', label: t('chat.composer.permission.default') },
+  { key: 'auto-review', label: t('chat.composer.permission.autoReview') },
+  { key: 'full-access', label: t('chat.composer.permission.fullAccess') },
+]);
+
+const permissionLabel = computed(() => {
+  if (permissionMode.value === 'auto-review') return t('chat.composer.permission.autoReview');
+  if (permissionMode.value === 'full-access') return t('chat.composer.permission.fullAccess');
+  return t('chat.composer.permission.default');
+});
+
+function onPermissionSelect(key: string | number): void {
+  if (key === 'default' || key === 'auto-review' || key === 'full-access') {
+    permissionMode.value = key;
+  }
+}
+
+function openFilePicker(): void {
+  fileInputRef.value?.click();
+}
+
+async function onFilesSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const remaining = MAX_ATTACHMENTS - attachments.value.length;
+  const files = Array.from(input.files ?? []).slice(0, remaining);
+  const next: ComposerAttachment[] = [];
+  for (const file of files) {
+    const id = `${file.name}_${file.size}_${file.lastModified}_${Math.random().toString(36).slice(2, 6)}`;
+    try {
+      const raw = await file.text();
+      next.push({
+        id,
+        name: file.name,
+        size: file.size,
+        content: raw.slice(0, MAX_ATTACHMENT_CHARS),
+        truncated: raw.length > MAX_ATTACHMENT_CHARS,
+      });
+    } catch (err) {
+      next.push({
+        id,
+        name: file.name,
+        size: file.size,
+        content: null,
+        truncated: false,
+        error: (err as Error).message,
+      });
+    }
+  }
+  attachments.value = [...attachments.value, ...next].slice(0, MAX_ATTACHMENTS);
+  input.value = '';
+}
+
+function removeAttachment(id: string): void {
+  attachments.value = attachments.value.filter(file => file.id !== id);
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function composeOutgoingText(): string {
+  const sections: string[] = [];
+  const permission = permissionInstruction();
+  if (permission) sections.push(permission);
+  if (attachments.value.length) {
+    sections.push([
+      t('chat.composer.attachmentsPromptHeader'),
+      ...attachments.value.map(file => {
+        if (file.content == null) {
+          return `\n--- ${file.name} (${formatFileSize(file.size)}) ---\n${t('chat.composer.fileReadFailed')}: ${file.error ?? ''}`;
+        }
+        const suffix = file.truncated ? `\n${t('chat.composer.fileTruncated')}` : '';
+        return `\n--- ${file.name} (${formatFileSize(file.size)}) ---\n${file.content}${suffix}`;
+      }),
+    ].join('\n'));
+  }
+  const body = text.value.trim();
+  if (body) sections.push(body);
+  return sections.join('\n\n');
+}
+
+function permissionInstruction(): string {
+  if (permissionMode.value === 'auto-review') return t('chat.composer.permissionPrompt.autoReview');
+  if (permissionMode.value === 'full-access') return t('chat.composer.permissionPrompt.fullAccess');
+  return '';
+}
+
+/**
+ * Public API exposed to parent via template ref. Import this type as
+ * `Ref<ComposerExposed | null>` to avoid re-declaring inline shapes.
+ */
+export interface ComposerExposed {
+  prependMention: (roleId: string) => void;
+  setText: (v: string) => void;
+  appendText: (v: string) => void;
+  focus: () => void;
+}
+defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
 </script>
 
 <template>
@@ -131,14 +325,14 @@ defineExpose({ prependMention, setText, focus });
     circular Send button anchored bottom-right.
   -->
   <div
-    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 focus-within:border-[var(--text-3)]"
+    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-200 focus-within:border-[var(--text-3)]"
   >
     <!-- Textarea -->
     <div class="composer-textarea-wrap px-5 pt-4 pb-1">
       <textarea
         ref="textareaRef"
         v-model="text"
-        :placeholder="t('chat.composer.placeholder')"
+        :placeholder="promptPlaceholder"
         class="composer-textarea block w-full resize-none outline-none bg-transparent text-[15px] font-sans"
         rows="2"
         spellcheck="false"
@@ -149,81 +343,142 @@ defineExpose({ prependMention, setText, focus });
     </div>
 
     <!-- Bottom toolbar: + button · speed · meter · meta · send -->
-    <div class="flex items-center gap-2 px-3 pb-3 pt-1">
-      <!-- "+" placeholder for attachments (visual only for v0.x) -->
-      <button
-        type="button"
-        class="composer-icon-btn cursor-pointer"
-        :title="t('chat.composer.attach')"
-        :aria-label="t('chat.composer.attach')"
-        disabled
+    <div class="composer-toolbar">
+      <input
+        ref="fileInputRef"
+        class="hidden"
+        type="file"
+        multiple
+        accept=".txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.vue,.py,.java,.go,.rs,.sh,.sql,text/*"
+        @change="onFilesSelected"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M8 3v10M3 8h10" />
-        </svg>
-      </button>
+      <div class="composer-toolbar-left">
+        <button
+          type="button"
+          class="composer-icon-btn cursor-pointer"
+          :title="t('chat.composer.attach')"
+          :aria-label="t('chat.composer.attach')"
+          :disabled="attachments.length >= MAX_ATTACHMENTS || sending"
+          @click="openFilePicker"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+        </button>
 
-      <!-- Thinking-speed segmented chips -->
-      <ThinkingStrategyPicker
-        :value="thinkingSpeed"
-        :disabled="sending"
-        @update:value="(v: 'fast' | 'auto' | 'extended') => emit('update:thinkingSpeed', v)"
-      />
+        <NDropdown
+          :options="permissionOptions"
+          trigger="click"
+          placement="top-start"
+          @select="onPermissionSelect"
+        >
+          <button
+            type="button"
+            class="composer-permission-btn"
+            :title="t('chat.composer.permission.title')"
+            :aria-label="t('chat.composer.permission.title')"
+            :disabled="sending"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 1.8 13 4v3.7c0 3.1-2 5.6-5 6.5-3-.9-5-3.4-5-6.5V4l5-2.2Z" />
+              <path d="m5.8 8.2 1.5 1.5 3-3" />
+            </svg>
+            <span>{{ permissionLabel }}</span>
+          </button>
+        </NDropdown>
+
+        <!-- Thinking-speed segmented chips -->
+        <ThinkingStrategyPicker
+          :value="thinkingSpeed"
+          :disabled="sending"
+          @update:value="(v: 'fast' | 'auto' | 'extended') => emit('update:thinkingSpeed', v)"
+        />
+      </div>
 
       <!-- spacer -->
       <span class="flex-1" />
 
-      <!-- Inline context meter (click opens breakdown popover) -->
-      <ContextRing
-        :used="session.tokenUsage.total"
-        :input="session.tokenUsage.input"
-        :output="session.tokenUsage.output"
-        :model="model"
-      />
+      <div class="composer-toolbar-right">
+        <!-- Inline context meter (click opens breakdown popover) -->
+        <ContextRing
+          :used="session.tokenUsage.total"
+          :input="session.tokenUsage.input"
+          :output="session.tokenUsage.output"
+          :model="model"
+        />
 
-      <!-- Char count + hotkey hint, desktop only -->
-      <span
-        v-if="showCharCount"
-        class="font-mono text-[var(--text-3)] tabular-nums text-xs"
-      >
-        {{ t('chat.composer.chars', { n: charCount }) }}
-      </span>
-      <span
-        v-if="!isMobile"
-        class="hidden md:inline-flex items-center gap-1 text-[var(--text-3)] text-xs"
-      >
-        <template v-for="(tok, i) in sendChordTokens" :key="`${tok}-${i}`">
-          <kbd class="composer-kbd">{{ tok }}</kbd>
-          <span v-if="i < sendChordTokens.length - 1" class="opacity-50">+</span>
-        </template>
-      </span>
+        <!-- Char count + hotkey hint, desktop only -->
+        <span
+          v-if="showCharCount"
+          class="composer-char-count"
+        >
+          {{ t('chat.composer.chars', { n: charCount }) }}
+        </span>
+        <span
+          v-if="!isMobile"
+          class="hidden md:inline-flex items-center gap-1 text-[var(--text-3)] text-xs"
+        >
+          <template v-for="(tok, i) in sendChordTokens" :key="`${tok}-${i}`">
+            <kbd class="composer-kbd">{{ tok }}</kbd>
+            <span v-if="i < sendChordTokens.length - 1" class="opacity-50">+</span>
+          </template>
+        </span>
 
-      <!-- Circular Send / Stop button -->
-      <button
-        v-if="sending"
-        type="button"
-        class="composer-send-btn is-stop cursor-pointer"
-        :title="t('chat.composer.stop')"
-        :aria-label="t('chat.composer.stop')"
-        @click="onStop"
+        <!-- Circular Send / Stop button -->
+        <button
+          v-if="sending"
+          type="button"
+          class="composer-send-btn is-stop cursor-pointer"
+          :title="t('chat.composer.stop')"
+          :aria-label="t('chat.composer.stop')"
+          @click="onStop"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="3" y="3" width="10" height="10" rx="1.5" />
+          </svg>
+        </button>
+        <button
+          v-else
+          type="button"
+          class="composer-send-btn cursor-pointer"
+          :disabled="!canSend"
+          :title="t('chat.composer.send')"
+          :aria-label="t('chat.composer.send')"
+          @click="submit"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 13V3M3 8l5-5 5 5" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="attachments.length"
+      class="composer-attachments px-3 pb-3 -mt-1 flex flex-wrap gap-1.5"
+    >
+      <span
+        v-for="file in attachments"
+        :key="file.id"
+        class="composer-attachment-chip"
+        :title="`${file.name} · ${formatFileSize(file.size)}`"
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <rect x="3" y="3" width="10" height="10" rx="1.5" />
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 1.8h4.5L13 5.3V14H5a2 2 0 0 1-2-2V3.8a2 2 0 0 1 2-2Z" />
+          <path d="M9.5 1.8V5.3H13" />
         </svg>
-      </button>
-      <button
-        v-else
-        type="button"
-        class="composer-send-btn cursor-pointer"
-        :disabled="!canSend"
-        :title="t('chat.composer.send')"
-        :aria-label="t('chat.composer.send')"
-        @click="submit"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M8 13V3M3 8l5-5 5 5" />
-        </svg>
-      </button>
+        <span class="truncate max-w-[150px]">{{ file.name }}</span>
+        <span class="opacity-50">{{ formatFileSize(file.size) }}</span>
+        <button
+          type="button"
+          class="composer-attachment-remove"
+          :title="t('common.remove')"
+          :aria-label="t('common.remove')"
+          @click="removeAttachment(file.id)"
+        >
+          ×
+        </button>
+      </span>
     </div>
   </div>
 </template>
@@ -242,6 +497,52 @@ defineExpose({ prependMention, setText, focus });
  */
 .composer-textarea-wrap {
   position: relative;
+}
+
+.composer-shell {
+  overflow: hidden;
+  box-shadow:
+    0 16px 38px color-mix(in srgb, var(--text-1) 8%, transparent),
+    0 1px 2px color-mix(in srgb, var(--text-1) 7%, transparent);
+}
+
+.composer-shell:focus-within {
+  box-shadow:
+    0 18px 44px color-mix(in srgb, var(--text-1) 10%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--brand-500) 9%, transparent);
+}
+
+.composer-toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 12px;
+}
+
+.composer-toolbar-left,
+.composer-toolbar-right {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.composer-toolbar-left {
+  flex: 1 1 auto;
+}
+
+.composer-toolbar-right {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.composer-char-count {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -366,6 +667,68 @@ defineExpose({ prependMention, setText, focus });
   opacity: 0.4;
   cursor: not-allowed;
 }
+.composer-permission-btn {
+  display: inline-flex;
+  max-width: 138px;
+  min-width: 0;
+  height: 30px;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.composer-permission-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-permission-btn:hover {
+  background: var(--bg-elevate);
+  color: var(--text-1);
+}
+.composer-permission-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.composer-attachment-chip {
+  display: inline-flex;
+  min-width: 0;
+  height: 26px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 5px 0 8px;
+  background: color-mix(in srgb, var(--bg-elevate) 72%, transparent);
+  color: var(--text-2);
+  font-size: 12px;
+}
+.composer-attachment-remove {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  line-height: 1;
+}
+.composer-attachment-remove:hover {
+  background: color-mix(in srgb, var(--text-1) 8%, transparent);
+  color: var(--text-1);
+}
 
 /* Round 32px send button — dark filled circle with white arrow, matching
  * the Codex-style reference. Stop variant uses the error color. */
@@ -392,7 +755,73 @@ defineExpose({ prependMention, setText, focus });
   cursor: not-allowed;
 }
 .composer-send-btn.is-stop {
-  background: #ef4444;
+  background: var(--color-error);
   color: #ffffff;
+}
+
+.composer-toolbar-left :deep(.strategy-picker) {
+  min-width: 0;
+}
+
+.composer-toolbar-left :deep(.strategy-chip) {
+  max-width: 112px;
+}
+
+.composer-toolbar-left :deep(.strategy-chip span:last-child) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+  .composer-textarea-wrap {
+    padding: 14px 16px 2px;
+  }
+
+  .composer-toolbar {
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 4px 10px 10px;
+  }
+
+  .composer-toolbar-left {
+    order: 1;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    padding-bottom: 1px;
+    scrollbar-width: none;
+  }
+
+  .composer-toolbar-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  .composer-toolbar-right {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .composer-permission-btn {
+    max-width: 120px;
+  }
+
+  .composer-toolbar-left :deep(.strategy-chip) {
+    max-width: 92px;
+    padding-inline: 9px;
+  }
+
+  .composer-char-count {
+    display: none;
+  }
+
+  .composer-attachments {
+    padding-inline: 10px;
+  }
+
+  .composer-attachment-chip {
+    max-width: 100%;
+  }
 }
 </style>

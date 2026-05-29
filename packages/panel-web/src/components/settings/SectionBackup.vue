@@ -4,10 +4,49 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { NButton, NCheckbox, useDialog, useMessage } from 'naive-ui';
 import { useBackupStore } from '@/stores/backup';
+import { exportPanelPrefs, importPanelPrefs } from '@/composables/usePanelPrefsBackup';
+import { triggerDownload } from '@/utils/download';
 
 const { t } = useI18n();
 const dialog = useDialog();
 const message = useMessage();
+
+const prefsFileInputRef = ref<HTMLInputElement | null>(null);
+
+function onExportPrefs(): void {
+  const data = exportPanelPrefs();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, `hermes-panel-prefs-${new Date().toISOString().slice(0, 10)}.json`);
+  message.success(t('settings.backup.prefsExportSuccess', { n: Object.keys(data.panel).length }));
+}
+
+function onPickPrefsFile(): void {
+  prefsFileInputRef.value?.click();
+}
+
+async function onPrefsFileChange(e: Event): Promise<void> {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  const text = await file.text();
+  dialog.warning({
+    title: t('settings.backup.prefsImportConfirmTitle'),
+    content: t('settings.backup.prefsImportConfirmContent'),
+    positiveText: t('settings.backup.prefsImportConfirmYes'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: () => {
+      const r = importPanelPrefs(text, { merge: false });
+      if (!r.ok) {
+        message.error(t(`settings.backup.prefsImportError.${r.reason ?? 'invalid_json'}`));
+        return;
+      }
+      message.success(t('settings.backup.prefsImportSuccess', { n: r.imported }));
+      // 重新加载让所有 store 重新读 localStorage
+      setTimeout(() => location.reload(), 800);
+    },
+  });
+}
 
 const store = useBackupStore();
 const { downloading, uploading } = storeToRefs(store);
@@ -113,7 +152,7 @@ function onRestoreClick(): void {
       </div>
 
       <!-- Restore -->
-      <div class="rounded-lg border-2 border-[#f5222d] bg-[#f5222d]/5 p-5 space-y-4">
+      <div class="restore-zone rounded-lg p-5 space-y-4">
         <div>
           <div class="text-sm font-medium">{{ t('settings.backup.restore') }}</div>
           <div class="text-xs opacity-70 mt-1">{{ t('settings.backup.restoreDesc') }}</div>
@@ -162,6 +201,34 @@ function onRestoreClick(): void {
           </NButton>
         </div>
       </div>
+
+      <!-- Panel preferences (localStorage) — 仅前端偏好，不动 hermes 数据 -->
+      <div class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-5">
+        <div class="text-sm font-medium mb-1">{{ t('settings.backup.prefsTitle') }}</div>
+        <div class="text-xs opacity-70 mb-3">{{ t('settings.backup.prefsDesc') }}</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <NButton size="small" @click="onExportPrefs">
+            {{ t('settings.backup.prefsExport') }}
+          </NButton>
+          <input
+            ref="prefsFileInputRef"
+            type="file"
+            accept=".json,application/json"
+            class="hidden"
+            @change="onPrefsFileChange"
+          >
+          <NButton size="small" @click="onPickPrefsFile">
+            {{ t('settings.backup.prefsImport') }}
+          </NButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.restore-zone {
+  border: 1px solid color-mix(in srgb, var(--color-error) 48%, var(--border));
+  background: color-mix(in srgb, var(--color-error) 7%, var(--bg-card));
+}
+</style>

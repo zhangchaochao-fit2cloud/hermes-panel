@@ -26,8 +26,8 @@ const display = computed(() => formatCompact(Math.round(animated.value)));
 
 const trendClass = computed(() => {
   switch (props.trendTone) {
-    case 'up':   return 'text-emerald-500';
-    case 'down': return 'text-rose-500';
+    case 'up':   return 'text-status-success';
+    case 'down': return 'text-status-error';
     default:     return 'text-[var(--text-3)]';
   }
 });

@@ -10,8 +10,11 @@ import {
   NEmpty,
   useMessage,
 } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import type { WorkspaceTemplate } from '@/data/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   show: boolean;
@@ -43,9 +46,9 @@ const showRoleTemplates = ref(false);
 async function copyPrompt(role: RoleDef): Promise<void> {
   try {
     await navigator.clipboard.writeText(role.promptPrefix);
-    message.success(`已复制 ${role.name} 的 prompt 模板`);
+    message.success(t('workspaces.drawer.copySuccess', { name: role.name }));
   } catch {
-    message.error('复制失败，请手动选择文本');
+    message.error(t('workspaces.drawer.copyFailed'));
   }
 }
 </script>
@@ -75,7 +78,7 @@ async function copyPrompt(role: RoleDef): Promise<void> {
             <div class="flex items-center gap-2 mb-1">
               <h2 class="text-lg font-semibold">{{ workspace.name }}</h2>
               <NTag v-if="active" size="small" type="success" :bordered="false">
-                ✓ 已启用
+                {{ t('workspaces.card.enabled') }}
               </NTag>
             </div>
             <p class="text-sm text-[var(--text-2)]">{{ workspace.description }}</p>
@@ -86,7 +89,7 @@ async function copyPrompt(role: RoleDef): Promise<void> {
         <section>
           <div class="flex items-baseline justify-between mb-2">
             <h3 class="text-xs uppercase tracking-wide text-[var(--text-3)]">
-              推荐角色 · {{ roles.length || workspace.roles }}
+              {{ t('workspaces.drawer.recommendedRoles', { n: roles.length || workspace.roles }) }}
             </h3>
             <button
               v-if="roles.length > 0"
@@ -94,7 +97,7 @@ async function copyPrompt(role: RoleDef): Promise<void> {
               class="text-xs text-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors"
               @click="showRoleTemplates = !showRoleTemplates"
             >
-              {{ showRoleTemplates ? '收起 prompt 模板' : '查看角色 prompt 模板' }}
+              {{ showRoleTemplates ? t('workspaces.drawer.hidePrompts') : t('workspaces.drawer.showPrompts') }}
             </button>
           </div>
 
@@ -156,16 +159,16 @@ async function copyPrompt(role: RoleDef): Promise<void> {
                       tertiary
                       @click.stop="copyPrompt(role)"
                     >
-                      复制
+                      {{ t('common.copy') }}
                     </NButton>
                   </div>
                   <pre
                     class="whitespace-pre-wrap break-words text-xs text-[var(--text-2)] bg-[var(--bg-elevate)] p-3 rounded font-mono leading-relaxed border border-[var(--border)]"
                   >{{ role.promptPrefix }}</pre>
                   <p class="text-[11px] text-[var(--text-3)]">
-                    在聊天输入框以
+                    {{ t('workspaces.drawer.summonPrefix') }}
                     <code class="font-mono text-[var(--text-2)]">@{{ role.id }} </code>
-                    开头即可召唤该角色。
+                    {{ t('workspaces.drawer.summonSuffix') }}
                   </p>
                 </div>
               </NCollapseItem>
@@ -179,7 +182,7 @@ async function copyPrompt(role: RoleDef): Promise<void> {
           >
             <NEmpty
               size="small"
-              description="该工作环境暂未配置角色 prompt 模板"
+              :description="t('workspaces.drawer.noRoleTemplates')"
             />
           </div>
         </section>
@@ -187,10 +190,10 @@ async function copyPrompt(role: RoleDef): Promise<void> {
         <!-- Suggested tools -->
         <section>
           <h3 class="text-xs uppercase tracking-wide text-[var(--text-3)] mb-2">
-            推荐工具
+            {{ t('workspaces.drawer.suggestedTools') }}
           </h3>
           <div v-if="workspace.suggestedTools.length === 0" class="text-sm text-[var(--text-3)]">
-            暂无推荐
+            {{ t('workspaces.drawer.noSuggestions') }}
           </div>
           <div v-else class="flex flex-wrap gap-1.5">
             <NTag
@@ -208,10 +211,10 @@ async function copyPrompt(role: RoleDef): Promise<void> {
         <!-- Suggested skills -->
         <section>
           <h3 class="text-xs uppercase tracking-wide text-[var(--text-3)] mb-2">
-            推荐技能
+            {{ t('workspaces.drawer.suggestedSkills') }}
           </h3>
           <div v-if="workspace.suggestedSkills.length === 0" class="text-sm text-[var(--text-3)]">
-            暂无推荐
+            {{ t('workspaces.drawer.noSuggestions') }}
           </div>
           <div v-else class="flex flex-wrap gap-1.5">
             <NTag
@@ -232,7 +235,7 @@ async function copyPrompt(role: RoleDef): Promise<void> {
             :disabled="active"
             @click="emit('activate', workspace.id)"
           >
-            {{ active ? '已是当前工作环境' : '立即启用' }}
+            {{ active ? t('workspaces.drawer.alreadyActive') : t('workspaces.drawer.activateNow') }}
           </NButton>
         </div>
       </div>

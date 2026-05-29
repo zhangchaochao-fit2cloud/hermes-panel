@@ -1,6 +1,6 @@
 [package]
 name = "hermes-panel-desktop"
-version = "0.1.0"
+version = "0.1.0-beta.0"
 description = "Hermes Panel desktop shell"
 authors = ["Hermes Panel Contributors"]
 edition = "2021"
@@ -10,7 +10,7 @@ rust-version = "1.77"
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = [ "devtools"] }
+tauri = { version = "2.0", features = ["devtools", "tray-icon", "image-png"] }
 tauri-plugin-shell = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

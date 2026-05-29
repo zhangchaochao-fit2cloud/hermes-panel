@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    
+    <defs>
+      <linearGradient id="blue" x1="252" y1="120" x2="820" y2="914" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#8bd0ff"/>
+        <stop offset=".48" stop-color="#3d9cff"/>
+        <stop offset="1" stop-color="#0f6ff1"/>
+      </linearGradient>
+      <linearGradient id="blueDeep" x1="220" y1="120" x2="820" y2="900" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#25395f"/>
+        <stop offset=".55" stop-color="#10244a"/>
+        <stop offset="1" stop-color="#07152d"/>
+      </linearGradient>
+      <linearGradient id="blueFlat" x1="180" y1="120" x2="844" y2="904" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#2f95ff"/>
+        <stop offset="1" stop-color="#0969f2"/>
+      </linearGradient>
+      <filter id="tileShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#0f4ea8" flood-opacity=".20"/>
+      </filter>
+      <filter id="markShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="14" stdDeviation="15" flood-color="#07499d" flood-opacity=".35"/>
+        <feDropShadow dx="0" dy="-5" stdDeviation="9" flood-color="#ffffff" flood-opacity=".72"/>
+      </filter>
+      <filter id="innerGloss" x="-10%" y="-10%" width="120%" height="120%">
+        <feGaussianBlur stdDeviation="2"/>
+      </filter>
+    </defs>
+  
+    <rect width="1024" height="1024" fill="none"/>
+    <rect x="118" y="118" width="788" height="788" rx="154" fill="#ffffff" stroke="#1677ff" stroke-width="18"/>
+    
+    
+    <g transform="translate(112 126) scale(.78)">
+      <g fill="none" stroke="#1677ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M274 468c22-112 74-195 157-220 59-18 122 2 171 47 34 31 52 72 81 111 34-25 76-28 116-7 48 25 75 76 70 142-2 24-18 42-40 42-24 0-36-18-36-42 0-39-17-70-49-79-25-7-48 1-70 25"/>
+        <path d="M356 406c47 63 112 100 200 101 70 1 130-20 177-58"/>
+        <path d="M411 530c-45 35-65 61-82 103"/>
+        <path d="M496 532v125"/>
+        <path d="M661 523c19 42 49 78 92 111"/>
+        <path d="M744 513c38 39 60 78 67 122"/>
+        <path d="M313 309c-27-38-43-72-35-102 43 18 78 46 105 85"/>
+        <path d="M310 305c-46 13-77 51-89 112"/>
+      </g>
+    </g>
+  </svg>

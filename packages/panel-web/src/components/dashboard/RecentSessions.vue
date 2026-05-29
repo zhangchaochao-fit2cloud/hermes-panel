@@ -3,6 +3,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { formatCompact } from '@/utils/format-number';
+import { displaySessionTitle } from '@/utils/session-title';
+import { extractCronJobId } from '@/utils/aggregate-cron-sessions';
 
 defineProps<{
   sessions: SessionSummary[];
@@ -10,9 +12,15 @@ defineProps<{
 }>();
 
 const router = useRouter();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 
 function openSession(id: string): void {
+  // 聚合行 (cron-job:<jobid>) 跳合并视图；普通 session 走 resume
+  const jobId = extractCronJobId(id);
+  if (jobId) {
+    void router.push({ path: '/chat', query: { cron: jobId } });
+    return;
+  }
   void router.push({ path: '/chat', query: { resume: id } });
 }
 
@@ -31,6 +39,10 @@ function fmtRelative(ts: number): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+function titleOf(session: SessionSummary): string {
+  return displaySessionTitle(session, t('dashboard.recentSessions.untitled'));
 }
 </script>
 
@@ -55,12 +67,12 @@ function fmtRelative(ts: number): string {
         v-for="s in sessions"
         :key="s.id"
         class="group flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-[var(--bg-elevate)]"
-        :title="s.id"
+        :title="titleOf(s)"
         @click="openSession(s.id)"
       >
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium">
-            {{ s.title || $t('dashboard.recentSessions.untitled') }}
+            {{ titleOf(s) }}
           </div>
           <div class="mt-0.5 flex items-center gap-2 text-xs text-[var(--text-3)]">
             <span class="truncate">{{ s.model || 'unknown' }}</span>

@@ -57,6 +57,9 @@ export interface SessionRow {
   started_at: number;
   ended_at: number | null;
   estimated_cost_usd: number | null;
+  // 首条 user message 的 content 前 200 字符，给前端在 title 为空时生成短标题。
+  // SELECT 才填，getSession 等单行查询不填。
+  first_user_message?: string | null;
 }
 
 export interface MessageRow {
@@ -96,7 +99,11 @@ export function listSessions(opts: { limit?: number; search?: string; source?: s
 
   const sql = `
     SELECT id, title, source, model, message_count, tool_call_count,
-           input_tokens, output_tokens, started_at, ended_at, estimated_cost_usd
+           input_tokens, output_tokens, started_at, ended_at, estimated_cost_usd,
+           (SELECT substr(content, 1, 200) FROM messages
+              WHERE session_id = sessions.id AND role = 'user'
+                AND content IS NOT NULL AND length(trim(content)) > 0
+              ORDER BY timestamp ASC LIMIT 1) AS first_user_message
     FROM sessions
     ${whereSql}
     ORDER BY started_at DESC

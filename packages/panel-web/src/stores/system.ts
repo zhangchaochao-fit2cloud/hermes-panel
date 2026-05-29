@@ -12,15 +12,15 @@ export const useSystemStore = defineStore('system', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  async function refresh(): Promise<void> {
-    loading.value = true;
+  async function refresh(opts: { silent?: boolean } = {}): Promise<void> {
+    if (!opts.silent) loading.value = true;
     error.value = null;
     try {
-      health.value = await bffFetch<HealthStatus>('/api/system/health');
+      health.value = await bffFetch<HealthStatus>('/api/system/health', { silent: opts.silent });
     } catch (err) {
       error.value = (err as Error).message;
     } finally {
-      loading.value = false;
+      if (!opts.silent) loading.value = false;
     }
   }
 

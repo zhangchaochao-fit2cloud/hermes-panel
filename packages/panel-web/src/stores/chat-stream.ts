@@ -14,6 +14,50 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   const currentRunId = ref<string | null>(null);
   const reconnectAttempts = ref(0);
 
+  // 流式 throughput 估算：用滚动窗口（最近 3s）算 char/s。
+  // 字符≈token 的 0.25-0.5 倍（中英文混合），UI 上以"约 N tok/s"显示。
+  const streamStartedAt = ref<number>(0);
+  const streamCharCount = ref<number>(0);
+  const charsPerSec = ref<number>(0);
+  // ring buffer 替代 push/shift — 流式 100+ delta/s 时 shift 是 O(n)。
+  // 64 个样本 × 200ms 采样间隔 ≈ 12.8s 窗口，UI 实际只需 3s 即可显示稳定值。
+  const SAMPLE_CAP = 64;
+  const SAMPLE_MIN_INTERVAL_MS = 200;
+  const sampleTimes = new Float64Array(SAMPLE_CAP);
+  const sampleChars = new Int32Array(SAMPLE_CAP);
+  let sampleHead = 0;       // 下一个写入位置
+  let sampleSize = 0;       // 当前样本数
+  let lastSampleTime = 0;
+
+  function bumpCharCount(addedChars: number): void {
+    streamCharCount.value += addedChars;
+    const now = Date.now();
+    // 采样节流：< 200ms 内忽略，避免每 delta 都写
+    if (now - lastSampleTime < SAMPLE_MIN_INTERVAL_MS) return;
+    lastSampleTime = now;
+    sampleTimes[sampleHead] = now;
+    sampleChars[sampleHead] = streamCharCount.value;
+    sampleHead = (sampleHead + 1) % SAMPLE_CAP;
+    if (sampleSize < SAMPLE_CAP) sampleSize++;
+    if (sampleSize >= 2) {
+      const oldestIdx = (sampleHead - sampleSize + SAMPLE_CAP) % SAMPLE_CAP;
+      const newestIdx = (sampleHead - 1 + SAMPLE_CAP) % SAMPLE_CAP;
+      const dt = (sampleTimes[newestIdx] - sampleTimes[oldestIdx]) / 1000;
+      if (dt > 0.1) {
+        charsPerSec.value = Math.round((sampleChars[newestIdx] - sampleChars[oldestIdx]) / dt);
+      }
+    }
+  }
+
+  function resetStreamMetrics(): void {
+    streamStartedAt.value = Date.now();
+    streamCharCount.value = 0;
+    charsPerSec.value = 0;
+    sampleHead = 0;
+    sampleSize = 0;
+    lastSampleTime = 0;
+  }
+
   let handle: SSEHandle | null = null;
 
   // Keep the last `send()` model around so run.completed can attribute
@@ -31,6 +75,7 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     lastError.value = null;
     lastErrorCode.value = null;
     reconnectAttempts.value = 0;
+    resetStreamMetrics();
 
     try {
       const run = await startRun('', {
@@ -73,20 +118,29 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   function dispatch(ev: HermesSSEEvent): void {
     const session = useSessionStore();
     switch (ev.event) {
-      case 'message.delta':
-        session.appendDelta((ev as { delta: string }).delta);
+      case 'message.delta': {
+        const d = (ev as { delta: string }).delta;
+        session.appendDelta(d);
+        bumpCharCount(d.length);
         break;
+      }
       case 'reasoning.available':
         session.appendReasoning((ev as { text: string }).text);
         break;
       case 'tool.started': {
-        const e = ev as { tool: string; preview?: string };
-        session.startToolCall(e.tool, e.preview);
+        const e = ev as { tool: string; preview?: string; input?: unknown; args?: unknown; arguments?: unknown };
+        session.startToolCall(e.tool, e.preview, extractToolInput(e));
         break;
       }
       case 'tool.completed': {
-        const e = ev as { tool: string; duration?: number; error?: boolean };
-        session.completeToolCall(e.tool, { error: e.error, durationSec: e.duration });
+        const e = ev as { tool: string; duration?: number; error?: boolean; output?: unknown; result?: unknown; message?: string; errorMessage?: string };
+        session.completeToolCall(e.tool, {
+          error: e.error,
+          durationSec: e.duration,
+          output: e.output ?? e.result,
+          errorMessage: e.errorMessage ?? e.message,
+          input: extractToolInput(e, ['duration', 'error', 'output', 'result', 'message', 'errorMessage']),
+        });
         break;
       }
       case 'run.completed': {
@@ -122,11 +176,28 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     }
   }
 
+  function extractToolInput(ev: { [key: string]: unknown; input?: unknown; args?: unknown; arguments?: unknown }, extraOmit: string[] = []): Record<string, unknown> {
+    const explicit = toRecord(ev.input) ?? toRecord(ev.args) ?? toRecord(ev.arguments);
+    const rest: Record<string, unknown> = {};
+    const omitted = new Set(['event', 'run_id', 'timestamp', 'tool', 'preview', 'input', 'args', 'arguments', ...extraOmit]);
+    for (const [key, value] of Object.entries(ev)) {
+      if (omitted.has(key)) continue;
+      rest[key] = value;
+    }
+    return { ...(explicit ?? {}), ...rest };
+  }
+
+  function toRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : null;
+  }
+
   function abort(): void {
     handle?.close();
     handle = null;
     state.value = 'idle';
   }
 
-  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, send, abort };
+  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, charsPerSec, send, abort };
 });

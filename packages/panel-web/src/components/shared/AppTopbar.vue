@@ -69,6 +69,10 @@ const pageSubtitle = computed(() => {
 function toggleLocale(): void {
   setLocale(locale.value === 'zh-CN' ? 'en-US' : 'zh-CN');
 }
+
+function showCheatsheet(): void {
+  window.dispatchEvent(new Event('panel:show-cheatsheet'));
+}
 </script>
 
 <template>
@@ -108,6 +112,28 @@ function toggleLocale(): void {
     <ModelSwitcher />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />
+    <button
+      type="button"
+      class="topbar-icon-button"
+      :title="t('hotkeysCheatsheet.title') + ' (⌘?)'"
+      :aria-label="t('hotkeysCheatsheet.title')"
+      @click="showCheatsheet"
+    >
+      <svg
+        class="h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.5 9a2.5 2.5 0 1 1 4.4 1.6c-.6.6-1.4 1-1.9 1.4-.5.4-.5.9-.5 1.5" />
+        <path d="M12 17h.01" />
+      </svg>
+    </button>
     <button
       type="button"
       class="topbar-icon-button relative"

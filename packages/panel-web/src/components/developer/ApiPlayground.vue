@@ -12,7 +12,7 @@ import {
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { HEADERS } from '@hermes-panel/shared';
-import { getBffBase, getPanelToken } from '@/api/token';
+import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 import { useDeveloperStore, type DevHistoryEntry } from '@/stores/developer';
 import { genCurl, genFetch } from '@/utils/code-templates';
 
@@ -99,10 +99,10 @@ async function send(): Promise<void> {
   responseStatus.value = null;
   responseDuration.value = null;
 
-  const url = `${getBffBase()}${current.value.url}`;
+  const url = `${await getBffBaseAsync()}${current.value.url}`;
   const headers = new Headers();
   headers.set('Content-Type', 'application/json');
-  headers.set(HEADERS.PANEL_TOKEN, getPanelToken());
+  headers.set(HEADERS.PANEL_TOKEN, await getPanelTokenAsync());
   for (const [k, v] of Object.entries(current.value.headers)) headers.set(k, v);
 
   const init: RequestInit = { method: current.value.method, headers };

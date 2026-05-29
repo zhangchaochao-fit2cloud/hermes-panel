@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    
+    <defs>
+      <linearGradient id="blue" x1="252" y1="120" x2="820" y2="914" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#8bd0ff"/>
+        <stop offset=".48" stop-color="#3d9cff"/>
+        <stop offset="1" stop-color="#0f6ff1"/>
+      </linearGradient>
+      <linearGradient id="blueDeep" x1="220" y1="120" x2="820" y2="900" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#25395f"/>
+        <stop offset=".55" stop-color="#10244a"/>
+        <stop offset="1" stop-color="#07152d"/>
+      </linearGradient>
+      <linearGradient id="blueFlat" x1="180" y1="120" x2="844" y2="904" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#2f95ff"/>
+        <stop offset="1" stop-color="#0969f2"/>
+      </linearGradient>
+      <filter id="tileShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#0f4ea8" flood-opacity=".20"/>
+      </filter>
+      <filter id="markShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="14" stdDeviation="15" flood-color="#07499d" flood-opacity=".35"/>
+        <feDropShadow dx="0" dy="-5" stdDeviation="9" flood-color="#ffffff" flood-opacity=".72"/>
+      </filter>
+      <filter id="innerGloss" x="-10%" y="-10%" width="120%" height="120%">
+        <feGaussianBlur stdDeviation="2"/>
+      </filter>
+    </defs>
+  
+    <rect width="1024" height="1024" fill="none"/>
+    <rect x="118" y="118" width="788" height="788" rx="174" fill="#0757ff" filter="url(#tileShadow)"/>
+    <path d="M184 285c0-67 54-121 121-121h414c70 0 127 57 127 127v21c-111-40-231-52-360-36-133 17-235 13-302-4z" fill="#fff" opacity=".20" filter="url(#innerGloss)"/>
+    <rect x="126" y="126" width="772" height="772" rx="166" fill="none" stroke="#bdddff" stroke-opacity=".5" stroke-width="10"/>
+    <g transform="translate(112 126) scale(.78)">
+    <g filter="url(#markShadow)">
+      <path d="M706 445c36-76 102-104 155-70 45 29 58 87 34 151" fill="none" stroke="#fff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#fff">
+        <ellipse cx="548" cy="500" rx="226" ry="92" transform="rotate(-4 548 500)" />
+        <path d="M398 470c-2-76-31-132-91-170-21-13-28-40-15-59 14-21 44-15 78 7 68 43 111 104 137 185 10 31-108 68-109 37z" />
+        <path d="M309 251c-24-31-38-62-31-92 42 12 76 39 102 77 13 20-44 47-71 15z" />
+        <path d="M300 284c-51 6-87 43-105 104-9 30 6 55 35 61 27 5 48-10 56-38 10-33 29-55 56-66 26-11-4-65-42-61z" />
+        <path d="M384 546c-42 28-69 63-79 105-7 28 12 53 39 58 24 4 44-9 53-34 9-26 29-49 60-69 22-14 29-42 15-62-18-24-58-18-88 2z" />
+        <path d="M478 534v137c0 30 20 50 48 50s48-20 48-50V530c0-28-20-46-48-46s-48 19-48 50z" />
+        <path d="M651 530c24 53 56 94 96 126 24 20 55 15 70-9 14-22 7-48-16-68-31-26-55-57-72-96-13-30-43-41-68-29-24 12-33 44-10 76z" />
+        <path d="M735 518c35 35 56 73 63 117 5 30 27 47 55 43 27-4 44-28 39-57-10-59-41-112-90-158-23-21-55-22-75-1-20 21-14 37 8 56z" />
+      </g>
+    </g>
+  </g>
+  </svg>

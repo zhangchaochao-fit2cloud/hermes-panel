@@ -145,10 +145,10 @@ const rows = computed(() => [
 ]);
 
 const DOT_CLASS: Record<DotState, string> = {
-  ok:      'bg-emerald-500',
-  pending: 'bg-amber-500 animate-pulse',
-  down:    'bg-red-500',
-  unknown: 'bg-zinc-400',
+  ok:      'status-dot-success',
+  pending: 'status-dot-warning animate-pulse',
+  down:    'status-dot-error',
+  unknown: 'status-dot-neutral opacity-70',
 };
 
 function onOpen(): void {

@@ -14,6 +14,8 @@ vi.mock('@/api/bff', () => ({
 vi.mock('@/api/token', () => ({
   getBffBase: () => 'http://test.local:5667',
   getPanelToken: () => 'devtoken123',
+  getBffBaseAsync: async () => 'http://test.local:5667',
+  getPanelTokenAsync: async () => 'devtoken123',
 }));
 
 // Imported *after* the mocks so the store picks up the mocked bffFetch.

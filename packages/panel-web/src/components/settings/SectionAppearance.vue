@@ -78,7 +78,7 @@ const fontOptions: FontOption[] = [
         <button
           v-for="opt in modeOptions"
           :key="opt.value"
-          class="cursor-pointer flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden"
+          class="cursor-pointer flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden text-[var(--text-1)] bg-[var(--bg-card)]"
           :class="
             mode === opt.value
               ? 'border-[var(--brand-500)] shadow-[var(--shadow-2)]'

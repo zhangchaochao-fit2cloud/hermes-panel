@@ -62,20 +62,20 @@ export const useSessionStore = defineStore('session', () => {
     msg.reasoning = (msg.reasoning ?? '') + text;
   }
 
-  function startToolCall(name: string, preview?: string): void {
+  function startToolCall(name: string, preview?: string, input: Record<string, unknown> = {}): void {
     const msg = getCurrentAssistant();
     msg.toolCalls ??= [];
     msg.toolCalls.push({
       id: `tc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       name,
-      input: preview ? { preview } : {},
+      input: preview ? { preview, ...input } : input,
       preview,
       status: 'running',
       startedAt: Date.now(),
     });
   }
 
-  function completeToolCall(name: string, opts: { error?: boolean; durationSec?: number }): void {
+  function completeToolCall(name: string, opts: { error?: boolean; durationSec?: number; output?: unknown; errorMessage?: string; input?: Record<string, unknown> }): void {
     const msg = getCurrentAssistant();
     if (!msg.toolCalls) return;
     // Find the most recent matching running tool call
@@ -85,6 +85,9 @@ export const useSessionStore = defineStore('session', () => {
         Object.assign(tc, {
           status: opts.error ? 'error' : 'done',
           completedAt: opts.durationSec != null ? tc.startedAt + opts.durationSec * 1000 : Date.now(),
+          input: opts.input ? { ...tc.input, ...opts.input } : tc.input,
+          ...(opts.output !== undefined ? { output: opts.output } : {}),
+          ...(opts.errorMessage ? { errorMessage: opts.errorMessage } : {}),
         });
         return;
       }
@@ -102,6 +105,7 @@ export const useSessionStore = defineStore('session', () => {
   function completeRun(output: string | undefined, usage?: { input?: number; output?: number; total?: number }): void {
     const msg = getCurrentAssistant();
     msg.completed = true;
+    msg.completedAt = Date.now();
     // If we never got deltas (rare), fall back to `output`
     if (!msg.content && output) msg.content = output;
     // Score the response locally (cheap heuristic, no LLM call)
@@ -132,12 +136,56 @@ export const useSessionStore = defineStore('session', () => {
     currentAssistantId = null;
   }
 
+  function branchAt(messageId: string): boolean {
+    const index = messages.value.findIndex(m => m.id === messageId);
+    if (index < 0) return false;
+    messages.value = messages.value.slice(0, index + 1).map(message => ({ ...message }));
+    sessionId.value = null;
+    currentAssistantId = null;
+    tokenUsage.value = messages.value.reduce<TokenUsage>((acc, message) => {
+      if (message.tokenUsage) {
+        acc.input += message.tokenUsage.input;
+        acc.output += message.tokenUsage.output;
+        acc.total += message.tokenUsage.total;
+      }
+      return acc;
+    }, { input: 0, output: 0, total: 0 });
+    return true;
+  }
+
+  /**
+   * 在某条 user message 处就地编辑。把它之前的消息保留、替换该条内容、
+   * 截断它之后所有消息。返回新内容供调用方 stream.send 重新跑。
+   * 注意：该会话的 sessionId 仍保留 — hermes 会在同一 session 续上
+   * 新的 turn（与 fork 行为不同）。
+   */
+  function editUserMessageAt(messageId: string, newContent: string): string | null {
+    const index = messages.value.findIndex(m => m.id === messageId);
+    if (index < 0) return null;
+    const target = messages.value[index];
+    if (target.role !== 'user') return null;
+    messages.value = messages.value.slice(0, index).map(m => ({ ...m }));
+    currentAssistantId = null;
+    // 重新累计 token（只剩前置 turns）
+    tokenUsage.value = messages.value.reduce<TokenUsage>((acc, m) => {
+      if (m.tokenUsage) {
+        acc.input += m.tokenUsage.input;
+        acc.output += m.tokenUsage.output;
+        acc.total += m.tokenUsage.total;
+      }
+      return acc;
+    }, { input: 0, output: 0, total: 0 });
+    return newContent;
+  }
+
   return {
     sessionId, messages, tokenUsage, contextLimit,
     appendUserMessage, startAssistantMessage, getCurrentAssistant,
     appendDelta, appendReasoning,
     startToolCall, completeToolCall, updateToolCall,
     completeRun,
+    branchAt,
+    editUserMessageAt,
     reset,
   };
 });

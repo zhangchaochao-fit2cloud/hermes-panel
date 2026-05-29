@@ -2,9 +2,11 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useNotificationsStore, type NotificationEvent } from '@/stores/notifications';
 
 const router = useRouter();
+const { t } = useI18n();
 const store = useNotificationsStore();
 const { events } = storeToRefs(store);
 
@@ -14,9 +16,9 @@ const paused = ref(false);
 let pollHandle: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
-  void store.refresh();
+  void store.refresh({ silent: true });
   pollHandle = setInterval(() => {
-    if (!paused.value) void store.refresh();
+    if (!paused.value) void store.refresh({ silent: true });
   }, 8_000);
 });
 
@@ -56,13 +58,13 @@ function onClickEvent(ev: NotificationEvent): void {
       @click="expanded = !expanded"
     >
       <span class="opacity-60">{{ expanded ? '▾' : '▸' }}</span>
-      <span class="font-medium">实时事件</span>
-      <span class="text-[var(--text-3)]">{{ tail.length }} 条</span>
+      <span class="font-medium">{{ t('eventStream.title') }}</span>
+      <span class="text-[var(--text-3)]">{{ t('eventStream.countItems', { n: tail.length }) }}</span>
       <span class="flex-1" />
       <button
         v-if="expanded"
         class="px-2 py-0.5 rounded hover:bg-[var(--bg-elevate)]"
-        :title="paused ? '继续' : '暂停'"
+        :title="paused ? t('eventStream.resume') : t('eventStream.pause')"
         @click.stop="paused = !paused"
       >
         {{ paused ? '▶' : '⏸' }}
@@ -76,7 +78,7 @@ function onClickEvent(ev: NotificationEvent): void {
       class="h-[224px] overflow-y-auto px-4 pb-2 font-mono text-xs"
     >
       <div v-if="tail.length === 0" class="py-8 text-center text-[var(--text-3)]">
-        暂无事件
+        {{ t('eventStream.empty') }}
       </div>
       <ul v-else>
         <li

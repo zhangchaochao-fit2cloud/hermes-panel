@@ -1,7 +1,7 @@
 import { HEADERS } from '@hermes-panel/shared';
 import { computed, ref } from 'vue';
 import { useHermesEndpointStore } from '@/stores/hermes-endpoint';
-import { getBffBase, getPanelToken } from './token.js';
+import { getBffBaseAsync, getPanelTokenAsync } from './token.js';
 
 interface BffError { code: string; message: string }
 export interface BffFetchOptions extends RequestInit { silent?: boolean }
@@ -18,10 +18,12 @@ export class BffApiError extends Error {
 
 export async function bffFetch<T>(path: string, init: BffFetchOptions = {}): Promise<T> {
   const { silent = false, ...requestInit } = init;
-  const url = `${getBffBase()}${path}`;
+  const base = await getBffBaseAsync();
+  const token = await getPanelTokenAsync();
+  const url = `${base}${path}`;
   const headers = new Headers(requestInit.headers);
   headers.set('Content-Type', 'application/json');
-  headers.set(HEADERS.PANEL_TOKEN, getPanelToken());
+  headers.set(HEADERS.PANEL_TOKEN, token);
 
   // Forward the active Hermes endpoint when calling proxied hermes routes.
   if (path.startsWith('/api/hermes')) {

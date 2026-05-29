@@ -57,7 +57,7 @@ async function switchTo(name: string): Promise<void> {
       <div v-if="currentProfile" class="flex items-center gap-2 flex-wrap">
         <span class="text-xs text-[var(--text-3)]">{{ t('workspaces.profile.current') }}</span>
         <span class="inline-flex items-center gap-1.5 font-mono text-sm font-medium">
-          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+          <span class="h-2 w-2 rounded-full status-dot-success animate-pulse" aria-hidden="true" />
           {{ currentProfile.name }}
         </span>
         <NTag

@@ -146,7 +146,7 @@ function onNewFile(): void {
       }),
       h('div', { class: 'text-xs text-[var(--text-3)]' }, t('memory.newFileHint')),
       errorRef.value
-        ? h('div', { class: 'text-xs text-red-500' }, errorRef.value)
+        ? h('div', { class: 'text-xs text-[var(--color-error)]' }, errorRef.value)
         : null,
     ]),
     positiveText: t('memory.create'),
@@ -226,7 +226,7 @@ watch(files, (next) => {
     <!-- Optional error banner (non-empty-state errors only) -->
     <div
       v-if="showErrorBanner"
-      class="px-4 py-2 text-xs bg-red-500/10 text-red-600 border-b border-red-500/30 flex items-center gap-2"
+      class="app-error-banner px-4 py-2 text-xs border-b flex items-center gap-2"
     >
       <span>{{ listError ?? listErrorCode }}</span>
       <button class="underline opacity-80 hover:opacity-100" @click="store.loadList()">

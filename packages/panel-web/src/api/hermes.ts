@@ -1,7 +1,7 @@
 import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { HEADERS } from '@hermes-panel/shared';
 import { useHermesEndpointStore } from '@/stores/hermes-endpoint';
-import { getBffBase, getPanelToken } from './token.js';
+import { getBffBaseAsync, getPanelTokenAsync } from './token.js';
 
 interface RunStartPayload {
   model: string;
@@ -21,14 +21,14 @@ export interface RunHandle {
  *   - Two CORS whitelists (just the BFF now)
  */
 
-function bffUrl(path: string): string {
-  return `${getBffBase()}/api/hermes${path}`;
+async function bffUrl(path: string): Promise<string> {
+  return `${await getBffBaseAsync()}/api/hermes${path}`;
 }
 
-function authHeaders(): Record<string, string> {
+async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = {
     'Content-Type': 'application/json',
-    [HEADERS.PANEL_TOKEN]: getPanelToken(),
+    [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync(),
   };
   // Read the active endpoint lazily so changes to the active URL apply
   // to the next request without needing to rebuild any client.
@@ -46,13 +46,13 @@ export async function startRun(
   payload: RunStartPayload,
 ): Promise<RunHandle> {
   void _apiKey;  // BFF holds the real key; this param is kept for signature symmetry
-  const url = bffUrl('/v1/runs');
+  const url = await bffUrl('/v1/runs');
 
   let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: authHeaders(),
+      headers: await authHeaders(),
       body: JSON.stringify(payload),
     });
   } catch (err) {
@@ -93,7 +93,6 @@ export function consumeSSE(
   },
 ): SSEHandle {
   void _apiKey;
-  const url = bffUrl(`/v1/runs/${runId}/events`);
   const controller = new AbortController();
   let closed = false;
 
@@ -106,9 +105,10 @@ export function consumeSSE(
 
   void (async () => {
     try {
+      const url = await bffUrl(`/v1/runs/${runId}/events`);
       const sseHeaders: Record<string, string> = {
         'Accept': 'text/event-stream',
-        [HEADERS.PANEL_TOKEN]: getPanelToken(),
+        [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync(),
       };
       try {
         const ep = useHermesEndpointStore();

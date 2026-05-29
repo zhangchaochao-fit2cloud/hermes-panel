@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import {
+  computed, nextTick, onMounted, ref, watch,
+} from 'vue';
 import { NInput, NSpin, NButton } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useBreakpoint } from '@/composables/use-breakpoint';
-import { renderMarkdown } from '@/utils/markdown';
+import {
+  handleMarkdownCodeCopyClick,
+  hydrateMarkdownCodeBlocks,
+  renderMarkdown,
+} from '@/utils/markdown';
 
 const props = defineProps<{
   path: string | null;
@@ -19,7 +25,7 @@ const emit = defineEmits<{
   save: [];
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { isMobile } = useBreakpoint();
 
 const value = computed({
@@ -89,6 +95,25 @@ const bodyGridStyle = computed<Record<string, string>>(() => {
 
 const renderedPreview = computed(() => renderMarkdown(props.content));
 const previewIsEmpty = computed(() => !props.content || !props.content.trim());
+const previewRef = ref<HTMLElement | null>(null);
+const codeCopyLabels = computed(() => ({
+  copy: t('common.copy'),
+  copied: t('common.copied'),
+  copyFailed: t('common.copyFailed'),
+}));
+
+function refreshMarkdownCodeBlocks(): void {
+  hydrateMarkdownCodeBlocks(previewRef.value, codeCopyLabels.value);
+}
+
+watch([renderedPreview, locale, showPreviewPane], async () => {
+  await nextTick();
+  refreshMarkdownCodeBlocks();
+});
+
+function onMarkdownClick(event: MouseEvent): void {
+  void handleMarkdownCodeCopyClick(event, codeCopyLabels.value);
+}
 
 // Ctrl/Cmd+S handler on the textarea wrapper. NInput passes through keydown.
 const wrapperRef = ref<HTMLElement | null>(null);
@@ -199,7 +224,13 @@ const toggleLabel = computed(() => {
             {{ t('memory.preview.empty') }}
           </div>
           <!-- eslint-disable vue/no-v-html -->
-          <div v-else class="prose-md" v-html="renderedPreview" />
+          <div
+            v-else
+            ref="previewRef"
+            class="prose-md"
+            @click="onMarkdownClick"
+            v-html="renderedPreview"
+          />
           <!-- eslint-enable vue/no-v-html -->
         </div>
       </div>
@@ -207,7 +238,7 @@ const toggleLabel = computed(() => {
       <!-- Error banner -->
       <div
         v-if="error"
-        class="absolute bottom-0 left-0 right-0 px-4 py-2 text-xs bg-red-500/10 text-red-600 border-t border-red-500/30"
+        class="app-error-banner absolute bottom-0 left-0 right-0 px-4 py-2 text-xs border-t"
       >
         {{ error }}
       </div>

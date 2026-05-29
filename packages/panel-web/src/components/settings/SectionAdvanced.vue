@@ -45,27 +45,27 @@ function clearLocalStorage(): void {
     <h3 class="text-lg font-semibold mb-1">{{ t('settings.advanced.title') }}</h3>
     <p class="text-sm opacity-60 mb-6">{{ t('settings.advanced.desc') }}</p>
 
-    <div class="border-2 border-[#f5222d] rounded-md p-5 space-y-5 bg-[#f5222d]/5">
+    <div class="danger-zone rounded-md p-5 space-y-5">
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="text-sm font-medium">{{ t('settings.advanced.reset_panel') }}</div>
           <div class="text-xs opacity-70 mt-1">{{ t('settings.advanced.reset_panel_desc') }}</div>
         </div>
         <button
-          class="px-3 py-1.5 text-sm rounded border border-[#f5222d] text-[#f5222d] hover:bg-[#f5222d] hover:text-white transition-colors flex-shrink-0"
+          class="danger-button px-3 py-1.5 text-sm rounded transition-colors flex-shrink-0"
           @click="resetPanelSettings"
         >
           {{ t('settings.advanced.reset_panel') }}
         </button>
       </div>
-      <div class="h-px bg-[#f5222d]/30" />
+      <div class="danger-divider h-px" />
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="text-sm font-medium">{{ t('settings.advanced.clear_storage') }}</div>
           <div class="text-xs opacity-70 mt-1">{{ t('settings.advanced.clear_storage_desc') }}</div>
         </div>
         <button
-          class="px-3 py-1.5 text-sm rounded border border-[#f5222d] text-[#f5222d] hover:bg-[#f5222d] hover:text-white transition-colors flex-shrink-0"
+          class="danger-button px-3 py-1.5 text-sm rounded transition-colors flex-shrink-0"
           @click="clearLocalStorage"
         >
           {{ t('settings.advanced.clear_storage') }}
@@ -74,3 +74,22 @@ function clearLocalStorage(): void {
     </div>
   </div>
 </template>
+
+<style scoped>
+.danger-zone {
+  border: 1px solid color-mix(in srgb, var(--color-error) 48%, var(--border));
+  background: color-mix(in srgb, var(--color-error) 7%, var(--bg-card));
+}
+.danger-button {
+  border: 1px solid color-mix(in srgb, var(--color-error) 72%, var(--border));
+  color: var(--color-error);
+  background: transparent;
+}
+.danger-button:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+.danger-divider {
+  background: color-mix(in srgb, var(--color-error) 26%, transparent);
+}
+</style>

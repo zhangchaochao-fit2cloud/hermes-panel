@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { NButton, NTag } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import type { WorkspaceTemplate } from '@/data/workspaces';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   workspace: WorkspaceTemplate;
@@ -45,11 +48,11 @@ const iconBgStyle = computed(() => ({
           <div class="flex items-center gap-2 mb-0.5">
             <h3 class="text-base font-semibold truncate">{{ workspace.name }}</h3>
             <NTag v-if="active" size="tiny" type="success" :bordered="false">
-              ✓ 已启用
+              {{ t('workspaces.card.enabled') }}
             </NTag>
           </div>
           <div class="text-xs text-[var(--text-3)] mb-1">
-            {{ workspace.roles }} 角色
+            {{ t('workspaces.card.roleCount', { n: workspace.roles }) }}
           </div>
           <p class="text-sm text-[var(--text-2)] line-clamp-2 min-h-[2.6em]">
             {{ workspace.description }}
@@ -63,7 +66,7 @@ const iconBgStyle = computed(() => ({
           quaternary
           @click="emit('open', workspace.id)"
         >
-          详情
+          {{ t('workspaces.card.details') }}
         </NButton>
         <NButton
           size="small"
@@ -71,7 +74,7 @@ const iconBgStyle = computed(() => ({
           :disabled="active"
           @click="emit('activate', workspace.id)"
         >
-          {{ active ? '当前' : '启用' }}
+          {{ active ? t('workspaces.card.current') : t('workspaces.card.enable') }}
         </NButton>
       </div>
     </div>

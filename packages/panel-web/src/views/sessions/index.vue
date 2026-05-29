@@ -16,6 +16,7 @@ import SessionFilters from '@/components/sessions/SessionFilters.vue';
 import SessionTable from '@/components/sessions/SessionTable.vue';
 import SessionGrid from '@/components/sessions/SessionGrid.vue';
 import SessionGroupHeader from '@/components/sessions/SessionGroupHeader.vue';
+import SessionHoverPreview from '@/components/sessions/SessionHoverPreview.vue';
 import type { SessionSource } from '@hermes-panel/shared';
 import { useSessionsStore, type SourceFilter, type ViewMode } from '@/stores/sessions';
 import { useBreakpoint } from '@/composables/use-breakpoint';
@@ -28,6 +29,15 @@ const dialog = useDialog();
 const store = useSessionsStore();
 const { items, loading, refreshing, error, initialized, search, source, view, groupBy, total } = storeToRefs(store);
 const { isMobile } = useBreakpoint();
+
+// hover preview — 桌面端 hover 行 0.5s 后右侧浮层显示该会话最后 3 条消息
+const previewId = ref<string | null>(null);
+const previewRect = ref<DOMRect | null>(null);
+function onHoverPreview(id: string | null, rect: DOMRect | null): void {
+  if (isMobile.value) return; // 移动端无 hover 概念，跳过
+  previewId.value = id;
+  previewRect.value = rect;
+}
 
 // Force grid view on phones — the table layout horizontally scrolls and is
 // painful to use with a thumb. We do not persist this override, so the
@@ -324,6 +334,7 @@ function toggleGroup(s: SessionSource): void {
           @rename="onRename"
           @delete="onDelete"
           @export="onExport"
+          @hover-preview="onHoverPreview"
         />
         <SessionGrid
           v-else
@@ -354,6 +365,7 @@ function toggleGroup(s: SessionSource): void {
             @rename="onRename"
             @delete="onDelete"
             @export="onExport"
+            @hover-preview="onHoverPreview"
           />
           <SessionGrid
             v-else-if="!collapsed[g.source]"
@@ -366,6 +378,8 @@ function toggleGroup(s: SessionSource): void {
         </div>
       </template>
     </div>
+
+    <SessionHoverPreview :session-id="previewId" :anchor-rect="previewRect" />
   </div>
 </template>
 

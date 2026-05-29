@@ -201,7 +201,7 @@ function shortHost(url: string): string {
             </span>
             <span
               v-if="configuredFamilies.has(g.provider)"
-              class="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0"
+              class="h-1.5 w-1.5 rounded-full status-dot-success flex-shrink-0"
               :title="t('model.switcher.providerConfigured')"
             />
             <span class="ml-auto text-[10px] text-[var(--text-3)] tabular-nums">{{ g.models.length }}</span>

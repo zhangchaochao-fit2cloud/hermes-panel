@@ -10,7 +10,7 @@ import {
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { HEADERS } from '@hermes-panel/shared';
-import { getBffBase, getPanelToken } from '@/api/token';
+import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 
 const { t } = useI18n();
 const message = useMessage();
@@ -75,11 +75,11 @@ async function start(): Promise<void> {
   controller = new AbortController();
 
   try {
-    const res = await fetch(`${getBffBase()}${url.value}`, {
+    const res = await fetch(`${await getBffBaseAsync()}${url.value}`, {
       method: 'GET',
       headers: {
         Accept: 'text/event-stream',
-        [HEADERS.PANEL_TOKEN]: getPanelToken(),
+        [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync(),
       },
       signal: controller.signal,
     });
@@ -173,11 +173,11 @@ function exportJsonl(): void {
 async function quickStart(): Promise<void> {
   // POST /v1/runs first to get a run_id, then attach to /events.
   try {
-    const res = await fetch(`${getBffBase()}/api/hermes/v1/runs`, {
+    const res = await fetch(`${await getBffBaseAsync()}/api/hermes/v1/runs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        [HEADERS.PANEL_TOKEN]: getPanelToken(),
+        [HEADERS.PANEL_TOKEN]: await getPanelTokenAsync(),
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',

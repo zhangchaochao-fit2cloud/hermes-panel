@@ -9,6 +9,12 @@ export interface ChatMessage {
   createdAt: number;
   completed: boolean;
   tokenUsage?: TokenUsage;
+  /** UI-only feedback marker for the current panel session */
+  feedback?: 'up' | 'down';
+  /** UI-only marker when the user has edited the prompt in panel */
+  edited?: boolean;
+  /** Best-effort completion timestamp for local duration display */
+  completedAt?: number;
   /** Local heuristic quality score 0-100; computed when message completes */
   qualityScore?: number;
   /** Local heuristic hallucination risk 0-1 */

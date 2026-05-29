@@ -4,15 +4,22 @@ import { NModal, NInput, NScrollbar } from 'naive-ui';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { useAppearanceStore, type ThemeMode } from '@/stores/appearance';
+import { useAppearanceStore } from '@/stores/appearance';
 import { useHotkeysStore } from '@/stores/hotkeys';
 import { setLocale } from '@/locales';
 import { bffFetch } from '@/api/bff';
+import { displaySessionTitle } from '@/utils/session-title';
+import {
+  PANEL_COMMANDS,
+  createRecentSessionCommand,
+  type CommandAction,
+  type CommandIconKey,
+} from '@/commands/registry';
 
 interface Action {
   id: string;
   group: string;       // category bucket
-  icon: string;
+  icon: IconKey;
   label: string;
   hint?: string;       // right-aligned hint or shortcut
   run: () => void | Promise<void>;
@@ -21,6 +28,23 @@ interface Action {
 interface SessionRow {
   id: string; title: string; updatedAt: number;
 }
+
+type IconKey = CommandIconKey | 'search';
+
+const iconPaths: Record<IconKey, string> = {
+  dashboard: 'M3 13h7V3H3v10Zm11 8h7V3h-7v18ZM3 21h7v-5H3v5Zm11 0h7v-5h-7v5Z',
+  chat: 'M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z',
+  sessions: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  tools: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z',
+  settings: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
+  new: 'M12 5v14M5 12h14',
+  refresh: 'M20 12a8 8 0 0 1-14.9 4M4 12a8 8 0 0 1 14.9-4M18 3v5h-5M6 21v-5h5',
+  sun: 'M12 4V2m0 20v-2m8-8h2M2 12h2m13.66-5.66 1.42-1.42M4.92 19.08l1.42-1.42m11.32 0 1.42 1.42M4.92 4.92l1.42 1.42M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  moon: 'M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z',
+  auto: 'M12 3a9 9 0 1 0 9 9h-9V3Z',
+  language: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM2 12h20M12 2a15.3 15.3 0 0 1 0 20a15.3 15.3 0 0 1 0-20Z',
+  search: 'm21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z',
+};
 
 const router = useRouter();
 const { t } = useI18n();
@@ -34,34 +58,45 @@ const recentSessions = ref<SessionRow[]>([]);
 const selectedIndex = ref(0);
 const inputRef = ref<InstanceType<typeof NInput> | null>(null);
 
+function runCommandAction(action: CommandAction): void {
+  if (action.type === 'route') {
+    void router.push(action.to);
+    return;
+  }
+  if (action.type === 'reload') {
+    location.reload();
+    return;
+  }
+  if (action.type === 'theme') {
+    appearance.setMode(action.mode);
+    return;
+  }
+  setLocale(action.locale);
+}
+
 const allActions = computed<Action[]>(() => {
-  const items: Action[] = [
-    // Navigation
-    { id: 'nav-dashboard', group: t('controlCenter.group.nav'), icon: '📊', label: t('nav.dashboard'), hint: '/dashboard', run: () => { void router.push('/dashboard'); } },
-    { id: 'nav-chat', group: t('controlCenter.group.nav'), icon: '💬', label: t('nav.chat'), hint: '/chat', run: () => { void router.push('/chat'); } },
-    { id: 'nav-sessions', group: t('controlCenter.group.nav'), icon: '📜', label: t('nav.sessions'), hint: '/sessions', run: () => { void router.push('/sessions'); } },
-    { id: 'nav-tools', group: t('controlCenter.group.nav'), icon: '🛠', label: t('nav.tools'), hint: '/tools', run: () => { void router.push('/tools'); } },
-    { id: 'nav-settings', group: t('controlCenter.group.nav'), icon: '⚙️', label: t('nav.settings'), hint: '/settings', run: () => { void router.push('/settings'); } },
-    // Actions
-    { id: 'new-chat', group: t('controlCenter.group.action'), icon: '✨', label: t('controlCenter.action.newChat'), hint: '⌘N', run: () => { void router.push('/chat'); } },
-    { id: 'refresh', group: t('controlCenter.group.action'), icon: '🔄', label: t('controlCenter.action.refresh'), hint: '⌘R', run: () => location.reload() },
-    // Appearance
-    { id: 'theme-light', group: t('controlCenter.group.theme'), icon: '☀️', label: t('controlCenter.action.themeLight'), run: () => appearance.setMode('light' as ThemeMode) },
-    { id: 'theme-dark', group: t('controlCenter.group.theme'), icon: '🌙', label: t('controlCenter.action.themeDark'), run: () => appearance.setMode('dark' as ThemeMode) },
-    { id: 'theme-auto', group: t('controlCenter.group.theme'), icon: '🌗', label: t('controlCenter.action.themeAuto'), run: () => appearance.setMode('auto' as ThemeMode) },
-    // Locale
-    { id: 'locale-zh', group: t('controlCenter.group.locale'), icon: '🇨🇳', label: '中文（简体）', run: () => setLocale('zh-CN') },
-    { id: 'locale-en', group: t('controlCenter.group.locale'), icon: '🇺🇸', label: 'English (US)', run: () => setLocale('en-US') },
-  ];
+  const items: Action[] = PANEL_COMMANDS.map((command) => ({
+    id: command.id,
+    group: t(command.groupKey),
+    icon: command.icon,
+    label: t(command.labelKey),
+    hint: 'hint' in command ? command.hint : undefined,
+    run: () => runCommandAction(command.action),
+  }));
 
   for (const s of recentSessions.value.slice(0, 8)) {
+    const command = createRecentSessionCommand({
+      id: s.id,
+      title: displaySessionTitle(s, t('sessions.untitled')),
+      updatedAtHint: relTime(s.updatedAt),
+    });
     items.push({
-      id: `sess-${s.id}`,
-      group: t('controlCenter.group.recent'),
-      icon: '💬',
-      label: s.title || s.id.slice(0, 12),
-      hint: relTime(s.updatedAt),
-      run: () => { void router.push(`/chat?resume=${s.id}`); },
+      id: command.id,
+      group: t(command.groupKey),
+      icon: command.icon,
+      label: command.label,
+      hint: command.hint,
+      run: () => runCommandAction(command.action),
     });
   }
   return items;
@@ -92,7 +127,7 @@ const flatItems = computed<Action[]>(() => filtered.value);
 function relTime(ts: number): string {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60_000);
-  if (m < 1) return '刚刚';
+  if (m < 1) return t('common.justNow');
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
@@ -102,7 +137,10 @@ function relTime(ts: number): string {
 
 async function loadRecent(): Promise<void> {
   try {
-    const r = await bffFetch<Array<{ id: string; title: string; updatedAt: number }>>('/api/sessions?limit=8');
+    const r = await bffFetch<Array<{ id: string; title: string; updatedAt: number }>>(
+      '/api/sessions?limit=8',
+      { silent: true },
+    );
     recentSessions.value = r;
   } catch {
     // Silent — if BFF is down, the action list still works without recents
@@ -219,7 +257,18 @@ void themeMode;  // touch ref so it stays reactive even though not directly boun
           @keydown="onInputKeydown"
         >
           <template #prefix>
-            <span class="text-base opacity-60">🔍</span>
+            <svg
+              class="h-4 w-4 text-[var(--text-3)]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path :d="iconPaths.search" />
+            </svg>
           </template>
         </NInput>
       </div>
@@ -250,7 +299,20 @@ void themeMode;  // touch ref so it stays reactive even though not directly boun
                 @click="runItem(item)"
                 @mouseenter="selectedIndex = flatItems.indexOf(item)"
               >
-                <span class="text-base shrink-0">{{ item.icon }}</span>
+                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--bg-elevate)] text-[var(--text-2)]">
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path :d="iconPaths[item.icon]" />
+                  </svg>
+                </span>
                 <span class="text-sm flex-1 truncate">{{ item.label }}</span>
                 <span v-if="item.hint" class="text-xs text-[var(--text-3)] font-mono">{{ item.hint }}</span>
               </li>

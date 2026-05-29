@@ -12,6 +12,7 @@ import {
 import { useI18n } from 'vue-i18n';
 import type { SessionSummary } from '@hermes-panel/shared';
 import { relativeTime, absoluteTime, type Locale } from '@/utils/relative-time';
+import { displaySessionTitle } from '@/utils/session-title';
 
 const props = defineProps<{
   items: SessionSummary[];
@@ -22,6 +23,8 @@ const emit = defineEmits<{
   (e: 'rename', row: SessionSummary): void;
   (e: 'delete', row: SessionSummary): void;
   (e: 'export', row: SessionSummary): void;
+  /** hover 浮层：传 session id + 当前 row 的 boundingRect */
+  (e: 'hoverPreview', id: string | null, rect: DOMRect | null): void;
 }>();
 
 const { t, locale } = useI18n();
@@ -31,6 +34,10 @@ function fmtNum(n: number): string {
   if (n < 1000) return String(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`;
   return `${(n / 1_000_000).toFixed(2)}m`;
+}
+
+function titleOf(row: SessionSummary): string {
+  return displaySessionTitle(row, t('sessions.untitled'));
 }
 
 function rowActions(): DropdownOption[] {
@@ -50,10 +57,12 @@ function handleAction(key: string | number, row: SessionSummary): void {
   else if (key === 'delete') emit('delete', row);
 }
 
+// 统一灰底 tag — 之前每条来源一种色（success/warning/info）和模型 tag 撞色，
+// 表格一行 4 个不同颜色块视觉混乱。靠 icon 区分来源足够，颜色留给状态语义。
 const SOURCE_META: Record<string, { icon: string; tone: 'info' | 'warning' | 'success' | 'default' }> = {
-  cli:        { icon: '💬', tone: 'success' },
-  cron:       { icon: '⏰', tone: 'warning' },
-  api_server: { icon: '🔌', tone: 'info' },
+  cli:        { icon: '💬', tone: 'default' },
+  cron:       { icon: '⏰', tone: 'default' },
+  api_server: { icon: '🔌', tone: 'default' },
   unknown:    { icon: '❔', tone: 'default' },
 };
 
@@ -85,7 +94,7 @@ const columns = computed<DataTableColumns<SessionSummary>>(() => [
       h(
         'span',
         { class: 'font-medium text-[var(--text-1)]' },
-        row.title,
+        titleOf(row),
       ),
   },
   {
@@ -154,37 +163,49 @@ const columns = computed<DataTableColumns<SessionSummary>>(() => [
   },
 ]);
 
+// hover 0.5s 后才展示浮层 — 避免快速移动鼠标导致一连串 fetch
+let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+function onRowEnter(row: SessionSummary, e: MouseEvent): void {
+  if (hoverTimer) clearTimeout(hoverTimer);
+  const el = (e.currentTarget as HTMLElement) ?? null;
+  hoverTimer = setTimeout(() => {
+    if (!el) return;
+    emit('hoverPreview', row.id, el.getBoundingClientRect());
+  }, 500);
+}
+function onRowLeave(): void {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
+  }
+  emit('hoverPreview', null, null);
+}
+
 const rowProps = (row: SessionSummary): Record<string, unknown> => ({
   class: 'session-row cursor-pointer',
   onDblclick: () => emit('open', row.id),
+  onMouseenter: (e: MouseEvent) => onRowEnter(row, e),
+  onMouseleave: () => onRowLeave(),
 });
 
 const rowKey = (row: SessionSummary): string => row.id;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _items = computed(() => props.items);
 </script>
 
 <template>
   <div class="session-table-wrap">
     <NDataTable
       :columns="columns"
-      :data="_items"
+      :data="props.items"
       :row-key="rowKey"
       :row-props="rowProps"
       :bordered="false"
       :single-line="false"
       size="medium"
-      flex-height
-      class="!h-full"
     />
   </div>
 </template>
 
 <style scoped>
-.session-table-wrap {
-  height: 100%;
-}
 .session-table-wrap :deep(.session-row:hover > td) {
   background-color: color-mix(in srgb, var(--brand-500) 4%, transparent);
 }

@@ -3,7 +3,9 @@ import { ref, computed } from 'vue';
 import { NInput, NTag } from 'naive-ui';
 import { useToolsStore } from '@/stores/tools';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const tools = useToolsStore();
 const { skillCategories, skills } = storeToRefs(tools);
 
@@ -32,16 +34,16 @@ const trustColor = (trust: string): 'success' | 'info' | 'warning' | 'default' =
     <div class="mb-4 flex items-center gap-3">
       <NInput
         v-model:value="search"
-        placeholder="搜索技能..."
+        :placeholder="t('tools.marketplace.searchPlaceholder')"
         clearable
         size="small"
         class="max-w-xs"
       />
-      <span class="text-xs text-[var(--text-3)]">共 {{ skills.length }} 个技能</span>
+      <span class="text-xs text-[var(--text-3)]">{{ t('tools.marketplace.totalCount', { n: skills.length }) }}</span>
     </div>
 
     <div v-if="filteredCategories.length === 0" class="py-12 text-center text-sm text-[var(--text-3)]">
-      未找到匹配的技能
+      {{ t('tools.marketplace.empty') }}
     </div>
 
     <div v-for="[cat, list] in filteredCategories" :key="cat" class="mb-6">
@@ -60,7 +62,7 @@ const trustColor = (trust: string): 'success' | 'info' | 'warning' | 'default' =
               {{ s.trust }}
             </NTag>
           </div>
-          <div class="text-xs text-[var(--text-3)]">source: {{ s.source }}</div>
+          <div class="text-xs text-[var(--text-3)]">{{ t('tools.marketplace.sourceLabel') }}: {{ s.source }}</div>
         </div>
       </div>
     </div>

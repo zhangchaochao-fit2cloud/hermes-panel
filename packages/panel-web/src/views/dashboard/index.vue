@@ -15,6 +15,8 @@ import CacheCard from '@/components/dashboard/CacheCard.vue';
 import MonthlyPaceCard from '@/components/dashboard/MonthlyPaceCard.vue';
 import UsageCard from '@/components/dashboard/UsageCard.vue';
 import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
+import { useCronStore } from '@/stores/cron';
+import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
 interface OverallStats {
   total_sessions: number;
@@ -87,10 +89,20 @@ async function loadModels(): Promise<void> {
   }
 }
 
+const cronStore = useCronStore();
+
 async function loadSessions(): Promise<void> {
   sessionsLoading.value = true;
   try {
-    sessions.value = await bffFetch<SessionSummary[]>('/api/sessions?limit=5');
+    // 多拉一些原始 session 让聚合后还剩 ≥5；同时拉 cron jobs 拿真名
+    const [raw] = await Promise.all([
+      bffFetch<SessionSummary[]>('/api/sessions?limit=30'),
+      cronStore.jobs.length === 0 ? cronStore.load({ initial: true }) : Promise.resolve(),
+    ]);
+    const jobNames = {
+      get: (id: string) => cronStore.jobs.find(j => j.id === id)?.name,
+    };
+    sessions.value = aggregateCronSessions(raw, jobNames).slice(0, 5);
   } catch (err) {
     reportError('sessions', err);
   } finally {

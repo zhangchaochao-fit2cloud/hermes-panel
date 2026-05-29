@@ -16,6 +16,22 @@
   --brand-500: #6366f1;
   --brand-600: #4f46e5;
   --brand-700: #4338ca;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --md-inline-code-bg: color-mix(in srgb, var(--brand-500) 8%, var(--bg-elevate));
+  --md-code-bg: color-mix(in srgb, var(--bg-elevate) 86%, var(--bg-card));
+  --md-code-border: color-mix(in srgb, var(--border) 82%, var(--brand-500));
+  --md-code-shadow: inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+  --md-quote-bg: color-mix(in srgb, var(--brand-500) 6%, var(--bg-card));
+  --md-quote-border: color-mix(in srgb, var(--brand-500) 52%, var(--border));
+  --md-table-header-bg: color-mix(in srgb, var(--bg-elevate) 88%, var(--brand-500));
+  --md-table-stripe-bg: color-mix(in srgb, var(--text-1) 3%, transparent);
+  --md-image-bg: color-mix(in srgb, var(--bg-elevate) 72%, transparent);
+  --md-token-string: var(--color-success);
+  --md-token-number: var(--color-warning);
+  --md-token-accent: color-mix(in srgb, var(--brand-500) 78%, var(--text-1));
+  --md-token-tag: #ec4899;
 
   /* === Light (default) === */
   --bg-page: #f3f5f9;
@@ -49,6 +65,19 @@
   --text-1: #fafafa;
   --text-2: #a1a1aa;
   --text-3: #71717a;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --md-inline-code-bg: color-mix(in srgb, var(--brand-500) 14%, var(--bg-elevate));
+  --md-code-bg: color-mix(in srgb, var(--bg-elevate) 84%, black);
+  --md-code-border: color-mix(in srgb, var(--border) 76%, var(--brand-500));
+  --md-code-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+  --md-quote-bg: color-mix(in srgb, var(--brand-500) 10%, var(--bg-card));
+  --md-quote-border: color-mix(in srgb, var(--brand-500) 58%, var(--border));
+  --md-table-header-bg: color-mix(in srgb, var(--bg-elevate) 82%, var(--brand-500));
+  --md-table-stripe-bg: color-mix(in srgb, white 4%, transparent);
+  --md-image-bg: color-mix(in srgb, var(--bg-elevate) 82%, transparent);
+  --md-token-tag: #f472b6;
 }
 
 /* =================================================================
@@ -136,17 +165,19 @@
   --brand-500: #1a1a1a;
   --brand-600: #0a0a0a;
   --brand-700: #000000;
-  --bg-page: #fafafa;
+  /* 页面 vs 卡片对比加大：页面 #f0f0f0 + 卡片 #ffffff，
+     比之前 #fafafa/#ffffff 区分更明显，避免侧边栏/卡片融成一片白。 */
+  --bg-page: #f0f0f0;
   --bg-card: #ffffff;
-  --bg-elevate: #f5f5f5;
-  --border: #e5e5e5;
+  --bg-elevate: #e8e8e8;
+  --border: #d4d4d4;
   --text-1: #0a0a0a;
   --text-2: #404040;
   --text-3: #737373;
-  --body-bg: #fafafa;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --body-bg: #f0f0f0;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.10);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
 
 /* =================================================================
@@ -160,14 +191,16 @@
   --brand-500: #3b82f6;
   --brand-600: #2563eb;
   --brand-700: #1d4ed8;
-  --bg-page: #0d0d0d;
-  --bg-card: #171717;
-  --bg-elevate: #1f1f1f;
-  --border: #2a2a2a;
+  /* 页面 vs 卡片 vs elevate 三档拉大对比，避免侧边栏/卡片融成一片黑。
+     border 也提到 #3a3a3a，让 card 轮廓看得见。 */
+  --bg-page: #050505;
+  --bg-card: #1c1c1c;
+  --bg-elevate: #2a2a2a;
+  --border: #3a3a3a;
   --text-1: #fafafa;
   --text-2: #d4d4d4;
   --text-3: #a3a3a3;
-  --body-bg: #0d0d0d;
+  --body-bg: #050505;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
   --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.7);
@@ -235,6 +268,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 深色主题下，浏览器对 <button> 默认不继承父级 color，手写的
+   tailwind button 显示成黑字看不清。只在三个真正暗的主题里强制继承，
+   避免影响 codex-light/light 主题里 button 的原生样式。
+   选择器只覆盖纯 <button>，带 .n-button 的 Naive 组件不动。 */
+:root[data-theme='dark'] button:not([class*='n-']),
+:root[data-theme='codex-dark'] button:not([class*='n-']),
+:root[data-theme='glass-tokyo'] button:not([class*='n-']) {
+  color: inherit;
+}
+
+
 /* =================================================================
    Glass surface helpers — applied automatically to common surfaces
    when [data-theme^='glass-'] is on the root.
@@ -286,6 +330,20 @@ body {
   background-color: transparent !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+/*
+ * Tauri on macOS uses WKWebView. On large routed pages, broad
+ * backdrop-filter usage can make WebKit's compositing layer paint a
+ * blank white surface while the DOM and accessibility tree remain alive.
+ * Keep the theme colors, but disable the expensive blur compositor only
+ * inside the desktop shell so menu navigation cannot visually blank out.
+ */
+:root[data-tauri-platform] *,
+:root[data-tauri-platform] *::before,
+:root[data-tauri-platform] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 :root[data-theme^='glass-'] .shadow-\[var\(--shadow-1\)\],
@@ -722,6 +780,21 @@ body {
   background: var(--bg-page);
 }
 
+.app-error-banner {
+  color: var(--color-error);
+  border-color: color-mix(in srgb, var(--color-error) 28%, var(--border));
+  background: color-mix(in srgb, var(--color-error) 9%, var(--bg-page));
+}
+
+.status-dot-success { background: var(--color-success); }
+.status-dot-warning { background: var(--color-warning); }
+.status-dot-error { background: var(--color-error); }
+.status-dot-neutral { background: var(--text-3); }
+
+.text-status-success { color: var(--color-success); }
+.text-status-warning { color: var(--color-warning); }
+.text-status-error { color: var(--color-error); }
+
 .n-button {
   font-weight: 500;
   transition:
@@ -838,7 +911,7 @@ body {
   font-size: 15px;
   font-weight: 400;
   line-height: 1.7;
-  letter-spacing: 0.005em;
+  letter-spacing: 0;
   word-wrap: break-word;
   /* SF Pro / 苹方 fallback chain matches macOS native chrome. */
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
@@ -870,9 +943,17 @@ body {
 .prose-md a {
   color: var(--brand-600);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--brand-500) 38%, transparent);
+  text-underline-offset: 3px;
+  transition:
+    color var(--dur-fast) var(--ease),
+    text-decoration-color var(--dur-fast) var(--ease);
 }
-.prose-md a:hover { color: var(--brand-500); }
+.prose-md a:hover {
+  color: var(--brand-500);
+  text-decoration-color: var(--brand-500);
+}
 
 /* Inline code: tinted bg, slightly smaller, monospace. */
 .prose-md code:not(pre code) {
@@ -882,18 +963,109 @@ body {
   font-weight: 500;
   padding: 0.15em 0.42em;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--text-1) 7%, transparent);
+  background: var(--md-inline-code-bg);
   color: var(--text-1);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 62%, transparent);
   white-space: pre-wrap;
 }
 
 /* Fenced code blocks: own background, scrollable, monospaced. */
+.md-code-block {
+  position: relative;
+  margin: 0.9em 0;
+  overflow: hidden;
+  border-radius: calc(var(--radius-md) + 2px);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-card) 46%, transparent),
+      transparent 44px
+    ),
+    var(--md-code-bg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--md-code-border) 58%, transparent),
+    var(--shadow-1);
+  isolation: isolate;
+}
+.md-code-toolbar {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.34;
+  transform: translateY(-2px);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.md-code-copy {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+  backdrop-filter: blur(10px) saturate(130%);
+  box-shadow: var(--shadow-1);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.md-code-copy:hover,
+.md-code-copy:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 9%, var(--bg-card));
+  color: var(--text-1);
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+}
+.md-code-block:hover .md-code-toolbar,
+.md-code-block:focus-within .md-code-toolbar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.md-code-copy {
+  gap: 5px;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+}
+.md-code-copy.is-copied {
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-success) 12%, var(--bg-card));
+  color: var(--color-success);
+}
+.md-code-copy svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
 .prose-md pre {
-  margin: 1em 0;
+  position: relative;
+  margin: 0.6em 0;
   padding: 14px 16px;
-  border-radius: 10px;
-  background: var(--bg-elevate);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--md-code-bg);
+  /* 去掉 border + inset shadow，只靠浅底色与 prose 区分；之前 1px border +
+     shadow 让 code block 看起来像"被框起来"，影响观感 */
   overflow-x: auto;
   font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono",
     ui-monospace, monospace;
@@ -902,6 +1074,36 @@ body {
   line-height: 1.6;
   color: var(--text-1);
   letter-spacing: 0;
+}
+.md-code-block .prose-md pre,
+.prose-md .md-code-block pre {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.prose-md pre[data-language] {
+  padding-top: 34px;
+}
+.prose-md pre[data-language]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 0 7px;
+  background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-card));
+  color: var(--text-3);
+  font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono",
+    ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: lowercase;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-500) 14%, var(--border));
 }
 .prose-md pre code {
   background: transparent;
@@ -927,11 +1129,11 @@ body {
 
 .prose-md blockquote {
   margin: 0.8em 0;
-  padding: 0.4em 1em;
-  border-left: 3px solid var(--border);
+  padding: 0.55em 1em;
+  border-left: 3px solid var(--md-quote-border);
   color: var(--text-2);
-  background: color-mix(in srgb, var(--text-1) 4%, transparent);
-  border-radius: 0 6px 6px 0;
+  background: var(--md-quote-bg);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 .prose-md blockquote p:first-child { margin-top: 0; }
 .prose-md blockquote p:last-child  { margin-bottom: 0; }
@@ -946,32 +1148,49 @@ body {
 .md-table-scroll {
   overflow-x: auto;
   margin: 0.9em 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
 }
 .prose-md table {
   border-collapse: collapse;
   font-size: 13px;
-  width: max-content;
-  min-width: 60%;
+  /* 占满 prose 列宽，避免内容少的表只显示一半；超宽时由 .md-table-scroll
+     的 overflow-x:auto 水平滚动 */
+  width: 100%;
 }
 .prose-md th, .prose-md td {
-  border: 1px solid var(--border);
-  padding: 6px 12px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 12px;
   text-align: left;
 }
+.prose-md th:last-child,
+.prose-md td:last-child {
+  border-right: 0;
+}
+.prose-md tr:last-child td {
+  border-bottom: 0;
+}
 .prose-md th {
-  background: var(--bg-elevate);
+  background: var(--md-table-header-bg);
   font-weight: 600;
   color: var(--text-1);
 }
 .prose-md tr:nth-child(even) td {
-  background: color-mix(in srgb, var(--text-1) 3%, transparent);
+  background: var(--md-table-stripe-bg);
 }
 
 /* Images stay within bubble. */
 .prose-md img {
   max-width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
+  background: var(--md-image-bg);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-1);
 }
 
 /* strong / em — explicit so the model-output palette stays consistent. */
@@ -982,21 +1201,40 @@ body {
 .hljs { color: var(--text-1); background: transparent; }
 .hljs-comment, .hljs-quote { color: var(--text-3); font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-section, .hljs-link,
-.hljs-meta, .hljs-doctag { color: color-mix(in srgb, var(--brand-500) 70%, var(--text-1)); }
+.hljs-meta, .hljs-doctag { color: var(--md-token-accent); }
 .hljs-string, .hljs-attr, .hljs-attribute, .hljs-symbol, .hljs-bullet,
-.hljs-addition { color: #22c55e; }
+.hljs-addition { color: var(--md-token-string); }
 .hljs-number, .hljs-literal, .hljs-built_in, .hljs-builtin-name,
 .hljs-variable, .hljs-template-variable, .hljs-type {
-  color: #f59e0b;
+  color: var(--md-token-number);
 }
 .hljs-title, .hljs-name, .hljs-selector-id, .hljs-selector-class,
 .hljs-class .hljs-title, .hljs-function .hljs-title, .hljs-strong {
-  color: color-mix(in srgb, var(--brand-500) 80%, var(--text-1));
+  color: var(--md-token-accent);
   font-weight: 600;
 }
-.hljs-tag, .hljs-tag .hljs-name { color: #ec4899; }
-.hljs-deletion { color: #ef4444; }
-.hljs-regexp { color: #f59e0b; }
+.hljs-tag, .hljs-tag .hljs-name { color: var(--md-token-tag); }
+.hljs-deletion { color: var(--color-error); }
+.hljs-regexp { color: var(--md-token-number); }
+
+/* diff 代码块特殊处理 — 行级背景让 +/- 一眼可读，模拟 GitHub diff view。
+   hljs 把 + 行包成 .hljs-addition、- 行包成 .hljs-deletion，把它们改 display:block
+   + 加左侧色条 + 浅色行背景。 */
+.prose-md pre[data-language="diff"] .hljs-addition,
+.prose-md pre[data-language="diff"] .hljs-deletion {
+  display: block;
+  margin: 0 -1em;
+  padding: 0 1em 0 calc(1em - 3px);
+  border-left: 3px solid transparent;
+}
+.prose-md pre[data-language="diff"] .hljs-addition {
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border-left-color: var(--color-success);
+}
+.prose-md pre[data-language="diff"] .hljs-deletion {
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
+  border-left-color: var(--color-error);
+}
 
 /* Dark-mode hljs adjustments — slightly brighter strings, milder
  * comments so they don't disappear against #0d0d0d. */
@@ -1025,4 +1263,3 @@ body {
 .composer-textarea:focus-visible {
   outline: none;
 }
-
