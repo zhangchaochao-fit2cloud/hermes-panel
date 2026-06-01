@@ -21,6 +21,6 @@
     "@tailwindcss/vite": "4.0.0-alpha.26",
     "typescript": "5.4.5",
     "vite": "6.0.0",
-    "vue-tsc": "2.1.6"
+    "vue-tsc": "3.3.3"
   }
 }
