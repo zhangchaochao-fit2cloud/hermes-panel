@@ -12,8 +12,8 @@
     "@hermes-panel/shared": "workspace:*"
   },
   "devDependencies": {
-    "tsx": "4.22.3",
-    "@types/node": "20.14.10",
+    "tsx": "4.22.4",
+    "@types/node": "20.19.41",
     "typescript": "5.4.5"
   }
 }
