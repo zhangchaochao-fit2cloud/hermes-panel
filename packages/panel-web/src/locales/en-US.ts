@@ -44,6 +44,7 @@ export default {
     subtitle: 'Manage built-in tools, MCP servers, and the skill library',
     searchPlaceholder: 'Search tools...',
     empty: 'No matching tools',
+    emptyHint: 'Try a different search term, or switch to MCP, Skills, or Plugins tabs',
     enabledOf: '{enabled} of {total} enabled',
     enabled: 'Enabled',
     disabled: 'Disabled',

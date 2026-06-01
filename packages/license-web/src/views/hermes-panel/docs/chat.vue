@@ -67,7 +67,7 @@ a:hover { text-decoration: underline; }
 .cards-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; margin: 1rem 0; }
 @media (max-width: 700px) { .cards-3 { grid-template-columns: 1fr; } }
 .info-card { padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default); display: flex; flex-direction: column; gap: .5rem; }
-.info-card strong { font-size: .875rem; color: var(--text); }
+.info-card strong { font-size: .875rem; color: var(--text-primary); }
 .info-card span { font-size: .8125rem; color: var(--text-muted); line-height: 1.6; }
 
 .next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: .75rem; flex-wrap: wrap; }

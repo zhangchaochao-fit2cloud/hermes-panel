@@ -97,7 +97,7 @@ a:hover { text-decoration: underline; }
   padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default);
   display: flex; flex-direction: column; gap: .5rem;
 }
-.info-card strong { font-size: .875rem; color: var(--text); }
+.info-card strong { font-size: .875rem; color: var(--text-primary); }
 .info-card span { font-size: .8125rem; color: var(--text-muted); line-height: 1.6; }
 
 .arch-diagram { margin: 1rem 0 2rem; }
@@ -105,7 +105,7 @@ a:hover { text-decoration: underline; }
   padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default);
   display: flex; flex-direction: column; gap: .25rem;
 }
-.arch-layer strong { font-size: .875rem; color: var(--text); }
+.arch-layer strong { font-size: .875rem; color: var(--text-primary); }
 .arch-layer span { font-size: .8125rem; color: var(--text-muted); }
 .arch-arrow { text-align: center; padding: .5rem 0; font-size: 1rem; color: var(--accent); }
 

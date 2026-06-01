@@ -345,16 +345,16 @@ const compareRows = [
 <style scoped>
 /* Reuse the same CSS variable system as the rest of the app */
 .landing-root {
-  --bg: #050510;
-  --bg-raised: #0a0a1a; --bg-card: #0d0d22; --bg-subtle: #111128;
-  --border: rgba(255,255,255,.06); --border-light: rgba(255,255,255,.04);
-  --text: #e8e8f0; --text-secondary: #9898b8; --text-muted: #5c5c7e;
-  --accent: #6366f1; --accent-glow: rgba(99,102,241,.25); --accent-soft: rgba(99,102,241,.1); --accent-text: #818cf8;
-  --brand-from: #6366f1; --brand-to: #a855f7; --brand-via: #06b6d4;
-  --green: #22c55e; --green-soft: rgba(34,197,94,.1); --amber: #f59e0b; --amber-soft: rgba(245,158,11,.1);
-  min-height: 100vh; background: var(--bg); color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  background: var(--bg-deep);
+  
+  
+  
+  
+  
+  
+  min-height: 100vh; background: var(--bg-deep); color: var(--text-primary);
+  
+  
 }
 
 [data-theme='light'] .landing-root,

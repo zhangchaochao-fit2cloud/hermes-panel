@@ -35,7 +35,7 @@ const faqs = [
 h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; }
 .lead { font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 2rem; }
 .faq-item { margin-bottom: 2rem; }
-h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: .5rem; color: var(--text); }
+h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: .5rem; color: var(--text-primary); }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
 a { color: var(--accent); }
 a:hover { text-decoration: underline; }
