@@ -49,19 +49,19 @@ jobs:
       matrix:
         include:
           - os: macos-14
-            platform: mac-arm64
+            platform: macos-arm64
             target: aarch64-apple-darwin
             args: --target aarch64-apple-darwin
           - os: macos-14
-            platform: mac-x64
+            platform: macos-amd64
             target: x86_64-apple-darwin
             args: --target x86_64-apple-darwin
           - os: ubuntu-22.04
-            platform: linux-x64
+            platform: linux-amd64
             target: x86_64-unknown-linux-gnu
             args: ''
           - os: windows-latest
-            platform: win-x64
+            platform: windows-amd64
             target: x86_64-pc-windows-msvc
             args: ''
 
@@ -147,10 +147,10 @@ jobs:
           APP=$(find "$BASE/macos" -name "*.app" -maxdepth 2 2>/dev/null | head -1 || true)
           TGZ=$(find "$BASE/macos" -name "*.app.tar.gz" 2>/dev/null | head -1 || true)
           SIG=$(find "$BASE/macos" -name "*.app.tar.gz.sig" 2>/dev/null | head -1 || true)
-          [ -n "$DMG" ] && cp "$DMG" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.dmg" || true
-          [ -n "$APP" ] && ditto -c -k --sequesterRsrc --keepParent "$APP" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.zip"
-          [ -n "$TGZ" ] && cp "$TGZ" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.tar.gz" || true
-          [ -n "$SIG" ] && cp "$SIG" "release-artifacts/hermes-panel-$VER-${{ matrix.platform }}.app.tar.gz.sig" || true
+          [ -n "$DMG" ] && cp "$DMG" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.dmg" || true
+          [ -n "$APP" ] && ditto -c -k --sequesterRsrc --keepParent "$APP" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.zip"
+          [ -n "$TGZ" ] && cp "$TGZ" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.tar.gz" || true
+          [ -n "$SIG" ] && cp "$SIG" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.tar.gz.sig" || true
           ls -lh release-artifacts/
 
       - name: Collect bundles (Linux)
@@ -163,9 +163,9 @@ jobs:
           DEB=$(find "$BASE/deb" -name "*.deb" 2>/dev/null | head -1 || true)
           AI=$(find "$BASE/appimage" -name "*.AppImage" 2>/dev/null | head -1 || true)
           RPM=$(find "$BASE/rpm" -name "*.rpm" 2>/dev/null | head -1 || true)
-          [ -n "$DEB" ] && cp "$DEB" "release-artifacts/hermes-panel-$VER-linux-x64.deb" || true
-          [ -n "$AI" ]  && cp "$AI"  "release-artifacts/hermes-panel-$VER-linux-x64.AppImage" || true
-          [ -n "$RPM" ] && cp "$RPM" "release-artifacts/hermes-panel-$VER-linux-x64.rpm" || true
+          [ -n "$DEB" ] && cp "$DEB" "release-artifacts/Hermes-Panel-v$VER-linux-amd64.deb" || true
+          [ -n "$AI" ]  && cp "$AI"  "release-artifacts/Hermes-Panel-v$VER-linux-amd64.AppImage" || true
+          [ -n "$RPM" ] && cp "$RPM" "release-artifacts/Hermes-Panel-v$VER-linux-amd64.rpm" || true
           ls -lh release-artifacts/
 
       - name: Collect bundles (Windows)
@@ -177,8 +177,8 @@ jobs:
           BASE=packages/panel-desktop/src-tauri/target/release/bundle
           MSI=$(find "$BASE/msi" -name "*.msi" 2>/dev/null | head -1 || true)
           EXE=$(find "$BASE/nsis" -name "*.exe" 2>/dev/null | head -1 || true)
-          [ -n "$MSI" ] && cp "$MSI" "release-artifacts/hermes-panel-$VER-win-x64.msi" || true
-          [ -n "$EXE" ] && cp "$EXE" "release-artifacts/hermes-panel-$VER-win-x64-setup.exe" || true
+          [ -n "$MSI" ] && cp "$MSI" "release-artifacts/Hermes-Panel-v$VER-windows-amd64.msi" || true
+          [ -n "$EXE" ] && cp "$EXE" "release-artifacts/Hermes-Panel-v$VER-windows-amd64-setup.exe" || true
           ls -lh release-artifacts/
 
       - name: Upload bundles

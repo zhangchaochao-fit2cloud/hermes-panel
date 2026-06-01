@@ -1,6 +1,7 @@
 <template>
   <n-config-provider :theme="naiveTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
     <n-message-provider>
+      <ToastBridge />
       <router-view />
     </n-message-provider>
   </n-config-provider>
@@ -8,13 +9,11 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { darkTheme, zhCN, dateZhCN, useMessage } from 'naive-ui';
+import { darkTheme, zhCN, dateZhCN } from 'naive-ui';
 import { useThemeStore } from '@/stores/theme';
-import { useToast } from '@/stores/toast';
+import ToastBridge from '@/components/shared/ToastBridge.vue';
 
 const theme = useThemeStore();
-const toast = useToast();
-const message = useMessage();
 
 const naiveTheme = computed(() => theme.resolved === 'dark' ? darkTheme : null);
 
@@ -56,13 +55,4 @@ watch(() => theme.resolved, (isDark) => {
     document.head.appendChild(m);
   }
 }, { immediate: true });
-
-// Toast bridge — watches reactive queue and pushes to Naive UI message
-watch(() => [...toast.queue.value], (items) => {
-  for (const item of items) {
-    const method = message[item.type] as (content: string, options?: object) => void;
-    method(item.content, { duration: item.duration ?? (item.type === 'error' ? 5000 : 3000) });
-    toast.consume(item.id);
-  }
-});
 </script>

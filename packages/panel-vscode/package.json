@@ -2,7 +2,7 @@
   "name": "hermes-panel-vscode",
   "displayName": "Hermes Panel",
   "description": "Send code, selection, or git diff to Hermes Panel from VS Code",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0",
   "publisher": "hermes-panel",
   "license": "MIT",
   "engines": {
@@ -26,11 +26,26 @@
   ],
   "contributes": {
     "commands": [
-      { "command": "hermesPanel.sendSelection", "title": "Hermes Panel: Send Selection" },
-      { "command": "hermesPanel.sendFile", "title": "Hermes Panel: Send Current File" },
-      { "command": "hermesPanel.sendDiff", "title": "Hermes Panel: Send Git Diff" },
-      { "command": "hermesPanel.openPanel", "title": "Hermes Panel: Open Panel" },
-      { "command": "hermesPanel.newChat", "title": "Hermes Panel: New Chat" }
+      {
+        "command": "hermesPanel.sendSelection",
+        "title": "Hermes Panel: Send Selection"
+      },
+      {
+        "command": "hermesPanel.sendFile",
+        "title": "Hermes Panel: Send Current File"
+      },
+      {
+        "command": "hermesPanel.sendDiff",
+        "title": "Hermes Panel: Send Git Diff"
+      },
+      {
+        "command": "hermesPanel.openPanel",
+        "title": "Hermes Panel: Open Panel"
+      },
+      {
+        "command": "hermesPanel.newChat",
+        "title": "Hermes Panel: New Chat"
+      }
     ],
     "menus": {
       "editor/context": [
