@@ -29,6 +29,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hermes-panel/shared build
       - run: pnpm typecheck
       - run: pnpm test
 
