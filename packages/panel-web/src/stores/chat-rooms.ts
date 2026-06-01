@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { bffFetch } from '@/api/bff';
+import { teamFor } from '@/data/roles';
 
 export interface ChatRoom {
   id: string;
@@ -47,24 +48,33 @@ export const useChatRoomsStore = defineStore('chat-rooms', () => {
     if (activeRoomId.value === id) { activeRoomId.value = null; messages.value = []; }
   }
 
+  async function renameRoom(id: string, name: string): Promise<void> {
+    await bffFetch(`/api/chat-rooms/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) });
+    const room = rooms.value.find(r => r.id === id);
+    if (room) room.name = name;
+  }
+
   async function fetchMessages(roomId: string): Promise<void> {
     activeRoomId.value = roomId;
     messages.value = await bffFetch<ChatMsg[]>(`/api/chat-rooms/${roomId}/messages`);
   }
 
-  async function sendMessage(roomId: string, content: string): Promise<{ userMessage: ChatMsg; agentReplies: ChatMsg[] }> {
+  async function sendMessage(roomId: string, content: string, mentions: Array<{ name: string; icon: string }> = []): Promise<{ userMessage: ChatMsg; agentReplies: ChatMsg[] }> {
     const result = await bffFetch<{ userMessage: ChatMsg; agentReplies: ChatMsg[] }>(`/api/chat-rooms/${roomId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ role: 'user', content }),
+      body: JSON.stringify({ role: 'user', content, mentions }),
     });
     messages.value.push(result.userMessage);
     messages.value.push(...result.agentReplies);
     return result;
   }
 
-  function addLocalMessage(msg: ChatMsg): void {
-    messages.value.push(msg);
+  function getAgentInfo(name: string, workspaceId?: string | null): { icon: string; name: string } {
+    if (!workspaceId) return { icon: '🤖', name };
+    const roles = teamFor(workspaceId);
+    const role = roles.find(r => r.id === name);
+    return role ? { icon: role.icon, name: role.name } : { icon: '🤖', name };
   }
 
-  return { rooms, messages, loading, activeRoomId, fetchRooms, createRoom, deleteRoom, fetchMessages, sendMessage, addLocalMessage };
+  return { rooms, messages, loading, activeRoomId, fetchRooms, createRoom, deleteRoom, renameRoom, fetchMessages, sendMessage, getAgentInfo, addLocalMessage(m: ChatMsg) { messages.value.push(m); } };
 });

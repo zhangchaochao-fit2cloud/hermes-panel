@@ -18,6 +18,14 @@ chatRoomsRouter.post('/chat-rooms', async ctx => {
   ctx.body = room;
 });
 
+chatRoomsRouter.patch('/chat-rooms/:id', async ctx => {
+  const body = ctx.request.body as { name?: string } | undefined;
+  if (!body?.name) { ctx.status = 400; ctx.body = { error: { code: 'BAD_REQUEST', message: 'name required' } }; return; }
+  const db = (await import('../services/panel-db.js')).getPanelDb();
+  db.prepare('UPDATE chat_rooms SET name = ?, updated_at = ? WHERE id = ?').run(body.name, Math.floor(Date.now() / 1000), ctx.params.id);
+  ctx.body = { ok: true };
+});
+
 chatRoomsRouter.delete('/chat-rooms/:id', async ctx => {
   const ok = deleteChatRoom(ctx.params.id);
   if (!ok) { ctx.status = 404; ctx.body = { error: { code: 'NOT_FOUND' } }; return; }
@@ -30,40 +38,24 @@ chatRoomsRouter.get('/chat-rooms/:id/messages', async ctx => {
 });
 
 chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
-  const body = ctx.request.body as { role?: string; agent_name?: string; agent_icon?: string; content?: string } | undefined;
+  const body = ctx.request.body as { role?: string; content?: string; mentions?: Array<{ name: string; icon: string }> } | undefined;
   if (!body?.content) { ctx.status = 400; ctx.body = { error: { code: 'BAD_REQUEST', message: 'content required' } }; return; }
 
-  // Parse @mentions and dispatch to agents via SSE
-  const mentions = parseMentions(body.content);
   const userMsg = addChatRoomMessage({
     id: randomUUID(), room_id: ctx.params.id,
     role: 'user', content: body.content,
   });
 
-  // For each @mention, create an agent reply placeholder
-  const agentReplies: Array<{ id: string; agent: string; icon: string }> = [];
+  const mentions = body.mentions ?? [];
+  const agentReplies: Array<{ id: string; agent_name: string; agent_icon: string }> = [];
   for (const m of mentions) {
     const agentMsg = addChatRoomMessage({
       id: randomUUID(), room_id: ctx.params.id,
       role: 'agent', agent_name: m.name, agent_icon: m.icon,
-      content: `正在处理 @${m.name} 的请求...`,
+      content: `正在思考 "${body.content.slice(0, 80)}${body.content.length > 80 ? '...' : ''}" ...`,
     });
-    agentReplies.push({ id: agentMsg.id, agent: m.name, icon: m.icon });
+    agentReplies.push({ id: agentMsg.id, agent_name: m.name, agent_icon: m.icon });
   }
 
   ctx.body = { userMessage: userMsg, agentReplies };
 });
-
-function parseMentions(text: string): Array<{ name: string; icon: string }> {
-  const re = /@(\w[\w-]*)/g;
-  const seen = new Set<string>();
-  const result: Array<{ name: string; icon: string }> = [];
-  for (const m of text.matchAll(re)) {
-    const name = m[1];
-    if (!seen.has(name)) {
-      seen.add(name);
-      result.push({ name, icon: '🤖' });
-    }
-  }
-  return result;
-}
