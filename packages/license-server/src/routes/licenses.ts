@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { issueLicense, listLicenses, listAllLicenses, getLicenseByKey } from '../services/licenses.js';
+import { issueLicense, listLicenses, listAllLicenses, getLicenseByKey, deactivateLicense } from '../services/licenses.js';
 import { requireUser, requireAdmin } from '../middleware/auth.js';
 
 export const licensesRouter = new Router();
@@ -32,6 +32,12 @@ licensesRouter.post('/licenses/:id/reset', async (ctx) => {
     ctx.status = 404;
     return;
   }
+  if (!lic.boundDevice) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'NOT_BOUND', message: 'license is not bound to any device' } };
+    return;
+  }
+  deactivateLicense(ctx.params.id, lic.boundDevice);
   ctx.status = 204;
 });
 

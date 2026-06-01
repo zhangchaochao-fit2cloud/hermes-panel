@@ -14,6 +14,7 @@ import RecentSessions from '@/components/dashboard/RecentSessions.vue';
 import CacheCard from '@/components/dashboard/CacheCard.vue';
 import MonthlyPaceCard from '@/components/dashboard/MonthlyPaceCard.vue';
 import UsageCard from '@/components/dashboard/UsageCard.vue';
+import CostIntelligenceCard from '@/components/dashboard/CostIntelligenceCard.vue';
 import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
@@ -168,6 +169,9 @@ const todayUsdLabel = computed(() => {
 
       <!-- Persistent usage ledger (today / this month / all time) -->
       <UsageCard />
+
+      <!-- Cost intelligence (proactive savings suggestions) -->
+      <CostIntelligenceCard />
 
       <!-- Token optimization row (spec §11) + at-a-glance system health -->
       <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
