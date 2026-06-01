@@ -13,6 +13,8 @@ export interface RoleDef {
   icon: string;
   description: string;
   promptPrefix: string;
+  /** Specific model for this role. Falls back to default when omitted. */
+  model?: string;
 }
 
 export const ROLE_TEAMS: Record<string, RoleDef[]> = {
@@ -21,7 +23,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'architect',
       name: '架构师',
       icon: '🏛',
-      description: '系统设计、技术决策、架构评审',
+      description: '系统设计、技术决策、架构评审 · 建议 Claude Opus',
+      model: 'claude-opus-4-7',
       promptPrefix: `你是一名资深系统架构师（15+ 年后端架构经验）。
 
 工作方式：
@@ -42,7 +45,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'backend',
       name: '后端工程师',
       icon: '🛠',
-      description: 'API 设计、数据库、服务端开发',
+      description: 'API 设计、数据库、服务端开发 · 建议 DeepSeek',
+      model: 'deepseek-v4',
       promptPrefix: `你是一名资深后端工程师，主栈 Node.js/TypeScript + PostgreSQL。
 
 代码要求：
@@ -60,7 +64,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'frontend',
       name: '前端工程师',
       icon: '🎨',
-      description: 'UI 组件、状态管理、用户体验',
+      description: 'UI 组件、状态管理、用户体验 · 建议 DeepSeek',
+      model: 'deepseek-v4',
       promptPrefix: `你是一名资深前端工程师，主栈 Vue 3 + TypeScript + Tailwind CSS + Naive UI。
 
 代码要求：
@@ -83,7 +88,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'mobile',
       name: '移动端工程师',
       icon: '📱',
-      description: 'React Native / Flutter 跨平台开发',
+      description: 'React Native / Flutter 跨平台开发 · 建议 DeepSeek',
+      model: 'deepseek-v4',
       promptPrefix: `你是一名资深移动端工程师，主栈 React Native + TypeScript。
 
 关注点：
@@ -100,7 +106,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'qa',
       name: '测试工程师',
       icon: '🧪',
-      description: '自动化测试、质量保障、性能测试',
+      description: '自动化测试、质量保障、性能测试 · 建议 Claude Sonnet',
+      model: 'claude-sonnet-4-6',
       promptPrefix: `你是一名资深 QA 工程师，主栈 Vitest + Testing Library。
 
 测试要求：
@@ -121,7 +128,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'reviewer',
       name: '代码审查',
       icon: '👁',
-      description: 'PR Review、代码质量、最佳实践',
+      description: 'PR Review、代码质量、最佳实践 · 建议 Claude Sonnet',
+      model: 'claude-sonnet-4-6',
       promptPrefix: `你是一名资深代码审查者。按以下维度审查代码：
 
 审查清单：
@@ -144,7 +152,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'security',
       name: '安全工程师',
       icon: '🔒',
-      description: '安全审计、漏洞扫描、合规检查',
+      description: '安全审计、漏洞扫描、合规检查 · 建议 Claude Opus',
+      model: 'claude-opus-4-7',
       promptPrefix: `你是一名资深应用安全工程师。按 OWASP Top 10 和 CWE Top 25 审查代码。
 
 审查范围：
@@ -168,7 +177,8 @@ export const ROLE_TEAMS: Record<string, RoleDef[]> = {
       id: 'devops',
       name: 'DevOps 工程师',
       icon: '⚙️',
-      description: 'CI/CD、容器化、基础设施',
+      description: 'CI/CD、容器化、基础设施 · 建议 Claude Sonnet',
+      model: 'claude-sonnet-4-6',
       promptPrefix: `你是一名资深 DevOps 工程师。主栈 Docker + GitHub Actions + 云服务。
 
 关注点：

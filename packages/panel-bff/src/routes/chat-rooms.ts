@@ -96,7 +96,7 @@ chatRoomsRouter.get('/chat-rooms/:id/messages', async ctx => {
 });
 
 chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
-  const body = ctx.request.body as { role?: string; content?: string; mentions?: Array<{ name: string; icon: string; prompt?: string }> } | undefined;
+  const body = ctx.request.body as { role?: string; content?: string; mentions?: Array<{ name: string; icon: string; prompt?: string; model?: string }> } | undefined;
   if (!body?.content) { ctx.status = 400; ctx.body = { error: { code: 'BAD_REQUEST', message: 'content required' } }; return; }
 
   const userMsg = addChatRoomMessage({
@@ -106,25 +106,25 @@ chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
 
   const mentions = body.mentions ?? [];
   const agentReplies: Array<{ id: string; agent_name: string; agent_icon: string }> = [];
-  const agentPlaceholders: Array<{ id: string; name: string; prompt: string }> = [];
+  const agentPlaceholders: Array<{ id: string; name: string; prompt: string; model?: string }> = [];
 
   for (const m of mentions) {
     const mid = randomUUID();
     addChatRoomMessage({
       id: mid, room_id: ctx.params.id,
       role: 'agent', agent_name: m.name, agent_icon: m.icon,
-      content: `⏳ 正在思考...`,
+      content: `⏳ 正在用 ${m.model || '默认模型'} 思考...`,
     });
     agentReplies.push({ id: mid, agent_name: m.name, agent_icon: m.icon });
-    agentPlaceholders.push({ id: mid, name: m.name, prompt: m.prompt || body.content });
+    agentPlaceholders.push({ id: mid, name: m.name, prompt: m.prompt || body.content, model: m.model });
   }
 
   // Fire-and-forget: call Hermes for each mentioned agent, update messages
   if (agentPlaceholders.length > 0) {
     Promise.allSettled(
-      agentPlaceholders.map(async ({ id, name, prompt }) => {
+      agentPlaceholders.map(async ({ id, name, prompt, model }) => {
         try {
-          const response = await callHermesAgent(prompt);
+          const response = await callHermesAgent(prompt, model);
           // Update the placeholder with real response
           const { getPanelDb } = await import('../services/panel-db.js');
           getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(response, id);

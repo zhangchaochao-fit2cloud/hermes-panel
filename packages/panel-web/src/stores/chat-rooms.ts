@@ -58,7 +58,7 @@ export const useChatRoomsStore = defineStore('chat-rooms', () => {
     messages.value = await bffFetch<ChatMsg[]>(`/api/chat-rooms/${roomId}/messages`);
   }
 
-  async function sendMessage(roomId: string, content: string, mentions: Array<{ name: string; icon: string; prompt: string }> = []): Promise<void> {
+  async function sendMessage(roomId: string, content: string, mentions: Array<{ name: string; icon: string; prompt: string; model?: string }> = []): Promise<void> {
     const result = await bffFetch<{ userMessage: ChatMsg; agentReplies: ChatMsg[] }>(`/api/chat-rooms/${roomId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ role: 'user', content, mentions }),
@@ -124,7 +124,7 @@ export const useChatRoomsStore = defineStore('chat-rooms', () => {
     streaming.value = false;
   }
 
-  function getAgentInfo(name: string, workspaceId?: string | null): RoleDef | { icon: string; name: string; id: string; description: string; promptPrefix: string } {
+  function getAgentInfo(name: string, workspaceId?: string | null): RoleDef {
     if (!workspaceId) return { icon: '🤖', name, id: name, description: '', promptPrefix: '' };
     const roles = teamFor(workspaceId);
     const role = roles.find(r => r.id === name);

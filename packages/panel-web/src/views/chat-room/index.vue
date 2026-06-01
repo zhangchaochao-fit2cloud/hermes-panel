@@ -34,10 +34,10 @@ function fmtTime(ts: number): string {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function parseMentions(text: string): Array<{ name: string; icon: string; prompt: string }> {
+function parseMentions(text: string): Array<{ name: string; icon: string; prompt: string; model?: string }> {
   const re = /@(\w[\w-]*)/g;
   const seen = new Set<string>();
-  const result: Array<{ name: string; icon: string; prompt: string }> = [];
+  const result: Array<{ name: string; icon: string; prompt: string; model?: string }> = [];
   for (const m of text.matchAll(re)) {
     const name = m[1];
     if (!seen.has(name)) {
@@ -46,7 +46,7 @@ function parseMentions(text: string): Array<{ name: string; icon: string; prompt
       const systemPrompt = info.promptPrefix
         ? `${info.promptPrefix}\n\n用户问题: ${text}`
         : text;
-      result.push({ name, icon: info.icon, prompt: systemPrompt });
+      result.push({ name, icon: info.icon, prompt: systemPrompt, model: info.model });
     }
   }
   return result;
