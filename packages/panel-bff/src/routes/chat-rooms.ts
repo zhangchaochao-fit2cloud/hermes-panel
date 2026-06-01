@@ -5,6 +5,9 @@ import {
   listChatRooms, createChatRoom, deleteChatRoom,
   getChatRoomMessages, addChatRoomMessage,
 } from '../services/panel-db.js';
+import {
+  generatePlan, getReadyTasks, markTaskDone, markTaskFailed, isPlanComplete, formatPlanSummary,
+} from '../services/orchestrator.js';
 import { getHermesHome } from '../services/hermes-home.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -139,6 +142,78 @@ chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
   }
 
   ctx.body = { userMessage: userMsg, agentReplies };
+});
+
+// Orchestrator: generate a plan and auto-dispatch
+chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
+  const body = ctx.request.body as { request: string; roles: string[] } | undefined;
+  if (!body?.request) { ctx.status = 400; ctx.body = { error: { code: 'BAD_REQUEST' } }; return; }
+
+  const plan = generatePlan(body.request, body.roles ?? []);
+
+  // Post plan as an agent message
+  const planMsg = addChatRoomMessage({
+    id: randomUUID(), room_id: ctx.params.id,
+    role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯',
+    content: formatPlanSummary(plan),
+  });
+
+  // Auto-dispatch the first batch of ready tasks
+  const ready = getReadyTasks(plan);
+  const dispatched: Array<{ taskId: string; msgId: string; role: string }> = [];
+
+  for (const task of ready) {
+    const mid = randomUUID();
+    addChatRoomMessage({
+      id: mid, room_id: ctx.params.id,
+      role: 'agent', agent_name: task.role, agent_icon: '🤖',
+      content: `⏳ ${task.description}`,
+    });
+    dispatched.push({ taskId: task.id, msgId: mid, role: task.role });
+  }
+
+  // Fire-and-forget: call Hermes for each dispatched task
+  Promise.allSettled(
+    dispatched.map(async ({ taskId, msgId }) => {
+      try {
+        const response = await callHermesAgent(body.request);
+        const { getPanelDb } = await import('../services/panel-db.js');
+        getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(response, msgId);
+        markTaskDone(plan, taskId, response);
+
+        // Check if there are more tasks to dispatch
+        const nextTasks = getReadyTasks(plan);
+        for (const nt of nextTasks) {
+          const nid = randomUUID();
+          addChatRoomMessage({
+            id: nid, room_id: ctx.params.id,
+            role: 'agent', agent_name: nt.role, agent_icon: '🤖',
+            content: `⏳ ${nt.description}`,
+          });
+          try {
+            const r = await callHermesAgent(`基于前面的结果，请完成：${nt.description}`);
+            getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(r, nid);
+            markTaskDone(plan, nt.id, r);
+          } catch {
+            markTaskFailed(plan, nt.id, 'execution failed');
+          }
+        }
+
+        // Check if plan is complete
+        if (isPlanComplete(plan)) {
+          addChatRoomMessage({
+            id: randomUUID(), room_id: ctx.params.id,
+            role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯',
+            content: `✅ 所有任务已完成！共执行了 ${plan.subtasks.length} 个子任务。`,
+          });
+        }
+      } catch (err) {
+        markTaskFailed(plan, taskId, (err as Error).message);
+      }
+    }),
+  ).catch(() => {});
+
+  ctx.body = { plan, planMessage: planMsg, dispatched };
 });
 
 // SSE endpoint: poll for updates to agent messages

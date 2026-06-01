@@ -133,6 +133,6 @@ export const useChatRoomsStore = defineStore('chat-rooms', () => {
 
   return {
     rooms, messages, loading, streaming, activeRoomId,
-    fetchRooms, createRoom, deleteRoom, fetchMessages, sendMessage, stopStream, getAgentInfo,
+    fetchRooms, createRoom, deleteRoom, fetchMessages, sendMessage, startStream, stopStream, getAgentInfo,
   };
 });

@@ -2,6 +2,7 @@
 import { onMounted, ref, nextTick, watch, computed } from 'vue';
 import { NButton, NInput, NModal, NPopconfirm, NSpin, useMessage } from 'naive-ui';
 import { useChatRoomsStore } from '@/stores/chat-rooms';
+import { bffFetch } from '@/api/bff';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
 import { getNextSteps, type WorkflowStep } from '@/data/workflows';
@@ -70,6 +71,28 @@ async function handleSend(): Promise<void> {
   try { await store.sendMessage(roomId, text, parseMentions(text)); }
   catch (err) { msg.error((err as Error).message); }
   finally { sending.value = false; }
+}
+
+async function handleOrchestrate(): Promise<void> {
+  const text = input.value.trim();
+  const roomId = store.activeRoomId;
+  if (!text || !roomId) return;
+  input.value = '';
+  sending.value = true;
+  try {
+    await bffFetch(`/api/chat-rooms/${roomId}/orchestrate`, {
+      method: 'POST',
+      body: JSON.stringify({ request: text, roles: roles.value.map(r => r.id) }),
+    });
+    msg.success('已生成编排计划，正在自动执行...');
+    // Reload messages and start SSE to track progress
+    await store.fetchMessages(roomId);
+    store.startStream(roomId);
+  } catch (err) {
+    msg.error((err as Error).message);
+  } finally {
+    sending.value = false;
+  }
 }
 
 async function handleRetry(msgId: string): Promise<void> {
@@ -271,6 +294,7 @@ function selectRoom(id: string): void {
           >{{ r.icon }} {{ r.name }}</button>
         </div>
         <div class="composer-row">
+          <NButton v-if="input.trim() && roles.length > 1" size="small" class="flex-shrink-0" @click="handleOrchestrate">🎯 智能编排</NButton>
           <NInput
             v-model:value="input"
             type="textarea"
