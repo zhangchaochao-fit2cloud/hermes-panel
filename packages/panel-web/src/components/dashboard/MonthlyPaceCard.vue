@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
 import { formatCompact as formatNumber } from '@/utils/format-number';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 
 const { t } = useI18n();
 
@@ -53,12 +54,12 @@ onMounted(load);
       <span class="text-xs text-[var(--text-3)]">{{ monthLabel }}</span>
     </div>
 
-    <div v-if="loading || !data" class="h-[120px] flex items-center justify-center">
-      <div class="text-sm text-[var(--text-3)]">{{ t('common.loading') }}</div>
+    <div v-if="error" class="h-[120px] flex items-center justify-center">
+      <button class="text-sm text-[var(--brand-600)]" @click="load">{{ t('common.retry') }}</button>
     </div>
 
-    <div v-else-if="error" class="h-[120px] flex items-center justify-center">
-      <button class="text-sm text-[var(--brand-600)]" @click="load">{{ t('common.retry') }}</button>
+    <div v-else-if="loading || !data" class="h-[120px] flex items-center">
+      <ThemedSkeleton :repeat="3" height="22px" />
     </div>
 
     <div v-else>

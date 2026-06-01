@@ -1,0 +1,17 @@
+node_modules
+dist
+target
+*.log
+.git
+.github
+docs
+scripts
+.vite
+.nyc_output
+coverage
+packages/panel-desktop
+packages/panel-vscode
+packages/fake-hermes
+**/node_modules
+**/dist
+**/target

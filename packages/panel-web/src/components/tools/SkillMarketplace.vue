@@ -5,7 +5,6 @@ import {
   NInput,
   NButton,
   NTag,
-  NSkeleton,
   NPagination,
   NSpin,
   useMessage,
@@ -13,6 +12,7 @@ import {
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useToolsStore } from '@/stores/tools';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 
 const { t } = useI18n();
 const store = useToolsStore();
@@ -98,7 +98,7 @@ function onUninstall(name: string): void {
     </div>
 
     <div v-if="loadingBrowse && availableSkills.length === 0" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-      <NSkeleton v-for="i in 6" :key="i" :height="120" />
+      <ThemedSkeleton v-for="i in 6" :key="i" height="120px" />
     </div>
 
     <div

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
 
 /**
@@ -16,6 +17,7 @@ import { fileURLToPath, URL } from 'node:url';
  *   explicitly. This keeps the bar high and discoverable.
  */
 export default defineConfig({
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

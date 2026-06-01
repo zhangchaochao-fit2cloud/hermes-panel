@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NTabs, NTabPane, NSelect, NButton, NEmpty, useMessage } from 'naive-ui';
+import { NTabs, NTabPane, NSelect } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
 import { useDeveloperStore } from '@/stores/developer';
 import { SUPPORTED_LANGS, genCode, type CodeLang } from '@/utils/code-templates';
 
 const { t } = useI18n();
-const message = useMessage();
 const store = useDeveloperStore();
 const { history, selectedHistory, selectedHistoryId } = storeToRefs(store);
 
@@ -33,14 +34,6 @@ const snippets = computed(() => {
   return result;
 });
 
-async function copy(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    message.success(t('developer.codegen.copied'));
-  } catch {
-    message.error(t('developer.codegen.copyFailed'));
-  }
-}
 </script>
 
 <template>
@@ -58,11 +51,10 @@ async function copy(text: string): Promise<void> {
       />
     </div>
 
-    <NEmpty
+    <EmptyState
       v-if="!snippets"
-      size="small"
-      :description="t('developer.codegen.emptyHint')"
-      class="py-12"
+      icon="{}"
+      :title="t('developer.codegen.emptyHint')"
     />
 
     <NTabs v-else v-model:value="lang" type="line" size="small" animated>
@@ -72,19 +64,11 @@ async function copy(text: string): Promise<void> {
         :name="meta.id"
         :tab="meta.label"
       >
-        <div class="relative">
-          <NButton
-            class="!absolute right-2 top-2 z-10"
-            size="tiny"
-            @click="copy((snippets?.[meta.id] ?? ''))"
-          >
-            {{ t('developer.codegen.copy') }}
-          </NButton>
-          <pre
-            class="rounded-md bg-[var(--bg-elevate)] p-3 text-xs font-mono overflow-auto"
-            style="max-height: 600px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
-          ><code>{{ (snippets?.[meta.id] ?? '') }}</code></pre>
-        </div>
+        <CodeBlock
+          :code="snippets?.[meta.id] ?? ''"
+          :lang="meta.label"
+          max-height="600px"
+        />
       </NTabPane>
     </NTabs>
   </div>

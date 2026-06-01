@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { runHermesCli } from '../services/hermes-cli.js';
 import { getHermesHome } from '../services/hermes-home.js';
+import { isDockerAvailable } from '../services/sandbox.js';
 import { logger } from '../lib/logger.js';
 
 /**
@@ -19,6 +20,7 @@ interface Capabilities {
   memory: boolean;
   mcp: boolean;
   skills: boolean;
+  sandbox: { available: boolean; reason?: string };
 }
 
 export const capabilitiesRouter = new Router();
@@ -36,6 +38,7 @@ async function detect(): Promise<Capabilities> {
     memory: false,
     mcp: false,
     skills: false,
+    sandbox: { available: false },
   };
 
   // hermes version
@@ -70,6 +73,12 @@ async function detect(): Promise<Capabilities> {
       logger.debug({ err, cmd }, 'capability probe failed');
     }
   }
+
+  // Docker sandbox
+  const dockerAvailable = await isDockerAvailable();
+  caps.sandbox = dockerAvailable
+    ? { available: true }
+    : { available: false, reason: 'Docker CLI not found or daemon not running' };
 
   return caps;
 }

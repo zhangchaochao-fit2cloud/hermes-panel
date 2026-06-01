@@ -91,8 +91,6 @@ export default {
     copy: '复制',
     regenerate: '重新生成',
     edit: '编辑',
-    feedbackUp: '回答不错',
-    feedbackDown: '回答有问题',
     copied: '已复制到剪贴板',
     edited: '已编辑',
     cost: '估算 ${value}',

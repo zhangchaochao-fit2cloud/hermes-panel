@@ -1,0 +1,42 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: AI Code Review
+        uses: anc95/ChatGPT-CodeReview@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          openai_api_key: ${{ secrets.CODEREVIEW_API_KEY }}
+          openai_api_endpoint: ${{ secrets.CODEREVIEW_API_ENDPOINT }}
+          model: ${{ secrets.CODEREVIEW_MODEL || 'gpt-4o-mini' }}
+          language: Chinese
+          prompt: |
+            请检查以下代码变更，从以下几个维度进行审查：
+            1. 安全性：是否存在 XSS、注入、密钥泄露、路径穿越等安全风险
+            2. 正确性：逻辑是否正确，边界条件是否覆盖
+            3. 性能：是否存在不必要的重渲染、内存泄漏、N+1 查询
+            4. 可维护性：命名是否清晰、职责是否单一、是否有死代码
+            5. 规范：是否符合项目的 TypeScript strict 模式、E SM 导入规范
+            请用中文输出审查结果，对严重问题标记为 🔴，建议优化标记为 🟡。
+          max_patch_length: 10000
+          ignore_patterns: |
+            /node_modules
+            *.md
+            /dist
+            /.github
+            *.lock
+            *.json

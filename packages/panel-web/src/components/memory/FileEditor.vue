@@ -2,14 +2,15 @@
 import {
   computed, nextTick, onMounted, ref, watch,
 } from 'vue';
-import { NInput, NSpin, NButton } from 'naive-ui';
+import { NInput, NButton } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 import {
-  handleMarkdownCodeCopyClick,
-  hydrateMarkdownCodeBlocks,
-  renderMarkdown,
-} from '@/utils/markdown';
+  handleMarkdownControlClick,
+  hydrateMarkdownControls,
+} from '@/utils/markdown-controls';
 
 const props = defineProps<{
   path: string | null;
@@ -93,17 +94,30 @@ const bodyGridStyle = computed<Record<string, string>>(() => {
   return { gridTemplateColumns: '1fr', gap: '0' };
 });
 
-const renderedPreview = computed(() => renderMarkdown(props.content));
+const renderedPreview = ref('');
+let renderSeq = 0;
+
+watch([() => props.content, showPreviewPane], async ([content, previewVisible]) => {
+  const seq = ++renderSeq;
+  if (!previewVisible) {
+    renderedPreview.value = '';
+    return;
+  }
+  const { renderMarkdown } = await import('@/utils/markdown-renderer');
+  if (seq !== renderSeq) return;
+  renderedPreview.value = renderMarkdown(content);
+}, { immediate: true });
 const previewIsEmpty = computed(() => !props.content || !props.content.trim());
 const previewRef = ref<HTMLElement | null>(null);
 const codeCopyLabels = computed(() => ({
   copy: t('common.copy'),
+  copyImage: t('common.copyImage'),
   copied: t('common.copied'),
   copyFailed: t('common.copyFailed'),
 }));
 
 function refreshMarkdownCodeBlocks(): void {
-  hydrateMarkdownCodeBlocks(previewRef.value, codeCopyLabels.value);
+  hydrateMarkdownControls(previewRef.value, codeCopyLabels.value);
 }
 
 watch([renderedPreview, locale, showPreviewPane], async () => {
@@ -112,7 +126,7 @@ watch([renderedPreview, locale, showPreviewPane], async () => {
 });
 
 function onMarkdownClick(event: MouseEvent): void {
-  void handleMarkdownCodeCopyClick(event, codeCopyLabels.value);
+  void handleMarkdownControlClick(event, codeCopyLabels.value);
 }
 
 // Ctrl/Cmd+S handler on the textarea wrapper. NInput passes through keydown.
@@ -181,9 +195,11 @@ const toggleLabel = computed(() => {
       <!-- Loading overlay -->
       <div
         v-if="loading"
-        class="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-page)]/60"
+        class="absolute inset-0 z-10 flex items-start justify-center bg-[var(--bg-page)]/70 px-5 py-5 backdrop-blur-sm"
       >
-        <NSpin size="medium" />
+        <div class="w-full max-w-3xl rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4 shadow-sm">
+          <ThemedSkeleton height="18px" :repeat="8" rounded="sm" />
+        </div>
       </div>
 
       <!-- Empty placeholder -->
@@ -236,11 +252,8 @@ const toggleLabel = computed(() => {
       </div>
 
       <!-- Error banner -->
-      <div
-        v-if="error"
-        class="app-error-banner absolute bottom-0 left-0 right-0 px-4 py-2 text-xs border-t"
-      >
-        {{ error }}
+      <div v-if="error" class="absolute bottom-3 left-3 right-3 z-20">
+        <ErrorBanner :message="error" surface="inline" />
       </div>
     </div>
 

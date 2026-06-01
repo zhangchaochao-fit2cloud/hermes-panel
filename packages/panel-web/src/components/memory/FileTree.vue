@@ -4,6 +4,7 @@ import { NInput } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import FileTreeNode from './FileTreeNode.vue';
 import type { TreeNode } from '@/utils/tree-helpers';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 
 const props = defineProps<{
   tree: TreeNode[];
@@ -92,8 +93,8 @@ function selectFile(path: string): void {
 
     <!-- Tree body -->
     <div class="flex-1 min-h-0 overflow-y-auto py-1">
-      <div v-if="loading" class="px-3 py-6 text-xs text-[var(--text-3)] text-center">
-        {{ t('common.loading') }}
+      <div v-if="loading" class="px-3 py-3">
+        <ThemedSkeleton :repeat="6" height="24px" />
       </div>
       <div v-else-if="tree.length === 0" class="px-3 py-6 text-xs text-[var(--text-3)] text-center">
         {{ search ? t('memory.noMatch') : t('memory.emptyTree') }}

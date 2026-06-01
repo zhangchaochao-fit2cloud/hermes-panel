@@ -7,12 +7,13 @@ import {
   NInputNumber,
   NButton,
   NSwitch,
-  NEmpty,
-  NSpin,
   NTag,
   useMessage,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useLogsStore, type LogLevelFilter, type LogLine } from '@/stores/logs';
 
 const { t } = useI18n();
@@ -185,17 +186,13 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Error banner -->
-    <div
+    <ErrorBanner
       v-if="error"
-      class="text-sm p-3 rounded-md border"
-      style="
-        color: var(--color-error, #e88080);
-        background: rgba(232, 128, 128, 0.08);
-        border-color: rgba(232, 128, 128, 0.3);
-      "
-    >
-      {{ t('developer.logs.errorPrefix') }} {{ error }}
-    </div>
+      :message="`${t('developer.logs.errorPrefix')} ${error}`"
+      :retry-label="t('developer.logs.refresh')"
+      surface="inline"
+      @retry="refresh"
+    />
 
     <!-- Log list -->
     <div
@@ -209,12 +206,13 @@ onBeforeUnmount(() => {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       "
     >
-      <NSpin v-if="loading && lines.length === 0" class="py-12 block" />
-      <NEmpty
+      <div v-if="loading && lines.length === 0" class="p-3">
+        <ThemedSkeleton height="18px" :repeat="8" rounded="sm" />
+      </div>
+      <EmptyState
         v-else-if="lines.length === 0"
-        size="small"
-        :description="t('developer.logs.empty')"
-        class="py-12"
+        icon="≡"
+        :title="t('developer.logs.empty')"
       />
       <ul v-else class="divide-y" style="border-color: var(--border)">
         <li

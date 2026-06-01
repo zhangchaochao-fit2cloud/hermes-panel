@@ -9,6 +9,8 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
+import { extractMarkdownImages, stripMarkdownImages, type MarkdownImagePreview } from '@/utils/markdown-images';
 
 const props = defineProps<{
   /** 当前 hover 的 session id，null 表示不显示 */
@@ -29,6 +31,10 @@ interface SessionDetail {
   title: string;
   model: string;
   messages: PreviewMessage[];
+}
+interface PreviewMessageView extends PreviewMessage {
+  images: MarkdownImagePreview[];
+  text: string;
 }
 
 const cache = new Map<string, SessionDetail>();
@@ -80,9 +86,13 @@ watch(() => props.sessionId, async (id) => {
   }
 });
 
-const lastMessages = computed<PreviewMessage[]>(() => {
+const lastMessages = computed<PreviewMessageView[]>(() => {
   if (!detail.value) return [];
-  return detail.value.messages.slice(-3);
+  return detail.value.messages.slice(-3).map(message => ({
+    ...message,
+    images: extractMarkdownImages(message.content, 3),
+    text: stripMarkdownImages(message.content) || message.content,
+  }));
 });
 
 // 定位：浮层贴 anchor 右侧；右边空间不够时翻到左侧。
@@ -127,7 +137,10 @@ function truncate(s: string, n: number): string {
         class="session-hover-preview pointer-events-none fixed z-[180] rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-[var(--shadow-2)] p-3 text-xs flex flex-col gap-2 overflow-hidden"
         :style="popoverStyle"
       >
-        <div v-if="loading" class="opacity-60">{{ t('common.loading') }}…</div>
+        <div v-if="loading" class="space-y-2">
+          <ThemedSkeleton height="14px" />
+          <ThemedSkeleton :repeat="3" height="36px" />
+        </div>
         <template v-else-if="detail">
           <div class="text-[11px] text-[var(--text-3)] truncate">{{ detail.model }} · {{ detail.messages.length }} {{ t('chat.message.tokens', { n: '' }).replace(/\s*\d*\s*tokens?/i, '').trim() || 'msgs' }}</div>
           <div v-if="lastMessages.length === 0" class="opacity-60">{{ t('sessions.preview.empty') }}</div>
@@ -139,7 +152,18 @@ function truncate(s: string, n: number): string {
             <div class="text-[10px] uppercase tracking-wide opacity-50">
               {{ m.role === 'user' ? t('sessions.preview.user') : t('sessions.preview.assistant') }}
             </div>
-            <div class="text-[var(--text-2)] leading-snug">{{ truncate(m.content, 120) }}</div>
+            <div v-if="m.images.length" class="session-preview-images">
+              <img
+                v-for="image in m.images"
+                :key="image.src"
+                class="session-preview-image"
+                :src="image.src"
+                :alt="image.alt"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div v-if="m.text" class="text-[var(--text-2)] leading-snug">{{ truncate(m.text, 120) }}</div>
           </div>
         </template>
       </div>
@@ -151,6 +175,24 @@ function truncate(s: string, n: number): string {
 .session-hover-preview {
   /* glass 主题下加 backdrop blur 让浮层更精致 */
   backdrop-filter: blur(4px) saturate(1.2);
+}
+
+.session-preview-images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin: 2px 0 4px;
+}
+
+.session-preview-image {
+  width: 100%;
+  aspect-ratio: 1.45;
+  object-fit: cover;
+  border-radius: 7px;
+  background: var(--md-image-bg);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--border) 82%, transparent),
+    var(--shadow-1);
 }
 
 .hover-preview-enter-active,

@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-web/
+packages/panel-npm/dist-bff/
+packages/panel-desktop/src-tauri/resources/bff/
 target/
 *.log
 .DS_Store

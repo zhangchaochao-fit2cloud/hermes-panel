@@ -12,8 +12,9 @@
  * given, the explicit `limit` wins.
  */
 import { computed } from 'vue';
-import { NPopover } from 'naive-ui';
+import { NPopover, NButton } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import { bffFetch } from '@/api/bff';
 import { inferContextLimit } from '@/data/model-limits';
 
 const props = withDefaults(defineProps<{
@@ -28,6 +29,8 @@ const props = withDefaults(defineProps<{
   cache?: number;
   /** Estimated USD cost; renders a Cost line in the popover when set. */
   cost?: number;
+  /** Session ID for compression requests. */
+  sessionId?: string | null;
 }>(), {
   limit: undefined,
   model: null,
@@ -35,7 +38,12 @@ const props = withDefaults(defineProps<{
   output: undefined,
   cache: undefined,
   cost: undefined,
+  sessionId: null,
 });
+
+const emit = defineEmits<{
+  (e: 'compressed', result: { savedTokens: number; savedCost: number }): void;
+}>();
 
 const { t } = useI18n();
 
@@ -70,6 +78,29 @@ function fmtFull(n: number): string {
 
 const pctLabel = computed(() => pct.value.toFixed(1));
 const modelLabel = computed(() => props.model || t('chat.context.modelFallback'));
+
+const needsCompression = computed(() => pct.value >= 70);
+
+const compacting = computed(() => false);
+
+async function handleCompress(): Promise<void> {
+  if (!props.sessionId || compacting.value) return;
+  try {
+    const result = await bffFetch(`/api/sessions/${props.sessionId}/compress`, {
+      method: 'POST',
+      body: JSON.stringify({ modelLimit: resolvedLimit.value }),
+    }) as { savedTokens: number; savingsPercent: number; compressedCount: number };
+
+    const estimatedCost = props.cost ?? 0;
+    const savedCost = estimatedCost > 0 && result.savingsPercent > 0
+      ? (estimatedCost * result.savingsPercent) / 100
+      : 0;
+
+    emit('compressed', { savedTokens: result.savedTokens, savedCost });
+  } catch {
+    // silently fail — compression is non-critical
+  }
+}
 </script>
 
 <template>
@@ -141,6 +172,26 @@ const modelLabel = computed(() => props.model || t('chat.context.modelFallback')
       <div v-if="cost != null" class="text-xs">
         <span class="opacity-60">{{ t('chat.context.cost') }}:</span>
         <span class="font-mono ml-1">${{ cost.toFixed(4) }}</span>
+      </div>
+
+      <!-- Compression alert -->
+      <div
+        v-if="needsCompression && sessionId"
+        class="border-t border-[color-mix(in_srgb,var(--color-warning)_30%,var(--border))] pt-2 mt-1"
+      >
+        <p class="text-xs text-[var(--color-warning)] mb-2">
+          {{ pct >= 95 ? '上下文即将耗尽，建议立即压缩' : '上下文用量较高，建议压缩历史消息' }}
+        </p>
+        <NButton
+          size="tiny"
+          type="warning"
+          :loading="compacting"
+          :disabled="compacting"
+          block
+          @click="handleCompress"
+        >
+          {{ compacting ? '压缩中...' : '压缩历史消息' }}
+        </NButton>
       </div>
 
       <!-- Model hint -->

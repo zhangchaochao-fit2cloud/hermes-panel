@@ -6,10 +6,12 @@ import {
   NTag,
   NCollapse,
   NCollapseItem,
-  NEmpty,
-  NSpin,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useDoctorStore, type DoctorStatus } from '@/stores/doctor';
 import { absoluteTime } from '@/utils/relative-time';
 
@@ -87,24 +89,27 @@ async function onRun(): Promise<void> {
 
     <!-- Error banner (e.g. HERMES_CLI_NOT_FOUND). We still render any
          partial results below if checks were parsed. -->
-    <div
+    <ErrorBanner
       v-if="error"
-      class="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-500"
-    >
-      {{ t('developer.doctor.errorPrefix') }} {{ error }}
-    </div>
+      :message="`${t('developer.doctor.errorPrefix')} ${error}`"
+      :retry-label="hasRun ? t('developer.doctor.runAgain') : t('developer.doctor.run')"
+      surface="inline"
+      @retry="onRun"
+    />
 
     <!-- Loading state with no prior data -->
-    <div v-if="loading && !hasRun" class="flex justify-center py-12">
-      <NSpin size="medium" />
+    <div
+      v-if="loading && !hasRun"
+      class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4"
+    >
+      <ThemedSkeleton height="18px" :repeat="4" rounded="sm" />
     </div>
 
     <!-- Empty (never run) -->
-    <NEmpty
+    <EmptyState
       v-else-if="!hasRun"
-      size="medium"
-      :description="t('developer.doctor.emptyHint')"
-      class="py-12"
+      icon="✓"
+      :title="t('developer.doctor.emptyHint')"
     />
 
     <!-- Results -->
@@ -155,20 +160,16 @@ async function onRun(): Promise<void> {
       >
         {{ t('developer.doctor.noStructured') }}
       </div>
-      <NEmpty
+      <EmptyState
         v-else
-        size="small"
-        :description="t('developer.doctor.noChecks')"
-        class="py-8"
+        icon="·"
+        :title="t('developer.doctor.noChecks')"
       />
 
       <!-- Raw output (collapsible) -->
       <NCollapse v-if="raw" arrow-placement="right" :default-expanded-names="[]">
         <NCollapseItem :title="t('developer.doctor.rawOutput')" name="raw">
-          <pre
-            class="rounded-md bg-[var(--bg-elevate)] p-3 text-xs overflow-auto"
-            style="max-height: 480px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
-          ><code>{{ raw }}</code></pre>
+          <CodeBlock :code="raw" lang="doctor" max-height="480px" />
         </NCollapseItem>
       </NCollapse>
     </template>

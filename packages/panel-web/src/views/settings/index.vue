@@ -12,6 +12,8 @@ import SectionAdvanced from '@/components/settings/SectionAdvanced.vue';
 import SectionBackup from '@/components/settings/SectionBackup.vue';
 import SectionAbout from '@/components/settings/SectionAbout.vue';
 import SectionSystemHealth from '@/components/settings/SectionSystemHealth.vue';
+import SectionAccess from '@/components/settings/SectionAccess.vue';
+import SectionLicense from '@/components/settings/SectionLicense.vue';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
@@ -21,6 +23,8 @@ const route = useRoute();
 interface AnchorItem { key: string; label: string }
 
 const anchors: AnchorItem[] = [
+  { key: 'license', label: 'settings.anchor.license' },
+  { key: 'access', label: 'settings.anchor.access' },
   { key: 'system-health', label: 'settings.anchor.systemHealth' },
   { key: 'appearance', label: 'settings.anchor.appearance' },
   { key: 'providers', label: 'settings.anchor.providers' },
@@ -145,6 +149,12 @@ onBeforeUnmount(() => {
         class="mx-auto space-y-8"
         :class="isMobile ? 'max-w-full px-4 py-6' : 'max-w-[800px] px-8 py-8'"
       >
+        <section id="settings-section-license" class="scroll-mt-24">
+          <SectionLicense />
+        </section>
+        <section id="settings-section-access" class="scroll-mt-24">
+          <SectionAccess />
+        </section>
         <section id="settings-section-system-health" class="scroll-mt-24">
           <SectionSystemHealth />
         </section>

@@ -3,10 +3,11 @@ import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import {
-  NButton, NTag, NSkeleton, NModal, NCard, NForm, NFormItem,
+  NButton, NTag, NModal, NCard, NForm, NFormItem,
   NInput, NSelect, useMessage,
 } from 'naive-ui';
 import { useProvidersStore, type ProviderInfo } from '@/stores/providers';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 
 const { t } = useI18n();
 const store = useProvidersStore();
@@ -108,8 +109,7 @@ function isCurrentProvider(p: ProviderInfo): boolean {
     </div>
 
     <div v-if="loading && !initialized" class="mt-4 space-y-2">
-      <NSkeleton :height="64" />
-      <NSkeleton :height="64" />
+      <ThemedSkeleton :repeat="2" height="64px" />
     </div>
 
     <div v-else-if="providers.length === 0" class="mt-4 text-sm text-[var(--text-3)]">

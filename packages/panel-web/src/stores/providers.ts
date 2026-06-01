@@ -44,6 +44,49 @@ export interface AddCredentialInput {
   label?: string;
 }
 
+export interface CandidateModel {
+  id: string;
+  label?: string;
+  provider: string;
+  baseUrl?: string;
+}
+
+export interface ModelPricing {
+  inputPerMillion: number;
+  outputPerMillion: number;
+  currency: 'USD';
+  source: 'static' | 'openrouter';
+}
+
+export interface InspectedModel {
+  id: string;
+  label?: string;
+  provider: string;
+  baseUrl?: string;
+  isCurrent: boolean;
+  credentialStatus: 'configured' | 'missing' | 'unknown';
+  availability: 'ready' | 'missing_credentials' | 'unknown';
+  availabilityReason?: string;
+  pricing?: ModelPricing;
+  contextLength?: number;
+}
+
+export interface ModelInspectionResult {
+  checkedAt: number;
+  items: InspectedModel[];
+}
+
+export interface ProviderBalance {
+  provider: string;
+  status: 'available' | 'unsupported' | 'unavailable' | 'unknown';
+  currency?: 'USD';
+  total?: number;
+  used?: number;
+  remaining?: number;
+  source?: 'openrouter';
+  reason?: string;
+}
+
 export const useProvidersStore = defineStore('providers', () => {
   const model = ref<ModelState | null>(null);
   const providers = ref<ProviderInfo[]>([]);
@@ -51,6 +94,11 @@ export const useProvidersStore = defineStore('providers', () => {
   const initialized = ref(false);
   const settingModel = ref(false);
   const addingCredential = ref(false);
+  const inspectionLoading = ref(false);
+  const balanceLoading = ref(false);
+  const inspectionCheckedAt = ref<number | null>(null);
+  const inspectedModels = ref<Record<string, InspectedModel>>({});
+  const providerBalances = ref<Record<string, ProviderBalance>>({});
   const error = ref<string | null>(null);
 
   const currentModelId = computed(() => model.value?.default ?? '');
@@ -88,6 +136,18 @@ export const useProvidersStore = defineStore('providers', () => {
     }
     return `${src} (${t('model.switcher.credential.unknown')})`;
   });
+
+  function modelKey(provider: string, id: string): string {
+    return `${provider}:${id}`;
+  }
+
+  function inspectionFor(provider: string, id: string): InspectedModel | undefined {
+    return inspectedModels.value[modelKey(provider, id)];
+  }
+
+  function balanceFor(provider: string): ProviderBalance | undefined {
+    return providerBalances.value[provider];
+  }
 
   async function load(opts: { initial?: boolean } = {}): Promise<void> {
     if (opts.initial) loading.value = true;
@@ -152,9 +212,57 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
+  async function inspectModels(candidates: CandidateModel[]): Promise<void> {
+    if (candidates.length === 0) return;
+    inspectionLoading.value = true;
+    try {
+      const r = await bffFetch<ModelInspectionResult>('/api/models/inspect', {
+        method: 'POST',
+        body: JSON.stringify({ models: candidates }),
+        silent: true,
+      });
+      inspectedModels.value = Object.fromEntries(
+        r.items.map(item => [modelKey(item.provider, item.id), item]),
+      );
+      inspectionCheckedAt.value = r.checkedAt;
+    } catch (err) {
+      error.value = (err as Error).message ?? 'failed to inspect models';
+    } finally {
+      inspectionLoading.value = false;
+    }
+  }
+
+  async function loadProviderBalance(provider: string): Promise<void> {
+    if (!provider) return;
+    balanceLoading.value = true;
+    try {
+      const r = await bffFetch<ProviderBalance>(
+        `/api/providers/balance?provider=${encodeURIComponent(provider)}`,
+        { silent: true },
+      );
+      providerBalances.value = {
+        ...providerBalances.value,
+        [provider]: r,
+      };
+    } catch (err) {
+      providerBalances.value = {
+        ...providerBalances.value,
+        [provider]: {
+          provider,
+          status: 'unavailable',
+          reason: (err as Error).message ?? 'BALANCE_CHECK_FAILED',
+        },
+      };
+    } finally {
+      balanceLoading.value = false;
+    }
+  }
+
   return {
-    model, providers, loading, initialized, settingModel, addingCredential, error,
+    model, providers, loading, initialized, settingModel, addingCredential,
+    inspectionLoading, balanceLoading, inspectionCheckedAt, error,
     currentModelId, currentProvider, activeCredentialLabel,
-    load, setModel, addCredential,
+    inspectionFor, balanceFor,
+    load, setModel, addCredential, inspectModels, loadProviderBalance,
   };
 });

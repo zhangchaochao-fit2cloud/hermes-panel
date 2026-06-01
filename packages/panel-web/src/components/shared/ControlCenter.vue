@@ -102,11 +102,19 @@ const allActions = computed<Action[]>(() => {
   return items;
 });
 
+function fuzzyMatch(text: string, query: string): boolean {
+  let qi = 0;
+  for (let i = 0; i < text.length && qi < query.length; i++) {
+    if (text[i] === query[qi]) qi++;
+  }
+  return qi === query.length;
+}
+
 const filtered = computed<Action[]>(() => {
   const q = query.value.trim().toLowerCase();
   if (!q) return allActions.value;
   return allActions.value.filter(a =>
-    a.label.toLowerCase().includes(q) || a.hint?.toLowerCase().includes(q),
+    fuzzyMatch(a.label.toLowerCase(), q) || fuzzyMatch(a.hint?.toLowerCase() ?? '', q),
   );
 });
 

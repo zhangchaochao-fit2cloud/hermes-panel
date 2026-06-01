@@ -16,6 +16,7 @@ const { t } = useI18n();
 
 interface WorkspaceStatus {
   cwd: string;
+  source: 'ide' | 'query' | 'env' | 'process';
   isGitRepo: boolean;
   branch: string | null;
   changeCount: number;
@@ -86,19 +87,13 @@ const fileCount = computed(() =>
 );
 
 const progressSteps = computed<ProgressStep[]>(() => {
-  const hasPrompt = props.messages.some(message => message.role === 'user');
-  const hasExplore = categoryCounts.value.read + categoryCounts.value.search + fileCount.value > 0;
-  const hasImplementation = categoryCounts.value.edit + categoryCounts.value.write > 0;
-  const hasVerification = categoryCounts.value.shell > 0;
   const lastAssistant = [...props.messages].reverse().find(message => message.role === 'assistant');
   const completed = lastAssistant?.completed === true && !hasActiveRun.value;
 
   return [
-    step('scope', t('chat.taskPanel.steps.scope'), hasPrompt, !hasPrompt && hasActiveRun.value),
-    step('explore', t('chat.taskPanel.steps.explore'), hasExplore, hasPrompt && !hasExplore && hasActiveRun.value),
-    step('implement', t('chat.taskPanel.steps.implement'), hasImplementation, hasExplore && !hasImplementation && hasActiveRun.value),
-    step('verify', t('chat.taskPanel.steps.verify'), hasVerification, hasImplementation && !hasVerification && hasActiveRun.value),
-    step('summarize', t('chat.taskPanel.steps.summarize'), completed, hasVerification && hasActiveRun.value),
+    step('run', t('chat.taskPanel.steps.run'), props.streamState !== 'idle', hasActiveRun.value && allToolCalls.value.length === 0),
+    step('tools', t('chat.taskPanel.steps.tools'), allToolCalls.value.some(tool => tool.status === 'done' || tool.status === 'error'), runningTools.value.length > 0),
+    step('response', t('chat.taskPanel.steps.response'), completed, props.streamState === 'streaming' && runningTools.value.length === 0),
   ];
 });
 
@@ -124,7 +119,7 @@ const taskRows = computed<TaskRow[]>(() =>
 
 const subAgents = computed<SubAgent[]>(() =>
   allToolCalls.value
-    .filter(isAgentTool)
+    .filter(hasExplicitAgentMetadata)
     .map((tool, index) => ({
       id: tool.id,
       name: agentName(tool, index),
@@ -181,14 +176,15 @@ function taskMeta(tool: ToolCall, toolFacts: ReturnType<typeof getToolCallFacts>
   return compact(tool.preview || tool.name, 54);
 }
 
-function isAgentTool(tool: ToolCall): boolean {
+function hasExplicitAgentMetadata(tool: ToolCall): boolean {
+  if (/^(spawn_agent|subagent|multi_agent|agent_run|agent\.run)$/i.test(tool.name)) return true;
   const inputText = JSON.stringify(tool.input ?? {});
-  return /agent|subagent|worker|explorer|spawn_agent|multi_agent/i.test(`${tool.name} ${tool.preview ?? ''} ${inputText}`);
+  return /"(?:agent_id|agentId|agent_name|agentName|subagent_id|subagentId|worker_id|workerId)"\s*:/.test(inputText);
 }
 
 function agentName(tool: ToolCall, index: number): string {
   const input = tool.input ?? {};
-  const explicit = pickString(input, ['nickname', 'name', 'agent_name', 'agentName']);
+  const explicit = pickString(input, ['nickname', 'name', 'agent_name', 'agentName', 'agent_id', 'agentId', 'subagent_id', 'subagentId', 'worker_id', 'workerId']);
   if (explicit) return explicit;
   const match = (tool.preview ?? '').match(/(?:agent|worker|explorer)\s+([A-Za-z0-9_-]+)/i);
   return match?.[1] ?? t('chat.taskPanel.subAgents.fallback', { n: index + 1 });
@@ -286,6 +282,10 @@ watch(() => props.open, (open) => {
         </button>
       </div>
       <div class="env-list">
+        <div class="env-row">
+          <span>{{ t('chat.taskPanel.env.source') }}</span>
+          <strong>{{ workspace ? t(`chat.taskPanel.env.sourceValue.${workspace.source}`) : '-' }}</strong>
+        </div>
         <div class="env-row">
           <span>{{ t('chat.taskPanel.env.changes') }}</span>
           <strong>{{ workspace?.changeCount ?? 0 }}</strong>

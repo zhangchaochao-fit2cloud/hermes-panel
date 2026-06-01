@@ -8,6 +8,7 @@ import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
 import { useSessionStore } from '@/stores/session';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { useBreakpoint } from '@/composables/use-breakpoint';
+import { teamFor, type RoleDef } from '@/data/roles';
 
 const { t } = useI18n();
 const hotkeys = useHotkeysStore();
@@ -19,6 +20,7 @@ const props = defineProps<{
   model: string;
   thinkingSpeed: 'fast' | 'extended' | 'auto';
   sending: boolean;
+  lastSentText?: string;
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +28,7 @@ const emit = defineEmits<{
   (e: 'stop'): void;
   (e: 'update:model', v: string): void;
   (e: 'update:thinkingSpeed', v: 'fast' | 'extended' | 'auto'): void;
+  (e: 'restoreText', text: string): void;
 }>();
 
 // Suppress "unused" warning for `model` — kept on the prop signature for
@@ -42,15 +45,19 @@ type PermissionMode = 'default' | 'auto-review' | 'full-access';
 
 interface ComposerAttachment {
   id: string;
+  kind: 'text' | 'image';
   name: string;
   size: number;
   content: string | null;
+  dataUrl?: string;
+  mime?: string;
   truncated: boolean;
   error?: string;
 }
 
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_CHARS = 200_000;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const permissionMode = ref<PermissionMode>('default');
 const attachments = ref<ComposerAttachment[]>([]);
 const canSend = computed(() => (text.value.trim().length > 0 || attachments.value.length > 0) && !props.sending);
@@ -151,15 +158,47 @@ const promptPlaceholder = computed(() => {
   return t('chat.composer.placeholder');
 });
 
+// @mention autocomplete
+const mentionedRoles = computed<RoleDef[]>(() => {
+  const atIdx = text.value.lastIndexOf('@');
+  if (atIdx < 0) return [];
+  const afterAt = text.value.slice(atIdx + 1);
+  if (afterAt.includes(' ')) return [];
+  const wsId = workspaces.activeId;
+  if (!wsId) return [];
+  const roles = teamFor(wsId);
+  if (!afterAt) return roles;
+  const q = afterAt.toLowerCase();
+  return roles.filter(r => r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
+});
+const showMentions = computed(() => mentionedRoles.value.length > 0);
+
+function selectMention(role: RoleDef): void {
+  const atIdx = text.value.lastIndexOf('@');
+  if (atIdx < 0) return;
+  text.value = text.value.slice(0, atIdx) + `@${role.id} `;
+  void nextTick(() => {
+    textareaRef.value?.focus();
+    resize();
+  });
+}
+
 const sendChord = computed(() => hotkeys.bindings.send);
 const sendChordTokens = computed(() => chordToDisplayTokens(sendChord.value));
 
+function restoreLastSent(): boolean {
+  if (!props.lastSentText) return false;
+  text.value = props.lastSentText;
+  void nextTick(resize);
+  return true;
+}
+
 function onKeydown(e: KeyboardEvent): void {
-  // Skip while IME is composing — Enter should commit the composition, not send.
   if (e.isComposing) return;
-  // `newline` is the explicit no-op (default Shift+Enter inserts a newline as
-  // the browser already does); only handle it if the user remapped it, so
-  // that the chord doesn't accidentally trigger `send`.
+
+  if (e.key === 'ArrowUp' && !text.value) { e.preventDefault(); if (restoreLastSent()) return; }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey && !text.value) { e.preventDefault(); if (restoreLastSent()) return; }
+
   if (hotkeys.matches(e, 'newline')) {
     return;
   }
@@ -179,6 +218,30 @@ function submit(): void {
 
 function onStop(): void {
   emit('stop');
+}
+
+// ─── Drag & drop files ───
+const dragOver = ref(false);
+
+function onDragOver(e: DragEvent): void {
+  e.preventDefault();
+  dragOver.value = true;
+}
+function onDragLeave(): void {
+  dragOver.value = false;
+}
+async function onDrop(e: DragEvent): Promise<void> {
+  e.preventDefault();
+  dragOver.value = false;
+  const files = e.dataTransfer?.files;
+  if (!files?.length) return;
+  for (const file of files) {
+    if (file.type.startsWith('text/') || file.name.match(/\.(ts|js|json|yaml|yml|md|txt|vue|css|html|py|rs|go|toml)$/i)) {
+      const content = await file.text();
+      text.value += `\n\n// ${file.name}\n${content.slice(0, 8000)}`;
+      void nextTick(resize);
+    }
+  }
 }
 
 /** Prepend an @role mention so the user can keep typing the request. */
@@ -239,16 +302,66 @@ function openFilePicker(): void {
 
 async function onFilesSelected(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  const next = await readAttachments(files);
+  attachments.value = [...attachments.value, ...next].slice(0, MAX_ATTACHMENTS);
+  input.value = '';
+}
+
+async function onPaste(event: ClipboardEvent): Promise<void> {
+  const items = Array.from(event.clipboardData?.items ?? []);
+  const imageFiles = items
+    .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+    .map(item => item.getAsFile())
+    .filter((file): file is File => file != null);
+  if (!imageFiles.length) return;
+  event.preventDefault();
+  const next = await readAttachments(imageFiles, true);
+  attachments.value = [...attachments.value, ...next].slice(0, MAX_ATTACHMENTS);
+}
+
+async function readAttachments(files: File[], fromPaste = false): Promise<ComposerAttachment[]> {
   const remaining = MAX_ATTACHMENTS - attachments.value.length;
-  const files = Array.from(input.files ?? []).slice(0, remaining);
+  const accepted = files.slice(0, remaining);
   const next: ComposerAttachment[] = [];
-  for (const file of files) {
-    const id = `${file.name}_${file.size}_${file.lastModified}_${Math.random().toString(36).slice(2, 6)}`;
+  for (const [index, file] of accepted.entries()) {
+    const name = fromPaste && !file.name
+      ? t('chat.composer.pastedImageName', { n: imageAttachmentCount() + index + 1 })
+      : file.name;
+    const id = `${name}_${file.size}_${file.lastModified}_${Math.random().toString(36).slice(2, 6)}`;
     try {
+      if (file.type.startsWith('image/')) {
+        if (file.size > MAX_IMAGE_BYTES) {
+          next.push({
+            id,
+            kind: 'image',
+            name,
+            size: file.size,
+            content: null,
+            truncated: false,
+            mime: file.type,
+            error: t('chat.composer.imageTooLarge', { size: formatFileSize(MAX_IMAGE_BYTES) }),
+          });
+          continue;
+        }
+        const dataUrl = await readFileAsDataUrl(file);
+        next.push({
+          id,
+          kind: 'image',
+          name,
+          size: file.size,
+          content: null,
+          dataUrl,
+          mime: file.type,
+          truncated: false,
+        });
+        continue;
+      }
       const raw = await file.text();
       next.push({
         id,
-        name: file.name,
+        kind: 'text',
+        name,
         size: file.size,
         content: raw.slice(0, MAX_ATTACHMENT_CHARS),
         truncated: raw.length > MAX_ATTACHMENT_CHARS,
@@ -256,16 +369,30 @@ async function onFilesSelected(event: Event): Promise<void> {
     } catch (err) {
       next.push({
         id,
-        name: file.name,
+        kind: file.type.startsWith('image/') ? 'image' : 'text',
+        name,
         size: file.size,
         content: null,
         truncated: false,
+        mime: file.type || undefined,
         error: (err as Error).message,
       });
     }
   }
-  attachments.value = [...attachments.value, ...next].slice(0, MAX_ATTACHMENTS);
-  input.value = '';
+  return next;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error('File read failed'));
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.readAsDataURL(file);
+  });
+}
+
+function imageAttachmentCount(): number {
+  return attachments.value.filter(file => file.kind === 'image').length;
 }
 
 function removeAttachment(id: string): void {
@@ -286,6 +413,12 @@ function composeOutgoingText(): string {
     sections.push([
       t('chat.composer.attachmentsPromptHeader'),
       ...attachments.value.map(file => {
+        if (file.kind === 'image') {
+          if (!file.dataUrl) {
+            return `\n--- ${file.name} (${formatFileSize(file.size)}) ---\n${t('chat.composer.fileReadFailed')}: ${file.error ?? ''}`;
+          }
+          return `\n--- ${file.name} (${formatFileSize(file.size)}) ---\n![${file.name}](${file.dataUrl})`;
+        }
         if (file.content == null) {
           return `\n--- ${file.name} (${formatFileSize(file.size)}) ---\n${t('chat.composer.fileReadFailed')}: ${file.error ?? ''}`;
         }
@@ -325,8 +458,27 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
     circular Send button anchored bottom-right.
   -->
   <div
-    class="composer-shell rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-200 focus-within:border-[var(--text-3)]"
+    class="composer-shell rounded-3xl bg-[var(--bg-card)] border transition-all duration-200 focus-within:border-[var(--text-3)]"
+    :class="dragOver ? 'border-[var(--brand-500)] ring-2 ring-[color-mix(in_srgb,var(--brand-500)_15%,transparent)]' : 'border-[var(--border)]'"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
   >
+    <!-- @mention suggestions -->
+    <div v-if="showMentions" class="composer-mentions flex flex-wrap gap-1.5 px-5 pt-3 pb-0">
+      <button
+        v-for="role in mentionedRoles"
+        :key="role.id"
+        type="button"
+        class="composer-mention-chip"
+        @click="selectMention(role)"
+      >
+        <span class="text-sm">{{ role.icon }}</span>
+        <span class="text-xs font-medium">@{{ role.id }}</span>
+        <span class="text-xs text-[var(--text-3)]">{{ role.name }}</span>
+      </button>
+    </div>
+
     <!-- Textarea -->
     <div class="composer-textarea-wrap px-5 pt-4 pb-1">
       <textarea
@@ -339,6 +491,7 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
         autocorrect="off"
         autocapitalize="off"
         @keydown="onKeydown"
+        @paste="onPaste"
       />
     </div>
 
@@ -349,7 +502,7 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
         class="hidden"
         type="file"
         multiple
-        accept=".txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.vue,.py,.java,.go,.rs,.sh,.sql,text/*"
+        accept=".txt,.md,.markdown,.json,.yaml,.yml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.vue,.py,.java,.go,.rs,.sh,.sql,text/*,image/png,image/jpeg,image/webp,image/gif,image/*"
         @change="onFilesSelected"
       >
       <div class="composer-toolbar-left">
@@ -461,9 +614,16 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
         v-for="file in attachments"
         :key="file.id"
         class="composer-attachment-chip"
+        :class="{ 'composer-attachment-chip--image': file.kind === 'image' }"
         :title="`${file.name} · ${formatFileSize(file.size)}`"
       >
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <img
+          v-if="file.kind === 'image' && file.dataUrl"
+          class="composer-attachment-thumb"
+          :src="file.dataUrl"
+          :alt="file.name"
+        >
+        <svg v-else width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M5 1.8h4.5L13 5.3V14H5a2 2 0 0 1-2-2V3.8a2 2 0 0 1 2-2Z" />
           <path d="M9.5 1.8V5.3H13" />
         </svg>
@@ -712,6 +872,20 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
   color: var(--text-2);
   font-size: 12px;
 }
+.composer-attachment-chip--image {
+  height: 32px;
+  padding-left: 4px;
+  background: color-mix(in srgb, var(--bg-elevate) 82%, var(--brand-500) 3%);
+}
+.composer-attachment-thumb {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--md-image-bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 86%, transparent);
+}
 .composer-attachment-remove {
   display: inline-flex;
   width: 18px;
@@ -823,5 +997,22 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
   .composer-attachment-chip {
     max-width: 100%;
   }
+}
+
+/* ─── @mention chips ─── */
+.composer-mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-elevate) 48%, transparent);
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.composer-mention-chip:hover {
+  background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+  border-color: color-mix(in srgb, var(--brand-500) 28%, var(--border));
 }
 </style>

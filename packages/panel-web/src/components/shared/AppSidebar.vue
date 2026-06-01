@@ -64,6 +64,7 @@ const icons = {
   cron: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
   memory: 'M12 3a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM6 8a3 3 0 0 0 0 6m12-6a3 3 0 0 1 0 6M9 18H7a3 3 0 0 1-3-3v-1m11 4h2a3 3 0 0 0 3-3v-1',
   tools: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z',
+  channels: 'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm11 0h3v3h-3v-3Zm5 0h2v2h-2v-2Zm-3 5h2v2h-2v-2Z',
   developer: 'm8 18-6-6 6-6m8 0 6 6-6 6M14 4l-4 16',
   settings: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
 } as const;
@@ -79,6 +80,7 @@ const items = computed<MenuItem[]>(() => [
   { key: 'memory', iconPath: icons.memory, label: t('nav.memory'), path: '/memory',
     disabled: !caps.has('memory'), disabledReason: t('nav.disabled.memory'), badge: caps.has('memory') ? undefined : t('nav.notAvailable') },
   { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools' },
+  { key: 'channels', iconPath: icons.channels, label: t('nav.channels'), path: '/channels' },
   { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer' },
   { key: 'settings', iconPath: icons.settings, label: t('nav.settings'), path: '/settings' },
 ]);

@@ -20,9 +20,16 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@hermes-panel/bff": "workspace:*",
-    "@hermes-panel/web": "workspace:*",
+    "@koa/cors": "5.0.0",
+    "@koa/router": "13.1.0",
+    "better-sqlite3": "11.3.0",
+    "keytar": "7.9.0",
+    "koa": "2.15.3",
+    "koa-bodyparser": "4.4.1",
     "open": "10.1.0",
-    "sirv": "3.0.0"
+    "pino": "9.4.0",
+    "pino-pretty": "11.2.2",
+    "sirv": "3.0.0",
+    "yaml": "^2.9.0"
   }
 }

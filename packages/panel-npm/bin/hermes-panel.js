@@ -17,14 +17,13 @@ const TOKEN = process.env.PANEL_TOKEN ?? randomBytes(32).toString('hex');
 process.env.PANEL_TOKEN = TOKEN;
 process.env.BFF_PORT = String(BFF_PORT);
 
-// 1) start BFF in-process. We rely on the BFF package's `main` (./dist/server.js)
-//    after `pnpm build`. In a fresh workspace the dist may not exist yet — we
-//    fall back to dynamic ts-on-the-fly via tsx if needed.
+// 1) start BFF in-process from the dist copied into this package by prepack.
+//    The published npm package cannot import private workspace packages.
 async function loadBff() {
   try {
-    return await import('@hermes-panel/bff');
+    return await import('../dist-bff/server.js');
   } catch (err) {
-    console.error('[bff] failed to import; did you run "pnpm build"?');
+    console.error('[bff] failed to import packaged BFF; did you run "pnpm build" before packing?');
     throw err;
   }
 }

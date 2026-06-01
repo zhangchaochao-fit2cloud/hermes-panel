@@ -41,6 +41,17 @@ async function readDesktopBffInfo(): Promise<DesktopBffInfo | null> {
   return desktopBffInfoPromise;
 }
 
+const SESSION_TOKEN_KEY = 'hermes-panel.session';
+
+/** The logged-in account session token, if any (written by stores/auth.ts). */
+export function getSessionToken(): string {
+  try {
+    return localStorage.getItem(SESSION_TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export function getPanelToken(): string {
   const v = readMeta('panel-token');
   // In Vite dev the meta still has the placeholder; we fall back to env
@@ -55,6 +66,10 @@ export function getBffBase(): string {
 }
 
 export async function getPanelTokenAsync(): Promise<string> {
+  // An account session token (logged-in user) takes precedence over the
+  // boot/desktop token — it carries the user identity the BFF needs.
+  const session = getSessionToken();
+  if (session) return session;
   const desktop = await readDesktopBffInfo();
   if (desktop?.token) return desktop.token;
   return getPanelToken();

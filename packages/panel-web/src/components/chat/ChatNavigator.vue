@@ -49,6 +49,11 @@ const atBottom = computed(() => {
   return scrollHeight.value - (scrollTop.value + clientHeight.value) < 32;
 });
 
+const atTop = computed(() => {
+  if (!hasOverflow.value) return true;
+  return scrollTop.value < 32;
+});
+
 // Dots: each user prompt becomes a mark in the quick history.
 interface Dot {
   id: string;
@@ -169,10 +174,11 @@ function jumpTo(id: string): void {
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// 跳到最新一条 user 提问 — pill 按钮调用。
-function jumpToLatestUser(): void {
-  if (dots.value.length === 0) return;
-  jumpTo(dots.value[dots.value.length - 1].id);
+// 回到开头 — 顶部箭头按钮调用。
+function scrollToTop(): void {
+  const s = props.scroller;
+  if (!s) return;
+  s.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 interface VisibleDot {
@@ -426,32 +432,36 @@ const indicatorStyle = computed(() => {
       </div>
     </div>
 
-    <!-- Jump-to-latest-user pill — 跳到最近一条提问；当滚到上方且至少有
-         一条 user message 时显示 -->
-    <button
-      v-if="hasOverflow && !atBottom && dots.length > 0"
-      type="button"
-      class="chat-navigator-jump pointer-events-auto absolute right-8 bottom-14 inline-flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] text-xs text-[var(--text-1)] hover:bg-[var(--bg-elevate)] cursor-pointer transition-colors"
-      @click="jumpToLatestUser"
+    <!-- 浮动箭头：回到开头 ↑ / 回到底部 ↓ —— 纯图标圆形按钮，垂直堆叠 -->
+    <div
+      v-if="hasOverflow"
+      class="chat-navigator-jumps pointer-events-none absolute right-8 bottom-3 flex flex-col gap-2"
     >
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="8" cy="5" r="2.5" />
-        <path d="M3 14a5 5 0 0 1 10 0" />
-      </svg>
-      <span>{{ t('chat.navigator.jumpLatestUser') }}</span>
-    </button>
-    <!-- Scroll-to-bottom pill -->
-    <button
-      v-if="hasOverflow && !atBottom"
-      type="button"
-      class="chat-navigator-jump pointer-events-auto absolute right-8 bottom-3 inline-flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] text-xs text-[var(--text-1)] hover:bg-[var(--bg-elevate)] cursor-pointer transition-colors"
-      @click="scrollToBottom"
-    >
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M8 3v10M3 8l5 5 5-5" />
-      </svg>
-      <span>{{ t('chat.navigator.jumpBottom') }}</span>
-    </button>
+      <button
+        v-if="!atTop"
+        type="button"
+        class="chat-navigator-jump pointer-events-auto inline-flex items-center justify-center h-9 w-9 rounded-full bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] text-[var(--text-1)] hover:bg-[var(--bg-elevate)] cursor-pointer transition-colors"
+        :title="t('chat.navigator.jumpTop')"
+        :aria-label="t('chat.navigator.jumpTop')"
+        @click="scrollToTop"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 13V3M3 8l5-5 5 5" />
+        </svg>
+      </button>
+      <button
+        v-if="!atBottom"
+        type="button"
+        class="chat-navigator-jump pointer-events-auto inline-flex items-center justify-center h-9 w-9 rounded-full bg-[var(--bg-card)] border border-[var(--border)] shadow-[var(--shadow-2)] text-[var(--text-1)] hover:bg-[var(--bg-elevate)] cursor-pointer transition-colors"
+        :title="t('chat.navigator.jumpBottom')"
+        :aria-label="t('chat.navigator.jumpBottom')"
+        @click="scrollToBottom"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 3v10M3 8l5 5 5-5" />
+        </svg>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -632,7 +642,6 @@ const indicatorStyle = computed(() => {
 }
 
 :global(:root[data-theme='dark']) .chat-navigator-shell,
-:global(:root[data-theme='codex-dark']) .chat-navigator-shell,
 :global(:root[data-theme='glass-tokyo']) .chat-navigator-shell {
   --navigator-panel-bg: color-mix(in srgb, var(--bg-elevate) 94%, transparent);
   --navigator-panel-border: color-mix(in srgb, var(--text-3) 22%, transparent);

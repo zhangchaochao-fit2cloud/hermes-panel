@@ -2,3 +2,6 @@ export * from './constants.js';
 export * from './types/chat.js';
 export * from './types/session.js';
 export * from './types/system.js';
+export * from './types/auth.js';
+export * from './types/license.js';
+export * from './types/channel.js';

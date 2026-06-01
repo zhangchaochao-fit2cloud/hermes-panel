@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/* ══════════════════════════════════════════════════════════════
+   Hermes Panel License Portal — Design Tokens
+   亮色 / 暗色双主题，通过 CSS 变量切换
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Surface */
+  --bg-deep: #f5f6fa;
+  --bg-base: #fafbfc;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.03);
+  --bg-active: rgba(0, 0, 0, 0.06);
+
+  /* Border */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
+
+  /* Text */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a5a;
+  --text-muted: #8e8e9a;
+  --text-placeholder: #b0b0ba;
+
+  /* Accent */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: rgba(79, 70, 229, 0.08);
+  --accent-glow: rgba(79, 70, 229, 0.15);
+
+  /* Semantic */
+  --success: #059669;
+  --success-soft: rgba(5, 150, 105, 0.08);
+  --warning: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.08);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.08);
+
+  /* Brand gradient */
+  --brand-from: #6366f1;
+  --brand-to: #8b5cf6;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 4px 24px rgba(79, 70, 229, 0.15);
+
+  /* Sidebar */
+  --sidebar-bg: #f0f1f5;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg-deep: #070709;
+  --bg-base: #0a0a0c;
+  --bg-elevated: #0f0f12;
+  --bg-card: #121215;
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-active: rgba(255, 255, 255, 0.07);
+
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #ededef;
+  --text-secondary: #a0a0a8;
+  --text-muted: #5c5c66;
+  --text-placeholder: #4a4a54;
+
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --accent-soft: rgba(129, 140, 248, 0.1);
+  --accent-glow: rgba(129, 140, 248, 0.2);
+
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.1);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.1);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.1);
+
+  --brand-from: #818cf8;
+  --brand-to: #a78bfa;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 4px 24px rgba(129, 140, 248, 0.15);
+
+  --sidebar-bg: #0a0a0d;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+
+  color-scheme: dark;
+}
+
+/* ── Global resets ─────────────────────────────────────────── */
+
+body {
+  margin: 0;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Naive UI theme override ────────────────────────────────── */
+/* Dark mode adjustments for Naive UI components */
+.dark .n-input .n-input__input-el,
+.dark .n-input .n-input__placeholder { color: var(--text-primary) !important; }
+.dark .n-base-selection .n-base-selection-label { color: var(--text-primary) !important; }
+.dark .n-form-item-label { color: var(--text-secondary) !important; }
+.dark .n-card { background: var(--bg-card) !important; border-color: var(--border-default) !important; }
+.dark .n-modal .n-card { background: var(--bg-elevated) !important; }
+.dark .n-tabs .n-tabs-bar { background: var(--accent) !important; }
+.dark .n-tabs .n-tabs-tab { color: var(--text-muted) !important; }
+.dark .n-tabs .n-tabs-tab--active { color: var(--accent) !important; }
+.dark .n-data-table { background: transparent !important; }
+.dark .n-data-table th { color: var(--text-muted) !important; border-color: var(--border-subtle) !important; }
+.dark .n-data-table td { color: var(--text-secondary) !important; border-color: var(--border-subtle) !important; }
+.dark .n-tag--default { background: var(--bg-hover) !important; color: var(--text-secondary) !important; }
+.dark .n-base-loading { color: var(--text-muted) !important; }
+.dark .n-radio-group .n-radio__label { color: var(--text-secondary) !important; }

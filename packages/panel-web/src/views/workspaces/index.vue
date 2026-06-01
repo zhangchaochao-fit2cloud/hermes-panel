@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NSkeleton, useMessage } from 'naive-ui';
+import { useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { findWorkspace, type WorkspaceTemplate } from '@/data/workspaces';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import WorkspaceCard from '@/components/workspaces/WorkspaceCard.vue';
 import WorkspaceDrawer from '@/components/workspaces/WorkspaceDrawer.vue';
 import ProfileSwitch from '@/components/workspaces/ProfileSwitch.vue';
@@ -78,7 +79,7 @@ function activateFromDrawer(id: string): void {
           v-if="showSkeleton"
           class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
         >
-          <NSkeleton v-for="i in 12" :key="i" :height="160" :sharp="false" />
+          <ThemedSkeleton v-for="i in 12" :key="i" height="160px" />
         </div>
 
         <div

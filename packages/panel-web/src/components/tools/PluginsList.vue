@@ -2,10 +2,12 @@
 import { onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
-  NButton, NPopconfirm, NSpin, NSwitch, NTag, useMessage,
+  NButton, NPopconfirm, NSwitch, NTag, useMessage,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { usePluginsStore } from '@/stores/plugins';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import InstallPluginModal from '@/components/tools/InstallPluginModal.vue';
 
 const { t } = useI18n();
@@ -78,80 +80,82 @@ function sourceLabel(source: string | undefined): string {
       </div>
     </div>
 
-    <NSpin :show="loading && plugins.length === 0">
-      <div v-if="isEmpty" class="py-12 text-center">
-        <div class="text-4xl mb-3">🧩</div>
-        <h3 class="text-base font-medium mb-1">{{ t('tools.plugins.emptyTitle') }}</h3>
-        <p class="text-sm text-[var(--text-3)] mb-4 max-w-md mx-auto">
-          {{ t('tools.plugins.emptyDescription') }}
-        </p>
-        <NButton type="primary" size="small" @click="showInstall = true">
-          {{ t('tools.plugins.installFirst') }}
-        </NButton>
-      </div>
+    <div v-if="loading && plugins.length === 0" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <ThemedSkeleton v-for="i in 3" :key="i" height="134px" />
+    </div>
 
-      <div v-else-if="plugins.length > 0" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="p in plugins"
-          :key="p.name"
-          class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 flex flex-col gap-3"
-        >
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-mono font-medium text-sm truncate">{{ p.name }}</span>
-                <NTag v-if="p.version" size="tiny" :bordered="false">
-                  v{{ p.version }}
-                </NTag>
-              </div>
-              <div
-                v-if="p.description"
-                class="text-xs text-[var(--text-2)] line-clamp-2 mb-1"
-              >
-                {{ p.description }}
-              </div>
-              <div class="text-xs text-[var(--text-3)]">
-                {{ t('tools.plugins.sourceLabel') }}: {{ sourceLabel(p.source) }}
-              </div>
+    <EmptyState
+      v-else-if="isEmpty"
+      icon="◇"
+      :title="t('tools.plugins.emptyTitle')"
+      :subtitle="t('tools.plugins.emptyDescription')"
+    >
+      <NButton type="primary" size="small" @click="showInstall = true">
+        {{ t('tools.plugins.installFirst') }}
+      </NButton>
+    </EmptyState>
+
+    <div v-else-if="plugins.length > 0" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div
+        v-for="p in plugins"
+        :key="p.name"
+        class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 flex flex-col gap-3"
+      >
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono font-medium text-sm truncate">{{ p.name }}</span>
+              <NTag v-if="p.version" size="tiny" :bordered="false">
+                v{{ p.version }}
+              </NTag>
             </div>
-            <NSwitch
-              :value="p.enabled"
-              :loading="store.isMutating(p.name)"
-              size="small"
-              @update:value="(v: boolean) => onToggle(p.name, v)"
-            />
+            <div
+              v-if="p.description"
+              class="text-xs text-[var(--text-2)] line-clamp-2 mb-1"
+            >
+              {{ p.description }}
+            </div>
+            <div class="text-xs text-[var(--text-3)]">
+              {{ t('tools.plugins.sourceLabel') }}: {{ sourceLabel(p.source) }}
+            </div>
           </div>
+          <NSwitch
+            :value="p.enabled"
+            :loading="store.isMutating(p.name)"
+            size="small"
+            @update:value="(v: boolean) => onToggle(p.name, v)"
+          />
+        </div>
 
-          <div class="flex items-center justify-end gap-2 pt-1 border-t border-[var(--border)]">
-            <NButton
-              size="tiny"
-              quaternary
-              :loading="store.isMutating(p.name)"
-              @click="onUpdate(p.name)"
-            >
-              {{ t('tools.plugins.update') }}
-            </NButton>
-            <NPopconfirm
-              :positive-text="t('common.confirm')"
-              :negative-text="t('common.cancel')"
-              @positive-click="onRemove(p.name)"
-            >
-              <template #trigger>
-                <NButton
-                  size="tiny"
-                  quaternary
-                  type="error"
-                  :loading="store.isMutating(p.name)"
-                >
-                  {{ t('tools.plugins.remove') }}
-                </NButton>
-              </template>
-              {{ t('tools.plugins.removeConfirm', { name: p.name }) }}
-            </NPopconfirm>
-          </div>
+        <div class="flex items-center justify-end gap-2 pt-1 border-t border-[var(--border)]">
+          <NButton
+            size="tiny"
+            quaternary
+            :loading="store.isMutating(p.name)"
+            @click="onUpdate(p.name)"
+          >
+            {{ t('tools.plugins.update') }}
+          </NButton>
+          <NPopconfirm
+            :positive-text="t('common.confirm')"
+            :negative-text="t('common.cancel')"
+            @positive-click="onRemove(p.name)"
+          >
+            <template #trigger>
+              <NButton
+                size="tiny"
+                quaternary
+                type="error"
+                :loading="store.isMutating(p.name)"
+              >
+                {{ t('tools.plugins.remove') }}
+              </NButton>
+            </template>
+            {{ t('tools.plugins.removeConfirm', { name: p.name }) }}
+          </NPopconfirm>
         </div>
       </div>
-    </NSpin>
+    </div>
 
     <InstallPluginModal v-model:show="showInstall" @installed="onRefresh" />
   </div>

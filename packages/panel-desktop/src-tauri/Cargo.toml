@@ -10,13 +10,23 @@ rust-version = "1.77"
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = ["devtools", "tray-icon", "image-png"] }
+tauri = { version = "2.0", features = ["tray-icon", "image-png"] }
 tauri-plugin-shell = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 which = "6.0"
+ed25519-dalek = "2"
+base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
 
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

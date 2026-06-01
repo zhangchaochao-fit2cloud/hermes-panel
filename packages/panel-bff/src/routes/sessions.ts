@@ -3,6 +3,7 @@ import type { SessionSummary, SessionSource } from '@hermes-panel/shared';
 import { runHermesCli, HermesCliError } from '../services/hermes-cli.js';
 import { exportOne, exportFiltered } from '../services/hermes-export.js';
 import { listSessions, getSession, getMessages, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
+import { shouldCompress, compress, type CompressionResult } from '../services/context-compressor.js';
 import { logger } from '../lib/logger.js';
 
 export const sessionsRouter = new Router();
@@ -150,6 +151,30 @@ sessionsRouter.get('/sessions/:id', ctx => {
     ...normalize(row),
     raw: row,
     messages: messages.map((m: MessageRow) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content ?? '',
+      reasoning: m.reasoning ?? undefined,
+      toolName: m.tool_name ?? undefined,
+      timestamp: Math.floor(m.timestamp * 1000),
+      tokenCount: m.token_count,
+    })),
+  };
+});
+
+sessionsRouter.post('/sessions/:id/compress', ctx => {
+  const messages = getMessages(ctx.params.id);
+  if (!messages.length) {
+    ctx.status = 404;
+    ctx.body = { error: { code: 'SESSION_NOT_FOUND', message: 'session not found or empty' } };
+    return;
+  }
+  const body = ctx.request.body as { modelLimit?: number } | undefined;
+  const result: CompressionResult = compress(messages, body?.modelLimit);
+  ctx.body = {
+    canCompress: shouldCompress(messages, body?.modelLimit),
+    ...result,
+    messages: result.messages.map((m: MessageRow) => ({
       id: m.id,
       role: m.role,
       content: m.content ?? '',

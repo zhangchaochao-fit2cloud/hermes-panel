@@ -4,5 +4,6 @@ import { readWorkspaceStatus } from '../services/workspace-status.js';
 export const workspaceStatusRouter = new Router();
 
 workspaceStatusRouter.get('/workspace/status', async ctx => {
-  ctx.body = await readWorkspaceStatus();
+  const cwd = typeof ctx.query.cwd === 'string' ? ctx.query.cwd : null;
+  ctx.body = await readWorkspaceStatus(cwd);
 });

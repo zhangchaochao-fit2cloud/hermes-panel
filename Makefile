@@ -14,7 +14,7 @@
 SHELL := /bin/bash
 
 # 收集所有 phony target — 这些 target 不对应文件，只是命名。
-.PHONY: help install dev dev-up smoke build typecheck test \
+.PHONY: help install dev dev-up smoke smoke-npm smoke-desktop-bff build typecheck test ci-release-critical \
         bff bff-test bff-test-watch bff-typecheck bff-build \
         web web-build web-typecheck \
         shared-build \
@@ -25,7 +25,7 @@ SHELL := /bin/bash
         clean clean-dist clean-modules \
         open start stop restart status logs kill-zombies \
         gateway-start gateway-stop gateway-restart \
-        app-build app-bundle app-refresh-local app-open \
+        app-build app-bundle app-refresh-local app-open desktop-resources desktop-web-dist \
         release release-mac release-mac-arm release-mac-intel release-mac-universal \
         release-win release-linux release-npm release-vsix \
         release-checksums release-clean \
@@ -69,6 +69,12 @@ dev-up: ## fake-hermes + bff + web (token=devtoken123)
 # CI 用，也可本地确认重构没破基本路由。
 smoke: ## 无人值守 smoke test (5 个 endpoint)
 	./scripts/smoke-test.sh
+
+smoke-npm: release-npm ## 安装 npm tarball 并真实启动 web + BFF
+	./scripts/smoke-npm-package.sh
+
+smoke-desktop-bff: desktop-build ## 验证 .app 内置 BFF runtime 可启动
+	./scripts/smoke-desktop-bff.sh
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -158,6 +164,12 @@ desktop: ## Tauri dev (cargo tauri dev)
 # 它们带自动校验和 zip / sha256。
 desktop-build: shared-build bff-build web-build ## Tauri release build (单平台 host)
 	pnpm --filter @hermes-panel/desktop build
+
+desktop-resources: shared-build bff-build ## 准备桌面包内置 BFF runtime
+	./scripts/prepare-desktop-resources.sh
+
+desktop-web-dist: web-build ## 裁剪 Tauri 桌面包不需要的 Web 下载素材
+	./scripts/prepare-desktop-web-dist.sh
 
 # 用 esbuild 把 panel-vscode bundle 成单个 dist/extension.js。
 # vsix 打包看 vscode-pack。
@@ -281,7 +293,7 @@ gateway-restart: gateway-stop gateway-start ## 重启 gateway
 
 # 编 Tauri release：cargo tauri build。耗时 3-8 分钟，看 Mac 是 M-chip 还是 Intel。
 # PATH 修正：CI 之外 zsh 经常找不到 cargo，所以手动 prepend $HOME/.cargo/bin。
-app-build: shared-build bff-build web-build ## 单机编 Tauri Mac .app (target/release)
+app-build: shared-build bff-build web-build desktop-resources ## 单机编 Tauri Mac .app (target/release)
 	@echo "→ building Tauri release (takes a few minutes)"
 	cd packages/panel-desktop && PATH=$$HOME/.cargo/bin:$$PATH cargo tauri build
 
@@ -301,12 +313,14 @@ app-bundle: app-build ## 编 + zip Mac .app (./dist/hermes-panel-VER-mac.zip)
 #   2) 只跑 cargo release binary，不重新跑完整 tauri bundle
 #   3) 把新 binary 覆盖到现有 Hermes Panel.app，并做 ad-hoc codesign
 # 适合频繁修桌面壳逻辑后立刻打开验证；第一次没有 .app 时先跑 make app-build。
-app-refresh-local: shared-build bff-build web-build ## 快速刷新本地 Hermes Panel.app 并 ad-hoc 签名
+app-refresh-local: shared-build bff-build web-build desktop-web-dist desktop-resources ## 快速刷新本地 Hermes Panel.app 并 ad-hoc 签名
 	@echo "→ refreshing local packaged app"
 	cd packages/panel-desktop/src-tauri && PATH=$$HOME/.cargo/bin:$$PATH CARGO_NET_OFFLINE=$${CARGO_NET_OFFLINE:-true} cargo build --release
 	@APP="packages/panel-desktop/src-tauri/target/release/bundle/macos/Hermes Panel.app"; \
 	  BIN_SRC="packages/panel-desktop/src-tauri/target/release/hermes-panel-desktop"; \
 	  BIN_DST="$$APP/Contents/MacOS/Hermes Panel"; \
+	  RES_SRC="packages/panel-desktop/src-tauri/resources/bff"; \
+	  RES_DST="$$APP/Contents/Resources/resources/bff"; \
 	  if [ ! -d "$$APP" ]; then \
 	    echo "缺少 $$APP，请先跑 make app-build"; \
 	    exit 1; \
@@ -316,6 +330,9 @@ app-refresh-local: shared-build bff-build web-build ## 快速刷新本地 Hermes
 	    exit 1; \
 	  fi; \
 	  cp "$$BIN_SRC" "$$BIN_DST"; \
+	  rm -rf "$$RES_DST"; \
+	  mkdir -p "$$(dirname "$$RES_DST")"; \
+	  cp -R "$$RES_SRC" "$$RES_DST"; \
 	  chmod +x "$$BIN_DST"; \
 	  /usr/libexec/PlistBuddy -c 'Set :CFBundleExecutable Hermes Panel' "$$APP/Contents/Info.plist" >/dev/null; \
 	  /usr/libexec/PlistBuddy -c 'Set :CFBundleName Hermes Panel' "$$APP/Contents/Info.plist" >/dev/null; \
@@ -334,7 +351,7 @@ app-open: ## 打开本地打包后的 Hermes Panel.app
 # 设计目标：
 #   - `make release` 在本机能打齐 *本平台能打* 的全部产物 (Mac/Linux/Win 三选一)。
 #   - 跨平台分发用 GitHub Actions：`make tag-push VER=v0.1.0-rc.1` 触发
-#     .github/workflows/release.yml，矩阵跑 macOS arm64/x86_64 + Win + Linux，
+#     .github/workflows/release-desktop.yml，矩阵跑 macOS arm64/x86_64 + Win + Linux，
 #     产物自动收集成 Draft Release。
 #   - 所有产物落到 ./dist/，文件名带版本号，并生成 SHA256SUMS 校验文件。
 # -----------------------------------------------------------------------------
@@ -513,3 +530,13 @@ ci-local: ## 本地跑 CI 做的事 (typecheck + test + build)
 	$(MAKE) typecheck
 	$(MAKE) test
 	$(MAKE) build
+
+ci-release-critical: ## 本地模拟 GitHub CI 的 release-critical build
+	pnpm --filter @hermes-panel/shared build
+	pnpm --filter @hermes-panel/bff build
+	pnpm --filter @hermes-panel/web build
+	pnpm --filter hermes-panel-vscode build
+	pnpm --filter @hermes-panel/desktop build
+	$(MAKE) release-npm
+	./scripts/smoke-npm-package.sh
+	./scripts/smoke-desktop-bff.sh

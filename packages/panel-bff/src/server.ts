@@ -2,6 +2,8 @@ import Koa from 'koa';
 import Router from '@koa/router';
 import cors from '@koa/cors';
 import bodyParser from 'koa-bodyparser';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { HEADERS, PORTS } from '@hermes-panel/shared';
 import { logger } from './lib/logger.js';
 import { errorMiddleware } from './middleware/error.js';
@@ -31,6 +33,10 @@ import { backupRouter } from './routes/backup.js';
 import { usageRouter } from './routes/usage.js';
 import { preferencesRouter } from './routes/preferences.js';
 import { workspaceStatusRouter } from './routes/workspace-status.js';
+import { sandboxRouter } from './routes/sandbox.js';
+import { filesRouter } from './routes/files.js';
+import { channelsRouter } from './routes/channels.js';
+import { authRouter } from './routes/auth.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -41,6 +47,9 @@ function isAllowedOrigin(origin: string): boolean {
   if (origin === 'http://tauri.localhost') return true;
   if (origin === 'https://tauri.localhost') return true;
   if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return true;
+  // Private LAN ranges — only meaningful once BFF_HOST opens the BFF beyond
+  // loopback (Phase 2: phone-as-remote-control over the same Wi-Fi).
+  if (/^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) return true;
   const extra = (process.env.PANEL_CORS_ORIGINS ?? '').split(',').map(s => s.trim()).filter(Boolean);
   return extra.includes(origin);
 }
@@ -50,6 +59,7 @@ export function createApp(): Koa {
   const router = new Router({ prefix: '/api' });
 
   router.use(systemRouter.routes(), systemRouter.allowedMethods());
+  router.use(authRouter.routes(), authRouter.allowedMethods());
   router.use(tokenRouter.routes(), tokenRouter.allowedMethods());
   router.use(sessionsRouter.routes(), sessionsRouter.allowedMethods());
   router.use(statsRouter.routes(), statsRouter.allowedMethods());
@@ -71,6 +81,9 @@ export function createApp(): Koa {
   router.use(usageRouter.routes(), usageRouter.allowedMethods());
   router.use(preferencesRouter.routes(), preferencesRouter.allowedMethods());
   router.use(workspaceStatusRouter.routes(), workspaceStatusRouter.allowedMethods());
+  router.use(sandboxRouter.routes(), sandboxRouter.allowedMethods());
+  router.use(filesRouter.routes(), filesRouter.allowedMethods());
+  router.use(channelsRouter.routes(), channelsRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
@@ -92,12 +105,13 @@ export function createApp(): Koa {
   return app;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) {
   const port = Number(process.env.BFF_PORT ?? PORTS.PANEL_BFF);
+  const host = process.env.BFF_HOST ?? '127.0.0.1';
   const token = getSessionToken();
-  logger.info({ port, token: token.slice(0, 8) + '...' }, 'starting bff');
+  logger.info({ port, host, token: token.slice(0, 8) + '...' }, 'starting bff');
   initWatermark();
-  createApp().listen(port, '127.0.0.1', () => {
-    logger.info(`bff listening on http://127.0.0.1:${port}`);
+  createApp().listen(port, host, () => {
+    logger.info(`bff listening on http://${host}:${port}`);
   });
 }

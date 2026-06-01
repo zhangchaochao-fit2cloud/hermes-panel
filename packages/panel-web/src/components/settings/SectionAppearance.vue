@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { NSwitch } from 'naive-ui';
+import { NSwitch, NButton } from 'naive-ui';
 import { useAppearanceStore, type FontSize, type ThemeMode } from '@/stores/appearance';
+import { useDesktopNotify } from '@/composables/useDesktopNotify';
 
 const { t } = useI18n();
 const store = useAppearanceStore();
 const { mode, color, fontSize, routeTabsEnabled } = storeToRefs(store);
+const { request: requestNotify, granted: notifyGranted } = useDesktopNotify();
 
 interface ModeOption {
   value: ThemeMode;
@@ -22,10 +24,6 @@ const modeOptions: ModeOption[] = [
     previewStyle: { background: '#0a0a0b' } },
   { value: 'auto', labelKey: 'settings.appearance.mode.auto', icon: '🖥',
     previewStyle: { background: 'linear-gradient(90deg, #f7f8fa 50%, #0a0a0b 50%)' } },
-  { value: 'codex-light', labelKey: 'settings.appearance.mode.codexLight', icon: '◻️',
-    previewStyle: { background: '#fafafa', border: '1px solid #e5e5e5' } },
-  { value: 'codex-dark', labelKey: 'settings.appearance.mode.codexDark', icon: '◼️',
-    previewStyle: { background: '#0d0d0d' } },
   { value: 'github-primer', labelKey: 'settings.appearance.mode.githubPrimer', icon: '🐙',
     previewStyle: { background: 'linear-gradient(135deg, #f6f8fa 0%, #ffffff 70%)', borderTop: '3px solid #0969da' } },
   { value: 'glass-minimal', labelKey: 'settings.appearance.mode.minimalGlass', icon: '◌',
@@ -170,6 +168,24 @@ const fontOptions: FontOption[] = [
           {{ t('settings.appearance.routeTabs.hint') }}
         </span>
       </div>
+    </div>
+
+    <!-- Density toggle -->
+    <div>
+      <div class="text-sm font-medium mb-1">{{ t('settings.appearance.density.label') }}</div>
+      <div class="flex items-center gap-3">
+        <NSwitch
+          :value="store.density === 'compact'"
+          @update:value="(v: boolean) => store.setDensity(v ? 'compact' : 'comfortable')"
+        />
+        <span class="text-xs text-[var(--text-3)]">{{ t('settings.appearance.density.hint') }}</span>
+      </div>
+    </div>
+
+    <!-- Desktop notifications -->
+    <div>
+      <div class="text-sm font-medium mb-1">{{ t('settings.appearance.notify.label') }}</div>
+      <NButton size="tiny" @click="requestNotify()">{{ notifyGranted ? t('settings.appearance.notify.enabled') : t('settings.appearance.notify.enable') }}</NButton>
     </div>
   </div>
 </template>

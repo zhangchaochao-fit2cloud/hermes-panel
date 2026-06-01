@@ -159,54 +159,6 @@
 }
 
 /* =================================================================
-   Codex · Light — clean white with dark accents
-   ================================================================= */
-:root[data-theme='codex-light'] {
-  --brand-500: #1a1a1a;
-  --brand-600: #0a0a0a;
-  --brand-700: #000000;
-  /* 页面 vs 卡片对比加大：页面 #f0f0f0 + 卡片 #ffffff，
-     比之前 #fafafa/#ffffff 区分更明显，避免侧边栏/卡片融成一片白。 */
-  --bg-page: #f0f0f0;
-  --bg-card: #ffffff;
-  --bg-elevate: #e8e8e8;
-  --border: #d4d4d4;
-  --text-1: #0a0a0a;
-  --text-2: #404040;
-  --text-3: #737373;
-  --body-bg: #f0f0f0;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.10);
-  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.14);
-}
-
-/* =================================================================
-   Codex · Dark — near-black background, soft white text
-   ================================================================= */
-:root[data-theme='codex-dark'] {
-  /* brand kept as a real accent color (not white) so components that
-   * use `bg-[var(--brand-500)] text-white` stay legible. The page chrome
-   * is still near-black and the accent is reserved for selection
-   * highlights / active states. */
-  --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  /* 页面 vs 卡片 vs elevate 三档拉大对比，避免侧边栏/卡片融成一片黑。
-     border 也提到 #3a3a3a，让 card 轮廓看得见。 */
-  --bg-page: #050505;
-  --bg-card: #1c1c1c;
-  --bg-elevate: #2a2a2a;
-  --border: #3a3a3a;
-  --text-1: #fafafa;
-  --text-2: #d4d4d4;
-  --text-3: #a3a3a3;
-  --body-bg: #050505;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.7);
-}
-
-/* =================================================================
    GitHub Primer — light theme with GitHub blue
    ================================================================= */
 :root[data-theme='github-primer'] {
@@ -269,11 +221,9 @@ body {
 }
 
 /* 深色主题下，浏览器对 <button> 默认不继承父级 color，手写的
-   tailwind button 显示成黑字看不清。只在三个真正暗的主题里强制继承，
-   避免影响 codex-light/light 主题里 button 的原生样式。
+   tailwind button 显示成黑字看不清。只在两个真正暗的主题里强制继承。
    选择器只覆盖纯 <button>，带 .n-button 的 Naive 组件不动。 */
 :root[data-theme='dark'] button:not([class*='n-']),
-:root[data-theme='codex-dark'] button:not([class*='n-']),
 :root[data-theme='glass-tokyo'] button:not([class*='n-']) {
   color: inherit;
 }
@@ -408,66 +358,6 @@ body {
    color; these rules add the personality (radii, hover affordances,
    send-button fill, etc.).
    ================================================================= */
-
-/* Codex Light: flat, near-monochrome. Composer feels like a Mac
- * native search field; send button is solid black with white arrow. */
-:root[data-theme='codex-light'] .composer-shell {
-  border-radius: 24px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 12px rgba(0, 0, 0, 0.04);
-}
-:root[data-theme='codex-light'] .composer-shell:focus-within {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-:root[data-theme='codex-light'] .composer-send-btn {
-  background: #0a0a0a;
-  color: #ffffff;
-}
-:root[data-theme='codex-light'] .composer-send-btn:hover:not(:disabled) {
-  background: #000;
-}
-:root[data-theme='codex-light'] .topbar-icon-button:hover {
-  background: #f4f4f5;
-}
-:root[data-theme='codex-light'] .n-input,
-:root[data-theme='codex-light'] .n-base-selection {
-  --n-border-radius: 10px;
-}
-:root[data-theme='codex-light'] .n-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-/* Codex Dark: composer sits on near-black with a soft halo; chips
- * use slightly elevated bg. Inputs blend into the background. */
-:root[data-theme='codex-dark'] .composer-shell {
-  border-radius: 24px;
-  background: #1a1a1a;
-  border-color: #2a2a2a;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 4px 24px rgba(0, 0, 0, 0.4);
-}
-:root[data-theme='codex-dark'] .composer-shell:focus-within {
-  border-color: #3a3a3a;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-:root[data-theme='codex-dark'] .composer-send-btn {
-  background: #ffffff;
-  color: #0a0a0a;
-}
-:root[data-theme='codex-dark'] .composer-send-btn:hover:not(:disabled) {
-  background: #e5e5e5;
-}
-:root[data-theme='codex-dark'] .composer-icon-btn:hover,
-:root[data-theme='codex-dark'] .topbar-icon-button:hover {
-  background: #262626;
-}
-:root[data-theme='codex-dark'] .strategy-chip:hover,
-:root[data-theme='codex-dark'] .strategy-chip.is-active {
-  background: #262626;
-}
-:root[data-theme='codex-dark'] .n-card,
-:root[data-theme='codex-dark'] .n-modal {
-  background-color: #171717 !important;
-  border-color: #2a2a2a !important;
-}
 
 /* GitHub Primer: blue-accented light theme. Composer/cards have a
  * 1px Primer border; primary buttons use the GH blue. */
@@ -708,6 +598,30 @@ body {
   outline-offset: -2px;
 }
 
+.topbar-user-button {
+  height: 32px;
+  width: 32px;
+  border-radius: 9999px;
+  color: #fff;
+  background: var(--brand-600);
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter var(--dur-fast) var(--ease);
+}
+
+.topbar-user-button:hover {
+  filter: brightness(1.08);
+}
+
+.topbar-user-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand-500) 45%, transparent);
+  outline-offset: 2px;
+}
+
 .app-route-tabs {
   scrollbar-width: none;
 }
@@ -855,6 +769,20 @@ body {
 .message-enter {
   animation: message-fade-in 220ms var(--ease);
 }
+/* ─── Route transitions ─── */
+.route-fade-enter-active,
+.route-fade-leave-active {
+  transition: opacity 150ms var(--ease), transform 150ms var(--ease);
+}
+.route-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.route-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 @keyframes message-fade-in {
   from { opacity: 0; transform: translateY(6px) scale(.985); }
   to   { opacity: 1; transform: none; }
@@ -886,6 +814,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .route-fade-enter-active,
+  .route-fade-leave-active,
   .message-enter,
   .cursor-blink,
   .tool-running,
@@ -1058,6 +988,42 @@ body {
   stroke-linejoin: round;
   flex-shrink: 0;
 }
+.md-code-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  transition: color var(--dur-fast), background var(--dur-fast);
+}
+.md-code-apply:hover,
+.md-code-apply:focus-visible {
+  color: var(--brand-600);
+  background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+  outline: none;
+}
+.md-code-apply svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.md-code-lang {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text-3) 10%, transparent);
+}
 .prose-md pre {
   position: relative;
   margin: 0.6em 0;
@@ -1182,8 +1148,17 @@ body {
   background: var(--md-table-stripe-bg);
 }
 
+.md-image-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0.55em 0;
+  vertical-align: top;
+}
+
 /* Images stay within bubble. */
-.prose-md img {
+.prose-md img,
+.md-image-frame img {
   max-width: 100%;
   height: auto;
   border-radius: var(--radius-md);
@@ -1191,6 +1166,70 @@ body {
   box-shadow:
     0 0 0 1px var(--border),
     var(--shadow-1);
+}
+
+.md-image-copy {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 1;
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 999px;
+  padding: 0 9px;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(-2px) scale(0.98);
+  backdrop-filter: blur(10px) saturate(130%);
+  box-shadow: var(--shadow-1);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.md-image-frame:hover .md-image-copy,
+.md-image-frame:focus-within .md-image-copy {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.md-image-copy:hover,
+.md-image-copy:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 9%, var(--bg-card));
+  color: var(--text-1);
+  outline: none;
+}
+
+.md-image-copy.is-copied {
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-success) 12%, var(--bg-card));
+  color: var(--color-success);
+}
+
+.md-image-copy svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* strong / em — explicit so the model-output palette stays consistent. */
@@ -1239,7 +1278,6 @@ body {
 /* Dark-mode hljs adjustments — slightly brighter strings, milder
  * comments so they don't disappear against #0d0d0d. */
 :root[data-theme='dark'] .hljs-comment,
-:root[data-theme='codex-dark'] .hljs-comment,
 :root[data-theme='glass-tokyo'] .hljs-comment {
   color: #6b7280;
 }
@@ -1262,4 +1300,86 @@ body {
 }
 .composer-textarea:focus-visible {
   outline: none;
+}
+
+/* ─── Compact density ─── */
+[data-density='compact'] .message--assistant { margin-bottom: 0.5rem !important; }
+[data-density='compact'] .message--user { margin-bottom: 0.25rem !important; }
+[data-density='compact'] .reasoning-block,
+[data-density='compact'] .activity-strip,
+[data-density='compact'] .tool-call-group { margin-bottom: 0.25rem !important; }
+[data-density='compact'] .assistant-prose { line-height: 1.55; }
+
+/* ─── Diff highlighting ─── */
+.diff-add { color: var(--color-success, #16a34a); background: color-mix(in srgb, var(--color-success, #16a34a) 8%, transparent); display: block; }
+.diff-del { color: var(--color-error, #dc2626); background: color-mix(in srgb, var(--color-error, #dc2626) 8%, transparent); display: block; }
+.diff-hunk { color: var(--brand-500, #6366f1); display: block; }
+
+/* ─── Mermaid container ─── */
+.md-mermaid-block pre {
+  background: transparent !important;
+  padding: 12px 16px !important;
+}
+
+/* ─── File path links ─── */
+.file-path-link {
+  color: var(--brand-500);
+  text-decoration: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.92em;
+  border-bottom: 1px dashed color-mix(in srgb, var(--brand-500) 40%, transparent);
+  transition: border-color var(--dur-fast);
+}
+.file-path-link:hover {
+  border-bottom-style: solid;
+}
+
+/* ─── Link preview cards ─── */
+.md-link-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-elevate) 50%, transparent);
+  margin-top: 6px;
+  text-decoration: none;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.md-link-card:hover {
+  border-color: var(--brand-500);
+  background: color-mix(in srgb, var(--brand-500) 5%, transparent);
+}
+.md-link-card-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-600);
+  font-size: 14px;
+}
+.md-link-card-url {
+  font-size: 11px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Branch badge in sessions ─── */
+.session-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-600);
+  font-size: 9px;
+  font-weight: 600;
 }

@@ -1,119 +1,77 @@
 <script setup lang="ts">
 import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, darkTheme } from 'naive-ui';
-import type { GlobalThemeOverrides } from 'naive-ui';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import ControlCenter from '@/components/shared/ControlCenter.vue';
 import HotkeysCheatsheet from '@/components/shared/HotkeysCheatsheet.vue';
 import AppErrorBoundary from '@/components/shared/AppErrorBoundary.vue';
 import { useAppearanceStore } from '@/stores/appearance';
+import { createPanelThemeOverrides } from '@/utils/naive-theme';
 
+const route = useRoute();
+const router = useRouter();
 const appearance = useAppearanceStore();
 const { color, effectiveDark } = storeToRefs(appearance);
 const theme = computed(() => (effectiveDark.value ? darkTheme : null));
+const themeOverrides = computed(() =>
+  createPanelThemeOverrides({
+    primary: color.value,
+    dark: effectiveDark.value,
+  }),
+);
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const normalized = hex.trim().replace(/^#/, '');
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
-  const n = Number.parseInt(normalized, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-
-function colorWithAlpha(hex: string, alpha: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(22, 119, 255, ${alpha})`;
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-}
-
-function mixColor(hex: string, target: string, weight: number): string {
-  const sourceRgb = hexToRgb(hex) ?? { r: 22, g: 119, b: 255 };
-  const targetRgb = hexToRgb(target) ?? { r: 255, g: 255, b: 255 };
-  const channel = (a: number, b: number) => Math.round(a * (1 - weight) + b * weight);
-  const mixed = [channel(sourceRgb.r, targetRgb.r), channel(sourceRgb.g, targetRgb.g), channel(sourceRgb.b, targetRgb.b)];
-  return `#${mixed.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
-const themeOverrides = computed<GlobalThemeOverrides>(() => {
-  const primary = color.value || '#1677ff';
-  const hover = mixColor(primary, '#ffffff', effectiveDark.value ? 0.18 : 0.12);
-  const pressed = mixColor(primary, '#000000', 0.14);
-
-  return {
-  common: {
-    primaryColor: primary,
-    primaryColorHover: hover,
-    primaryColorPressed: pressed,
-    primaryColorSuppl: primary,
-    borderRadius: '8px',
-    borderRadiusSmall: '6px',
-    fontSize: '14px',
-    fontSizeMedium: '14px',
-    heightMedium: '34px',
-  },
-  Button: {
-    borderRadiusTiny: '6px',
-    borderRadiusSmall: '7px',
-    borderRadiusMedium: '8px',
-    borderRadiusLarge: '8px',
-    fontWeight: '500',
-    heightSmall: '30px',
-    heightMedium: '34px',
-    heightLarge: '38px',
-  },
-  Card: {
-    borderRadius: '8px',
-    titleFontWeight: '600',
-    paddingMedium: '18px 20px',
-    paddingHuge: '22px 24px',
-  },
-  Dialog: {
-    borderRadius: '8px',
-    titleFontWeight: '600',
-    padding: '22px 24px 20px',
-  },
-  Input: {
-    borderRadius: '8px',
-    borderHover: `1px solid ${primary}`,
-    borderFocus: `1px solid ${primary}`,
-    boxShadowFocus: `0 0 0 2px ${colorWithAlpha(primary, 0.18)}`,
-  },
-  Select: {
-    peers: {
-      InternalSelection: {
-        borderRadius: '8px',
-        borderHover: `1px solid ${primary}`,
-        borderActive: `1px solid ${primary}`,
-        boxShadowActive: `0 0 0 2px ${colorWithAlpha(primary, 0.18)}`,
-      },
-    },
-  },
-  Tabs: {
-    tabTextColorActiveLine: primary,
-    barColor: primary,
-  },
-  Tooltip: {
-    // Always render with a solid dark background and pure white text so
-    // chips like the thinking-strategy tooltip stay legible even under
-    // translucent glass themes where the default rgba(...) bg would mix
-    // with the white text into illegible gray.
-    color: '#1f2025',
-    textColor: '#ffffff',
-    borderRadius: '6px',
-    padding: '8px 12px',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.22)',
-  },
-  Popover: {
-    // Popovers used as menus/cards (ModelSwitcher, ContextRing, etc.)
-    // should respect the theme — they carry real interactive content.
-    color: 'var(--bg-card)',
-    textColor: 'var(--text-1)',
-    borderRadius: '8px',
-  },
-  };
-});
+// Public routes (login) render full-screen without the app chrome.
+const isChrome = computed(() => !route.meta.public);
 
 onMounted(() => appearance.init());
+
+// Navigation shortcuts: Mod+1..9 for quick view switching
+const NAV_SHORTCUTS: Record<string, string> = {
+  '1': '/dashboard',
+  '2': '/chat',
+  '3': '/sessions',
+  '4': '/files',
+  '5': '/memory',
+  '6': '/tools',
+  '7': '/channels',
+  '8': '/developer',
+  '9': '/settings',
+};
+
+const closedTabs: string[] = [];
+
+function pushClosedTab(path: string): void {
+  if (path === '/dashboard') return;
+  closedTabs.push(path);
+  if (closedTabs.length > 10) closedTabs.shift();
+}
+
+router.afterEach((to, from) => {
+  if (from && from.path !== to.path) pushClosedTab(from.path);
+});
+
+function handleNavShortcut(e: KeyboardEvent): void {
+  const mod = e.metaKey || e.ctrlKey;
+  // Mod+Shift+T: restore last closed tab
+  if (mod && e.shiftKey && e.key === 't') {
+    e.preventDefault();
+    const path = closedTabs.pop();
+    if (path) router.push(path);
+    return;
+  }
+  if (!mod || e.shiftKey || e.altKey) return;
+  const target = NAV_SHORTCUTS[e.key];
+  if (!target) return;
+  const el = e.target as HTMLElement;
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
+  e.preventDefault();
+  router.push(target);
+}
+
+onMounted(() => { window.addEventListener('keydown', handleNavShortcut); });
+onBeforeUnmount(() => { window.removeEventListener('keydown', handleNavShortcut); });
 </script>
 
 <template>
@@ -121,13 +79,26 @@ onMounted(() => appearance.init());
     <NMessageProvider>
       <NDialogProvider>
         <NNotificationProvider>
-          <AppErrorBoundary>
-            <DefaultLayout>
-              <RouterView />
-            </DefaultLayout>
-            <ControlCenter />
-            <HotkeysCheatsheet />
-          </AppErrorBoundary>
+          <DefaultLayout v-if="isChrome">
+            <AppErrorBoundary>
+              <RouterView v-slot="{ Component }">
+                <Transition name="route-fade" mode="out-in">
+                  <component :is="Component" />
+                </Transition>
+              </RouterView>
+            </AppErrorBoundary>
+          </DefaultLayout>
+          <template v-else>
+            <AppErrorBoundary>
+              <RouterView v-slot="{ Component }">
+                <Transition name="route-fade" mode="out-in">
+                  <component :is="Component" />
+                </Transition>
+              </RouterView>
+            </AppErrorBoundary>
+          </template>
+          <ControlCenter v-if="isChrome" />
+          <HotkeysCheatsheet v-if="isChrome" />
         </NNotificationProvider>
       </NDialogProvider>
     </NMessageProvider>

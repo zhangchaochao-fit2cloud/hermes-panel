@@ -54,6 +54,10 @@ const filtered = computed(() => items.value);
 
 // 置顶 / pin 状态 — 提到 grouped/menuOptions 之前，避免 TDZ
 const { pinned: pinnedIds, isPinned, toggle: togglePin } = usePinnedSessions();
+type SessionItem = (typeof items.value)[number];
+type SessionGroup = { source: string; items: SessionItem[] };
+const PINNED_VISIBLE_LIMIT = 3;
+const pinnedExpanded = ref(false);
 
 // Group items by source for the drawer. Same ordering policy as the Sessions
 // view: cli first, cron last (chattiest, easiest to ignore once collapsed).
@@ -66,14 +70,14 @@ const SOURCE_META: Record<string, { icon: string; labelKey: string }> = {
   unknown:    { icon: '❔', labelKey: 'sessions.source.unknown' },
 };
 
-const grouped = computed<{ source: string; items: typeof filtered.value }[]>(() => {
+const grouped = computed<SessionGroup[]>(() => {
   // pinned 伪组：把固定的 sessions 顶到最上面，按 pinned 数组顺序（新固定的优先）
   const pinnedSet = new Set(pinnedIds.value);
   const pinnedItems = pinnedIds.value
     .map(id => filtered.value.find(s => s.id === id))
     .filter((s): s is NonNullable<typeof s> => s !== undefined);
 
-  const map = new Map<string, typeof filtered.value>();
+  const map = new Map<string, SessionItem[]>();
   for (const s of filtered.value) {
     if (pinnedSet.has(s.id)) continue; // 已在 pinned 组
     const key = s.source ?? 'unknown';
@@ -81,7 +85,7 @@ const grouped = computed<{ source: string; items: typeof filtered.value }[]>(() 
     bucket.push(s);
     map.set(key, bucket);
   }
-  const out: { source: string; items: typeof filtered.value }[] = [];
+  const out: SessionGroup[] = [];
   if (pinnedItems.length > 0) {
     out.push({ source: 'pinned', items: pinnedItems });
   }
@@ -95,6 +99,18 @@ const grouped = computed<{ source: string; items: typeof filtered.value }[]>(() 
   }
   return out;
 });
+
+function visibleGroupItems(group: SessionGroup): SessionItem[] {
+  if (group.source !== 'pinned') return group.items;
+  return pinnedExpanded.value
+    ? group.items
+    : group.items.slice(0, PINNED_VISIBLE_LIMIT);
+}
+
+function hiddenPinnedCount(group: SessionGroup): number {
+  if (group.source !== 'pinned' || pinnedExpanded.value) return 0;
+  return Math.max(0, group.items.length - PINNED_VISIBLE_LIMIT);
+}
 
 // Collapsed state per source in this drawer, persisted to localStorage.
 // Default cron to collapsed because it's typically dozens of short runs.
@@ -116,7 +132,6 @@ function toggleSource(src: string): void {
 // 侧边栏不展开历次执行 — 每个 cron job 只显示一行（job 名 + 最近时间），
 // 点击 = 跳合并视图 /chat?cron=<jobId>（虚拟会话拼接所有 runs）。
 const CRON_ID_RE = /^cron_([a-f0-9]+)_/i;
-type SessionItem = (typeof items.value)[number];
 interface CronJobBucket {
   jobId: string;            // hex jobid 或 '_other'
   count: number;            // 同 job 的 sessions 数量
@@ -273,7 +288,7 @@ function fmtTime(ts: number): string {
     @click="emit('update:collapsed', true)"
   />
   <aside
-    class="flex flex-col h-full bg-[var(--bg-card)] border-r border-[var(--border)] transition-[width,transform] duration-200 overflow-hidden flex-shrink-0"
+    class="chat-sessions-drawer flex flex-col h-full bg-[var(--bg-card)] border-r border-[var(--border)] transition-[width,transform] duration-200 overflow-hidden flex-shrink-0"
     :class="[
       isMobile
         ? props.collapsed
@@ -285,10 +300,12 @@ function fmtTime(ts: number): string {
     ]"
   >
     <!-- Header: toggle + new -->
-    <div class="h-12 flex items-center px-2 gap-1 flex-shrink-0 border-b border-[var(--border)]">
+    <div class="drawer-toolbar">
       <button
-        class="h-8 w-8 rounded-md flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--bg-elevate)] transition-colors flex-shrink-0"
+        type="button"
+        class="drawer-icon-button"
         :title="props.collapsed ? t('chat.sidebar.expand') : t('chat.sidebar.collapse')"
+        :aria-label="props.collapsed ? t('chat.sidebar.expand') : t('chat.sidebar.collapse')"
         @click="emit('update:collapsed', !props.collapsed)"
       >
         <svg v-if="props.collapsed" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -299,15 +316,20 @@ function fmtTime(ts: number): string {
         </svg>
       </button>
       <template v-if="!props.collapsed">
-        <span class="text-xs font-semibold uppercase tracking-wider text-[var(--text-3)] flex-1 truncate">
+        <span class="drawer-title">
           {{ t('chat.sidebar.title') }}
         </span>
         <button
-          class="h-8 px-2 rounded-md text-xs font-medium text-[var(--brand-600)] hover:bg-[var(--brand-500)]/10 transition-colors flex-shrink-0"
+          type="button"
+          class="drawer-new-button"
           :title="t('chat.sidebar.newChat')"
+          :aria-label="t('chat.sidebar.newChat')"
           @click="emit('new')"
         >
-          + {{ t('chat.sidebar.new') }}
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+          <span>{{ t('chat.sidebar.new') }}</span>
         </button>
       </template>
     </div>
@@ -339,48 +361,35 @@ function fmtTime(ts: number): string {
           <template v-for="g in grouped" :key="g.source">
             <!-- Group header -->
             <button
-              class="w-full px-3 py-2 mt-3 first:mt-1 flex items-center gap-1.5 text-left text-[12px] font-semibold text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
+              class="session-group-header"
               :aria-expanded="!groupCollapsed[g.source]"
               @click="toggleSource(g.source)"
             >
               <span
-                class="inline-block w-2 transition-transform text-[8px]"
+                class="session-group-chev"
                 :class="groupCollapsed[g.source] ? '' : 'rotate-90'"
               >▶</span>
-              <span class="text-[12px]">{{ SOURCE_META[g.source]?.icon ?? '❔' }}</span>
-              <span class="font-semibold">{{ t(SOURCE_META[g.source]?.labelKey ?? 'sessions.source.unknown') }}</span>
-              <span class="ml-auto text-[11px] opacity-70">{{ g.items.length }}</span>
+              <span class="session-group-title">{{ t(SOURCE_META[g.source]?.labelKey ?? 'sessions.source.unknown') }}</span>
+              <span class="session-group-count">{{ g.items.length }}</span>
             </button>
             <ul v-show="!groupCollapsed[g.source]" v-if="g.source !== 'cron'" class="space-y-0.5 mb-2">
               <li
-                v-for="s in g.items"
+                v-for="s in visibleGroupItems(g)"
                 :key="s.id"
                 class="session-row group relative"
               >
                 <button
-                  class="session-row-main w-full text-left pl-3 pr-24 py-2.5 rounded-xl flex items-center gap-2 transition-colors"
+                  class="session-row-main"
                   :class="isCurrent(s.id) ? 'is-current' : ''"
                   @click="emit('select', s.id)"
                 >
+                  <span class="session-current-dot" :class="{ 'is-visible': isCurrent(s.id) }" />
                   <span
-                    v-if="isCurrent(s.id)"
-                    class="h-2 w-2 rounded-full bg-[var(--brand-500)] flex-shrink-0"
-                  />
-                  <span v-else class="h-2 w-2 flex-shrink-0" />
-                  <div class="min-w-0 flex-1">
-                    <div
-                      class="text-[15px] leading-5 truncate flex items-center gap-1"
-                      :class="isCurrent(s.id) ? 'text-[var(--text-1)] font-medium' : 'text-[var(--text-2)]'"
-                      :title="displayTitle(s)"
-                    >
-                      <span class="truncate">{{ displayTitle(s) }}</span>
-                    </div>
-                    <div class="text-[11px] text-[var(--text-3)] mt-1 flex items-center gap-1.5">
-                      <span class="truncate">{{ s.model || 'unknown' }}</span>
-                      <span>·</span>
-                      <span>{{ fmtTime(s.updatedAt) }}</span>
-                    </div>
-                  </div>
+                    class="session-row-title"
+                    :class="{ 'is-current': isCurrent(s.id) }"
+                    :title="displayTitle(s)"
+                  >{{ displayTitle(s) }}</span>
+                  <span class="session-row-time">{{ fmtTime(s.updatedAt) }}</span>
                 </button>
                 <div class="session-row-actions">
                   <button
@@ -443,6 +452,26 @@ function fmtTime(ts: number): string {
                   </svg>
                 </button>
               </li>
+              <li v-if="g.source === 'pinned' && (hiddenPinnedCount(g) > 0 || pinnedExpanded)">
+                <button
+                  type="button"
+                  class="session-pinned-more"
+                  @click="pinnedExpanded = !pinnedExpanded"
+                >
+                  <span>{{ pinnedExpanded ? t('chat.sidebar.pinnedLess') : t('chat.sidebar.pinnedMore', { n: hiddenPinnedCount(g) }) }}</span>
+                  <svg
+                    class="session-pinned-more__chev"
+                    :class="{ 'is-expanded': pinnedExpanded }"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </li>
             </ul>
 
             <!-- cron source: 单行 per job，点击进合并视图（虚拟会话），
@@ -454,21 +483,12 @@ function fmtTime(ts: number): string {
                 class="session-row group relative"
               >
                 <button
-                  class="session-row-main w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-2 transition-colors"
+                  class="session-row-main"
                   @click="openCronAggregate(bucket.jobId)"
                 >
-                  <span class="h-2 w-2 flex-shrink-0" />
-                  <div class="min-w-0 flex-1">
-                    <div
-                      class="text-[15px] leading-5 truncate text-[var(--text-2)]"
-                      :title="bucket.jobName"
-                    >
-                      {{ bucket.jobName }}
-                    </div>
-                    <div class="text-[11px] text-[var(--text-3)] mt-1 flex items-center gap-1.5">
-                      <span>{{ fmtTime(bucket.latest.updatedAt) }}</span>
-                    </div>
-                  </div>
+                  <span class="session-current-dot" />
+                  <span class="session-row-title" :title="bucket.jobName">{{ bucket.jobName }}</span>
+                  <span class="session-row-time">{{ fmtTime(bucket.latest.updatedAt) }}</span>
                 </button>
               </li>
             </ul>
@@ -480,20 +500,238 @@ function fmtTime(ts: number): string {
 </template>
 
 <style scoped>
-.session-row-main {
+.chat-sessions-drawer {
+  box-shadow: 1px 0 0 color-mix(in srgb, var(--bg-elevate) 40%, transparent) inset;
+}
+
+.drawer-toolbar {
+  display: flex;
+  height: 48px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  padding: 7px 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-elevate) 42%, transparent), transparent 84%),
+    var(--bg-card);
+}
+
+.drawer-icon-button,
+.drawer-new-button {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.drawer-icon-button {
+  width: 32px;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--bg-elevate) 52%, transparent);
+  color: var(--text-3);
+}
+
+.drawer-icon-button:hover,
+.drawer-icon-button:focus-visible {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--bg-elevate) 90%, transparent);
+  color: var(--text-1);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.drawer-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.drawer-new-button {
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-600);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.drawer-new-button:hover,
+.drawer-new-button:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-500) 24%, transparent);
+  background: color-mix(in srgb, var(--brand-500) 15%, var(--bg-card));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-600);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.session-group-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 6px 12px 5px;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.session-group-header:first-child {
+  margin-top: 4px;
+}
+
+.session-group-header:hover {
   color: var(--text-2);
 }
-.session-row-main:hover,
-.session-row-main.is-current {
-  background: color-mix(in srgb, var(--bg-elevate) 86%, transparent);
+
+.session-group-chev {
+  display: inline-block;
+  width: 10px;
+  flex: 0 0 auto;
+  font-size: 8px;
+  opacity: 0;
+  transform-origin: center;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
-.session-row-main.is-current {
+
+.session-group-header:hover .session-group-chev,
+.session-group-header:focus-visible .session-group-chev {
+  opacity: 0.7;
+}
+
+.session-group-title {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-group-count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--text-3) 80%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.session-group-header:hover .session-group-count,
+.session-group-header:focus-visible .session-group-count {
+  opacity: 1;
+}
+
+.session-row-main {
+  display: grid;
+  width: 100%;
+  min-height: 34px;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 5px 12px;
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.session-row-main:hover {
+  background: color-mix(in srgb, var(--bg-elevate) 72%, transparent);
   color: var(--text-1);
 }
+
+.session-row-main.is-current {
+  background: color-mix(in srgb, var(--bg-elevate) 88%, transparent);
+  color: var(--text-1);
+}
+
+.session-row:hover .session-row-main {
+  transform: translateX(1px);
+}
+
+.session-current-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--brand-500);
+  opacity: 0;
+}
+
+.session-current-dot.is-visible {
+  opacity: 1;
+}
+
+.session-row-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-row-title.is-current,
+.session-row-main:hover .session-row-title {
+  color: var(--text-1);
+}
+
+.session-row-time {
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  opacity: 0.88;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.session-row:hover .session-row-time,
+.session-row:focus-within .session-row-time {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+
 .session-row-actions {
   position: absolute;
   top: 50%;
-  right: 30px;
+  right: 32px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -507,7 +745,7 @@ function fmtTime(ts: number): string {
 .session-more-btn {
   position: absolute;
   top: 50%;
-  right: 6px;
+  right: 8px;
   display: inline-flex;
   width: 24px;
   height: 24px;
@@ -516,6 +754,7 @@ function fmtTime(ts: number): string {
   border-radius: 8px;
   color: var(--text-3);
   opacity: 0;
+  pointer-events: none;
   transform: translateY(-50%) translateX(3px);
   transition:
     opacity var(--dur-fast) var(--ease),
@@ -531,9 +770,10 @@ function fmtTime(ts: number): string {
   justify-content: center;
   border: 0;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
   color: var(--text-3);
   cursor: pointer;
+  backdrop-filter: blur(8px);
 }
 .session-action-btn:hover,
 .session-more-btn:hover {
@@ -543,6 +783,40 @@ function fmtTime(ts: number): string {
 .session-action-btn.is-pinned {
   color: var(--brand-600);
   background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+}
+.session-pinned-more {
+  display: inline-flex;
+  width: calc(100% - 20px);
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 2px 10px 4px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.session-pinned-more:hover,
+.session-pinned-more:focus-visible {
+  background: color-mix(in srgb, var(--bg-elevate) 68%, transparent);
+  color: var(--text-1);
+  outline: none;
+  transform: translateX(1px);
+}
+.session-pinned-more__chev {
+  opacity: 0.72;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.session-pinned-more__chev.is-expanded {
+  transform: rotate(180deg);
 }
 .session-row:hover .session-row-actions,
 .session-row:focus-within .session-row-actions,

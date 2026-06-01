@@ -2239,4 +2239,83 @@ P2 全部 (6 项)：
 
 ---
 
+## §22 战略方向更新（2026-05-31）
+
+### 22.1 市场格局变化
+
+自 v0.1 设计（2026-05-25）以来，AI 编码工具市场发生重大变化：
+
+- **Codex** 从 CLI 工具演进为 macOS 超级 App（2026-04-16），增加背景桌面操控、多 Agent 并行、语音交互、内嵌浏览器、Plugin 市场等能力。云端执行、macOS only、GPT 模型绑定。
+- **Claude Code** 巩固终端 Agent 地位，在多文件操作、深度 Agentic 编排方面领先。本地执行、跨平台、API 模型灵活。
+- **Hermes Panel 的机会窗口**：两者在「本地优先 GUI + 跨平台桌面 + 多 Agent 可视化编排」的交叉区域留下了空白。
+
+### 22.2 定位修正
+
+从「Hermes Agent 的控制面板」升级为：
+
+> **本地优先、跨平台、模型自由的 AI 开发工作台，以多 Agent 可视化编排为核心差异化能力。**
+
+| 竞争维度 | Codex App | Claude Code | **Hermes Panel（新定位）** |
+|---------|-----------|-------------|--------------------------|
+| 执行位置 | 云端 | 本地 | **本地** |
+| 平台 | macOS only | Win/Mac/Linux | **Win/Mac/Linux + Web + PWA** |
+| 模型 | GPT only | Anthropic 优先 | **任意模型** |
+| 交互界面 | GUI (Electron) | 终端 CLI | **GUI (Tauri) + Web** |
+| 多 Agent | Sub-agent 并行 | Agent Teams | **可视化编排 + 12 Workspace 模板** |
+| 开放协议 | Apache 2.0 | Proprietary | **MIT** |
+
+### 22.3 里程碑重新规划
+
+原有 v0.1/v0.2/v0.3/v1.0 里程碑基于「完成 spec 全部功能」的线性路径。新计划聚焦差异化，分为四个阶段：
+
+```
+Phase 2a (2026-06-21): 基础
+├── 自建 panel.db（任务/工作流/Agent 状态/审批队列）
+├── Docker 沙箱执行环境
+├── Monaco Editor + 文件浏览器
+└── Reasoning 流式显示 UI
+
+Phase 2b (2026-07-19): 多 Agent 编排
+├── Orchestrator 引擎（意图识别 → 任务分解 → 调度执行）
+├── 工作流编辑器（vue-flow 拖拽式 DAG 编辑器）
+├── Multi-Agent Control Plane（实时 Agent 状态监控大屏）
+└── Agent 质量评估（幻觉检测 + 质量评分 + 模型替换建议）
+
+Phase 2c (2026-08-09): 自主执行
+├── Review Queue（Diff/Script/Handoff 统一审批队列）
+├── 三种执行模式（Suggest / Auto Edit / Full Auto）
+├── Monaco Diff Viewer（审批时左右对比）
+└── 语音输入（Web Speech API）
+
+Phase 2d (2026-08-23): 跨平台发布
+├── Windows/Linux Tauri 构建验证 + 签名
+├── PWA 离线模式 + Service Worker 缓存策略
+├── 性能达标（LCP < 1.5s, idle < 80MB）
+└── 三平台 CI 全绿
+```
+
+### 22.4 推迟到 v0.3+ 的功能
+
+以下原 spec 中的功能优先级下调，不在 Phase 2 实现：
+
+| 功能 | 延迟原因 |
+|------|---------|
+| TUI 嵌入 (xterm.js) | 与 GUI-first 定位冲突 |
+| 微信/飞书 OAuth | 依赖外部服务，非核心 |
+| 2000+ Skill 市场 | 依赖外部 API 标准化 |
+| 提示词自优化 + Insights | 需大量 ML 基础设施 |
+| Tailscale 私网模式 | 利基需求 |
+| 4 种额外布局变体 | 锦上添花，非战略级 |
+
+### 22.5 关键假设与风险
+
+| 假设 | 如果被打破 |
+|------|-----------|
+| Hermes Agent 社区持续活跃 | 通过模型/Agent 抽象层降低对 Hermes 的依赖（Phase 2b 内建） |
+| Docker 在目标用户机器上普遍可用 | 降级到直接执行 + sudo 式审批（Phase 2a 设计） |
+| Web Speech API 可用 | 能力门控，不可用时隐藏麦克风按钮 |
+| Monaco Editor 懒加载不影响首屏 | Vite manualChunks 拆分 + 仅 `/files` 路由时加载 |
+
+---
+
 **END OF DESIGN DOC**

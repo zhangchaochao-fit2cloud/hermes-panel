@@ -77,7 +77,7 @@ pub fn shutdown<R: Runtime>(app: &AppHandle<R>) {
 }
 
 fn start_bff<R: Runtime>(app: &AppHandle<R>) -> Result<(u16, String, Child), String> {
-    let repo = find_repo_root(app)?;
+    let runtime = find_bff_runtime(app)?;
     let port = find_free_port(5667, 5686).ok_or_else(|| "no free port in 5667..5686".to_string())?;
     let token = make_token();
     let log_path = panel_home().join("desktop-bff.log");
@@ -92,16 +92,17 @@ fn start_bff<R: Runtime>(app: &AppHandle<R>) -> Result<(u16, String, Child), Str
     let stderr = stdout.try_clone().map_err(|err| format!("clone bff log: {err}"))?;
 
     let node = which::which("node").map_err(|_| "node command not found; install Node.js 20+".to_string())?;
-    let server = repo.join("packages/panel-bff/dist/server.js");
+    let server = runtime.join("dist/server.js");
     if !server.exists() {
         return Err(format!("BFF build output missing: {}", server.display()));
     }
 
     let mut child = Command::new(node)
         .arg(server)
-        .current_dir(&repo)
+        .current_dir(&runtime)
         .env("PANEL_TOKEN", &token)
         .env("BFF_PORT", port.to_string())
+        .env("NODE_ENV", "production")
         .stdout(Stdio::from(stdout))
         .stderr(Stdio::from(stderr))
         .spawn()
@@ -113,6 +114,20 @@ fn start_bff<R: Runtime>(app: &AppHandle<R>) -> Result<(u16, String, Child), Str
         let _ = child.kill();
         Err(format!("BFF did not listen on 127.0.0.1:{port}; see {}", log_path.display()))
     }
+}
+
+fn find_bff_runtime<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    if let Ok(dir) = app.path().resource_dir() {
+        for rel in ["bff", "resources/bff"] {
+            let packaged = dir.join(rel);
+            if packaged.join("dist/server.js").exists() {
+                return Ok(packaged);
+            }
+        }
+    }
+
+    let repo = find_repo_root(app)?;
+    Ok(repo.join("packages/panel-bff"))
 }
 
 fn find_repo_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {

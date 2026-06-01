@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  panel:
+    image: hermespanel/hermes-panel:latest
+    container_name: hermes-panel
+    ports:
+      - "5666:5666"
+      - "5667:5667"
+    environment:
+      - PANEL_TOKEN=${PANEL_TOKEN:-}
+      - HERMES_API_BASE=http://hermes:8642
+      - HERMES_BIN=hermes
+      - HERMES_HOME=/home/hermes/.hermes
+      - PANEL_HOME=/home/panel/.hermes-panel
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - panel_data:/home/panel/.hermes-panel
+      - hermes_data:/home/hermes/.hermes:ro
+    restart: unless-stopped
+    depends_on:
+      hermes:
+        condition: service_healthy
+
+  hermes:
+    image: ghcr.io/nousresearch/hermes-agent:latest
+    container_name: hermes-agent
+    ports:
+      - "8642:8642"
+    environment:
+      - HERMES_HOME=/home/hermes/.hermes
+      - API_SERVER_ENABLED=true
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_PORT=8642
+    volumes:
+      - hermes_data:/home/hermes/.hermes
+      - ${HERMES_CONFIG:-./hermes-config}:/home/hermes/.hermes:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8642/v1/models"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  panel_data:
+  hermes_data:

@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible problem in Hermes Panel
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: install-mode
+    attributes:
+      label: Install mode
+      placeholder: "Desktop app, npx hermes-panel, dev server, VS Code extension"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "macOS 15 arm64, Node 22, pnpm 10"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs from make logs or ~/.hermes-panel/desktop-bff.log.
+

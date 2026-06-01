@@ -16,7 +16,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: process.env.SOURCEMAP === 'true',
     outDir: 'dist',
     // Raised after splitting vendors into discrete chunks below; naive-ui by
     // itself sits just under this and is unavoidable without per-component
@@ -30,13 +30,21 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
 
-          if (id.includes('/node_modules/naive-ui/') || id.includes('/node_modules/vooks/')
-            || id.includes('/node_modules/vueuc/') || id.includes('/node_modules/seemly/')
-            || id.includes('/node_modules/treemate/') || id.includes('/node_modules/css-render/')
+          if (id.includes('/node_modules/monaco-editor/')) {
+            return 'monaco';
+          }
+
+          if (id.includes('/node_modules/naive-ui/')) {
+            return 'naive-ui';
+          }
+
+          if (id.includes('/node_modules/vooks/') || id.includes('/node_modules/vueuc/')
+            || id.includes('/node_modules/seemly/') || id.includes('/node_modules/treemate/')
+            || id.includes('/node_modules/css-render/')
             || id.includes('/node_modules/@css-render/') || id.includes('/node_modules/@juggle/')
             || id.includes('/node_modules/evtd/') || id.includes('/node_modules/async-validator/')
             || id.includes('/node_modules/vdirs/')) {
-            return 'naive-ui';
+            return 'naive-runtime';
           }
 
           if (id.includes('/node_modules/markdown-it/') || id.includes('/node_modules/highlight.js/')

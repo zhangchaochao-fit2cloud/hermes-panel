@@ -9,6 +9,14 @@ export interface BffFetchOptions extends RequestInit { silent?: boolean }
 const pendingRequestCount = ref(0);
 export const globalRequestLoading = computed(() => pendingRequestCount.value > 0);
 
+// Set by the auth store; invoked when any request comes back 401 so the
+// router guard can bounce the user to /login. Decoupled via callback to
+// avoid a bff ↔ auth-store import cycle.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: () => void): void {
+  onUnauthorized = fn;
+}
+
 export class BffApiError extends Error {
   constructor(public code: string, message: string, public status: number) {
     super(message);
@@ -56,6 +64,12 @@ export async function bffFetch<T>(path: string, init: BffFetchOptions = {}): Pro
   if (!res.ok) {
     let err: BffError = { code: 'HTTP_ERROR', message: res.statusText };
     try { err = (await res.json()).error ?? err; } catch { /* ignore */ }
+    // 401 on a non-auth route means the session is gone/expired — drop local
+    // auth state so the router guard redirects to /login. Skip /api/auth/* so
+    // a bad login attempt doesn't trigger a spurious logout.
+    if (res.status === 401 && onUnauthorized && !path.startsWith('/api/auth/')) {
+      onUnauthorized();
+    }
     throw new BffApiError(err.code, err.message, res.status);
   }
   return (await res.json()) as T;

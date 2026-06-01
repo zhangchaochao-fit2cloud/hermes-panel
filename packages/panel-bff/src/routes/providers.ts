@@ -2,11 +2,63 @@ import Router from '@koa/router';
 import { readProvidersState, setModel, addCredential } from '../services/hermes-providers.js';
 import { startGateway } from '../services/hermes-gateway.js';
 import { logger } from '../lib/logger.js';
+import {
+  buildModelInspection,
+  fetchOpenRouterBalance,
+  fetchOpenRouterModels,
+  resolveProviderEnvApiKey,
+  unsupportedBalance,
+  type CandidateModel,
+} from '../services/model-inspector.js';
 
 export const providersRouter = new Router();
 
 providersRouter.get('/providers/state', async ctx => {
   ctx.body = await readProvidersState();
+});
+
+providersRouter.post('/models/inspect', async ctx => {
+  const body = ctx.request.body as { models?: CandidateModel[] } | undefined;
+  const candidates = Array.isArray(body?.models)
+    ? body.models.filter(m =>
+        m
+        && typeof m.id === 'string'
+        && typeof m.provider === 'string'
+        && (!m.label || typeof m.label === 'string')
+        && (!m.baseUrl || typeof m.baseUrl === 'string'),
+      )
+    : [];
+  if (candidates.length === 0) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'BAD_REQUEST', message: 'models are required' } };
+    return;
+  }
+
+  const state = await readProvidersState();
+  const needsOpenRouter = candidates.some(m => m.provider === 'openrouter');
+  const openRouterModels = needsOpenRouter
+    ? await fetchOpenRouterModels(resolveProviderEnvApiKey('openrouter'))
+    : undefined;
+  ctx.body = buildModelInspection({
+    candidates,
+    providers: state.providers,
+    model: state.model,
+    openRouterModels,
+  });
+});
+
+providersRouter.get('/providers/balance', async ctx => {
+  const provider = typeof ctx.query.provider === 'string' ? ctx.query.provider : '';
+  if (!provider) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'BAD_REQUEST', message: 'provider is required' } };
+    return;
+  }
+  if (provider === 'openrouter') {
+    ctx.body = await fetchOpenRouterBalance(resolveProviderEnvApiKey('openrouter'));
+    return;
+  }
+  ctx.body = unsupportedBalance(provider);
 });
 
 providersRouter.post('/model', async ctx => {

@@ -4,6 +4,8 @@ import App from './App.vue';
 import { router } from './router/index.js';
 import { i18n } from './locales/index.js';
 import { registerServiceWorker } from './utils/register-sw.js';
+import { setUnauthorizedHandler } from './api/bff.js';
+import { useAuthStore } from './stores/auth.js';
 import './styles/theme.css';
 
 // Detect the running platform so CSS can react to macOS (which needs to
@@ -39,6 +41,16 @@ app.config.errorHandler = (err, _instance, info) => {
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
+
+// On any 401 from a protected route, drop auth state and bounce to /login.
+setUnauthorizedHandler(() => {
+  const auth = useAuthStore();
+  auth.onUnauthorized();
+  if (router.currentRoute.value.name !== 'login') {
+    void router.replace({ name: 'login' });
+  }
+});
+
 app.mount('#app');
 
 registerServiceWorker();

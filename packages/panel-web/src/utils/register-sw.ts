@@ -7,6 +7,17 @@ export function registerServiceWorker(): void {
   if (typeof navigator === 'undefined') return;
   if (!('serviceWorker' in navigator)) return;
 
+  if (import.meta.env.DEV) {
+    window.addEventListener('load', () => {
+      void navigator.serviceWorker.getRegistrations()
+        .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+        .catch(() => {
+          // Silent — dev recovery should never block app boot.
+        });
+    });
+    return;
+  }
+
   // Tauri WebView serves from tauri://localhost — skip SW there
   if (location.protocol.startsWith('tauri')) return;
 

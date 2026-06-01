@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { NButton, NTag, NSkeleton, NTooltip, useMessage } from 'naive-ui';
+import { NButton, NTag, NTooltip, useMessage } from 'naive-ui';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useWorkspacesStore, type ProfileInfo } from '@/stores/workspaces';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import CreateProfileModal from './CreateProfileModal.vue';
 
 const { t } = useI18n();
@@ -48,8 +49,10 @@ async function switchTo(name: string): Promise<void> {
 
     <!-- Loading skeleton -->
     <div v-if="loadingProfiles && profiles.length === 0" class="space-y-2">
-      <NSkeleton :height="28" />
-      <NSkeleton :height="20" :width="160" />
+      <ThemedSkeleton height="28px" />
+      <div class="max-w-[160px]">
+        <ThemedSkeleton height="20px" />
+      </div>
     </div>
 
     <template v-else>

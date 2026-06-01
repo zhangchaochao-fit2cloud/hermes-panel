@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoftKey — 软件 License 管理平台</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Design Tokens — 参考 1Panel / JumpServer 的克制专业风格
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --c-bg: #f8f9fb;
+  --c-surface: #ffffff;
+  --c-border: #e8eaef;
+  --c-border-light: #f0f1f5;
+  --c-text: #1d1f2a;
+  --c-text-secondary: #5a5d6b;
+  --c-text-muted: #9599a6;
+  --c-accent: #4f46e5;
+  --c-accent-hover: #4338ca;
+  --c-accent-subtle: #eef0ff;
+  --c-accent-text: #4f46e5;
+  --c-success: #10b981;
+  --c-success-bg: #ecfdf5;
+  --c-warning: #f59e0b;
+  --c-warning-bg: #fffbeb;
+  --c-brand-start: #6366f1;
+  --c-brand-end: #8b5cf6;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-nav: 0 1px 0 rgba(0,0,0,0.04);
+  color-scheme: light;
+}
+.dark {
+  --c-bg: #0b0b10; --c-surface: #13131a; --c-border: #1f1f2a; --c-border-light: #191922;
+  --c-text: #ededf2; --c-text-secondary: #a0a0ac; --c-text-muted: #5c5c6a;
+  --c-accent: #818cf8; --c-accent-hover: #6366f1; --c-accent-subtle: #1a1a30; --c-accent-text: #818cf8;
+  --c-success: #34d399; --c-success-bg: #0a2a1e;
+  --c-warning: #fbbf24; --c-warning-bg: #2a200a;
+  --c-brand-start: #818cf8; --c-brand-end: #a78bfa;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.2); --shadow-card-hover: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-nav: 0 1px 0 rgba(255,255,255,0.04);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --c-bg: #0b0b10; --c-surface: #13131a; --c-border: #1f1f2a; --c-border-light: #191922;
+    --c-text: #ededf2; --c-text-secondary: #a0a0ac; --c-text-muted: #5c5c6a;
+    --c-accent: #818cf8; --c-accent-hover: #6366f1; --c-accent-subtle: #1a1a30; --c-accent-text: #818cf8;
+    --c-success: #34d399; --c-success-bg: #0a2a1e;
+    --c-warning: #fbbf24; --c-warning-bg: #2a200a;
+    --c-brand-start: #818cf8; --c-brand-end: #a78bfa;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.2); --shadow-card-hover: 0 4px 16px rgba(0,0,0,0.3);
+    --shadow-nav: 0 1px 0 rgba(255,255,255,0.04);
+    color-scheme: dark;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Reset & Base
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--c-bg); color: var(--c-text); line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 2rem; }
+@media (max-width: 768px) { .container { padding: 0 1.25rem; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   Header
+   ═══════════════════════════════════════════════════════════════ */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--c-bg); box-shadow: var(--shadow-nav);
+  backdrop-filter: blur(12px);
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 3.5rem; max-width: 1120px; margin: 0 auto; padding: 0 2rem;
+}
+@media (max-width: 768px) { .header-inner { padding: 0 1.25rem; } }
+.header-logo {
+  display: flex; align-items: center; gap: 0.625rem; font-weight: 700; font-size: 1rem;
+}
+.header-logo-icon {
+  width: 2rem; height: 2rem; border-radius: 6px;
+  background: linear-gradient(135deg, var(--c-brand-start), var(--c-brand-end));
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  font-size: 0.75rem; font-weight: 800;
+}
+.header-nav { display: flex; align-items: center; gap: 0.125rem; }
+.header-nav a {
+  padding: 0.375rem 0.75rem; font-size: 0.8125rem; color: var(--c-text-secondary);
+  border-radius: 6px; transition: all 0.15s;
+}
+.header-nav a:hover { color: var(--c-text); background: var(--c-border-light); }
+.header-right { display: flex; align-items: center; gap: 0.5rem; }
+.btn-theme {
+  width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; color: var(--c-text-muted); transition: all 0.15s;
+}
+.btn-theme:hover { background: var(--c-border-light); color: var(--c-text); }
+.btn-theme svg { width: 1rem; height: 1rem; }
+.btn-text {
+  padding: 0.375rem 0.75rem; font-size: 0.8125rem; color: var(--c-text-secondary);
+  border-radius: 6px; transition: all 0.15s;
+}
+.btn-text:hover { background: var(--c-border-light); color: var(--c-text); }
+.btn-primary {
+  padding: 0.5rem 1.125rem; font-size: 0.8125rem; font-weight: 500;
+  background: var(--c-accent); color: #fff; border-radius: 6px; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+}
+.btn-primary:hover { background: var(--c-accent-hover); }
+.btn-primary--lg { padding: 0.75rem 1.75rem; font-size: 0.9375rem; border-radius: 8px; }
+.btn-outline {
+  padding: 0.5rem 1.125rem; font-size: 0.8125rem; font-weight: 500;
+  color: var(--c-text-secondary); border-radius: 6px;
+  border: 1px solid var(--c-border); transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+}
+.btn-outline:hover { border-color: var(--c-text-muted); color: var(--c-text); }
+.btn-outline--lg { padding: 0.75rem 1.75rem; font-size: 0.9375rem; border-radius: 8px; }
+@media (max-width: 768px) {
+  .header-nav { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Section shared
+   ═══════════════════════════════════════════════════════════════ */
+.section { padding: 5rem 0; }
+.section-header { margin-bottom: 3rem; }
+.section-eyebrow {
+  font-size: 0.75rem; font-weight: 600; color: var(--c-accent-text);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;
+  display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px;
+  background: var(--c-accent-subtle);
+}
+.section-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
+.section-desc { font-size: 1rem; color: var(--c-text-muted); max-width: 560px; }
+@media (max-width: 768px) {
+  .section { padding: 3rem 0; }
+  .section-title { font-size: 1.5rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Hero — 参考 1Panel 的大标题 + 副标题 + CTA + 产品截图
+   ═══════════════════════════════════════════════════════════════ */
+.hero { padding: 5rem 0 0; text-align: center; overflow: hidden; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.875rem;
+  border-radius: 999px; background: var(--c-accent-subtle); font-size: 0.75rem;
+  color: var(--c-accent-text); font-weight: 500; margin-bottom: 1.5rem;
+}
+.hero-badge-dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--c-accent); }
+.hero-title { font-size: 3.25rem; font-weight: 800; line-height: 1.12; letter-spacing: -0.03em; }
+.hero-title span { background: linear-gradient(135deg, var(--c-brand-start), var(--c-brand-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-desc { font-size: 1.0625rem; color: var(--c-text-muted); max-width: 600px; margin: 1.25rem auto 2rem; line-height: 1.7; }
+.hero-actions { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 4rem; flex-wrap: wrap; }
+
+/* Screenshot mockup */
+.hero-mockup-wrap {
+  max-width: 900px; margin: 0 auto; position: relative;
+}
+.hero-mockup {
+  border-radius: 12px 12px 0 0; overflow: hidden;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-bottom: 0; box-shadow: 0 -4px 40px rgba(99,102,241,0.08);
+}
+.hero-mockup-topbar {
+  display: flex; align-items: center; gap: 0.375rem; padding: 0.75rem 1rem;
+  background: var(--c-border-light); border-bottom: 1px solid var(--c-border);
+}
+.hero-mockup-dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; }
+.hero-mockup-dot:nth-child(1) { background: #ef4444; }
+.hero-mockup-dot:nth-child(2) { background: #f59e0b; }
+.hero-mockup-dot:nth-child(3) { background: #22c55e; }
+.hero-mockup-addr {
+  margin-left: 0.75rem; font-size: 0.6875rem; color: var(--c-text-muted);
+  background: var(--c-surface); padding: 0.25rem 0.75rem; border-radius: 999px;
+}
+.hero-mockup-body { display: flex; min-height: 360px; }
+.hero-mockup-sidebar {
+  width: 180px; padding: 1rem 0.75rem; background: var(--c-bg);
+  border-right: 1px solid var(--c-border-light);
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.hero-mockup-side-item {
+  padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.75rem;
+  color: var(--c-text-muted); display: flex; align-items: center; gap: 0.5rem;
+}
+.hero-mockup-side-item:first-child { background: var(--c-accent-subtle); color: var(--c-accent-text); font-weight: 500; }
+.hero-mockup-side-dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: currentColor; opacity: 0.4; }
+.hero-mockup-main { flex: 1; padding: 1.5rem; }
+.hero-mockup-card {
+  padding: 1rem 1.25rem; border-radius: 8px;
+  background: var(--c-surface); border: 1px solid var(--c-border-light);
+  margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem;
+}
+.hero-mockup-avatar {
+  width: 2rem; height: 2rem; border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-brand-start), var(--c-brand-end));
+  flex-shrink: 0;
+}
+.hero-mockup-lines { flex: 1; }
+.hero-mockup-line {
+  height: 0.375rem; border-radius: 999px; background: var(--c-border-light);
+  margin-bottom: 0.25rem;
+}
+.hero-mockup-line:first-child { width: 60%; }
+.hero-mockup-line:last-child { width: 85%; }
+@media (max-width: 768px) {
+  .hero-title { font-size: 2rem; }
+  .hero-mockup-sidebar { display: none; }
+  .hero-mockup-body { min-height: 240px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Logo bar — 信任标识
+   ═══════════════════════════════════════════════════════════════ */
+.trust-bar {
+  border-top: 1px solid var(--c-border-light);
+  padding: 2rem 0; text-align: center;
+}
+.trust-bar-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-text-muted); margin-bottom: 1rem; }
+.trust-bar-items { display: flex; align-items: center; justify-content: center; gap: 2.5rem; flex-wrap: wrap; }
+.trust-bar-item {
+  font-size: 0.9375rem; font-weight: 600; color: var(--c-text-muted);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.trust-bar-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--c-accent); opacity: 0.4; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Product cards — 参考 1Panel 的模块卡片
+   ═══════════════════════════════════════════════════════════════ */
+.product-grid { display: flex; flex-direction: column; gap: 1rem; }
+.product-card {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 1.75rem; border-radius: var(--radius-lg);
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-card); transition: all 0.2s;
+}
+.product-card:hover { box-shadow: var(--shadow-card-hover); border-color: var(--c-border); transform: translateY(-1px); }
+.product-card-icon {
+  width: 3rem; height: 3rem; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.product-card-icon svg { width: 1.5rem; height: 1.5rem; }
+.product-card-info { flex: 1; min-width: 0; }
+.product-card-info h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.25rem; }
+.product-card-info p { font-size: 0.8125rem; color: var(--c-text-muted); line-height: 1.5; }
+.product-card-tags { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.product-card-tag {
+  padding: 0.125rem 0.625rem; border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 500;
+  background: var(--c-border-light); color: var(--c-text-muted);
+}
+.product-card-tag--accent { background: var(--c-accent-subtle); color: var(--c-accent-text); }
+@media (max-width: 640px) {
+  .product-card { flex-direction: column; align-items: flex-start; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Feature cards — 3 列网格
+   ═══════════════════════════════════════════════════════════════ */
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@media (max-width: 768px) { .feature-grid { grid-template-columns: 1fr; } }
+.feature-card {
+  padding: 1.5rem; border-radius: var(--radius-lg);
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-card); transition: all 0.2s;
+}
+.feature-card:hover { box-shadow: var(--shadow-card-hover); }
+.feature-card-icon {
+  width: 2.5rem; height: 2.5rem; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+  background: var(--c-accent-subtle); color: var(--c-accent-text);
+}
+.feature-card-icon svg { width: 1.25rem; height: 1.25rem; }
+.feature-card h3 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.375rem; }
+.feature-card p { font-size: 0.8125rem; color: var(--c-text-muted); line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Product Detail — 产品详情页（路由 #product-xxx）
+   ═══════════════════════════════════════════════════════════════ */
+.prod-hero { padding: 4rem 0 2rem; }
+.prod-hero-inner { display: flex; gap: 3rem; align-items: center; }
+@media (max-width: 768px) { .prod-hero-inner { flex-direction: column; gap: 1.5rem; } }
+.prod-hero-text { flex: 1; }
+.prod-hero-text h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; }
+.prod-hero-text p { font-size: 1rem; color: var(--c-text-muted); line-height: 1.7; margin-bottom: 1.5rem; }
+.prod-hero-image {
+  flex: 1; border-radius: var(--radius-lg); overflow: hidden;
+  border: 1px solid var(--c-border); box-shadow: var(--shadow-card-hover);
+  background: var(--c-surface);
+}
+.prod-hero-image-placeholder {
+  aspect-ratio: 16/10; background: var(--c-border-light);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Product feature list */
+.prod-features { background: var(--c-surface); border-radius: var(--radius-lg); border: 1px solid var(--c-border); overflow: hidden; }
+.prod-features-title {
+  padding: 1.25rem 1.5rem; font-size: 1rem; font-weight: 600;
+  border-bottom: 1px solid var(--c-border);
+}
+.prod-feature-item {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--c-border-light);
+}
+.prod-feature-item:last-child { border-bottom: 0; }
+.prod-feature-check {
+  width: 1.25rem; height: 1.25rem; border-radius: 50%; flex-shrink: 0;
+  background: var(--c-success-bg); color: var(--c-success);
+  display: flex; align-items: center; justify-content: center; margin-top: 0.125rem;
+}
+.prod-feature-check svg { width: 0.75rem; height: 0.75rem; }
+.prod-feature-item h4 { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.125rem; }
+.prod-feature-item p { font-size: 0.8125rem; color: var(--c-text-muted); }
+
+/* Pricing card row */
+.pricing-row { display: flex; gap: 1rem; margin-top: 1.5rem; }
+@media (max-width: 768px) { .pricing-row { flex-direction: column; } }
+.pricing-card {
+  flex: 1; padding: 1.5rem; border-radius: var(--radius-lg);
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-card); transition: all 0.2s;
+}
+.pricing-card:hover { box-shadow: var(--shadow-card-hover); }
+.pricing-card--highlight { border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent), var(--shadow-card); }
+.pricing-card--highlight:hover { box-shadow: 0 0 0 1px var(--c-accent), var(--shadow-card-hover); }
+.pricing-card-name { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem; }
+.pricing-card-price { font-size: 1.75rem; font-weight: 700; }
+.pricing-card-price small { font-size: 0.875rem; font-weight: 400; color: var(--c-text-muted); }
+.pricing-card-desc { font-size: 0.75rem; color: var(--c-text-muted); margin: 0.5rem 0 1rem; }
+.pricing-card-features { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.pricing-card-features li { font-size: 0.8125rem; color: var(--c-text-secondary); display: flex; align-items: center; gap: 0.5rem; }
+.pricing-card .btn-primary, .pricing-card .btn-outline { width: 100%; justify-content: center; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Steps — 购买流程
+   ═══════════════════════════════════════════════════════════════ */
+.steps-row { display: flex; gap: 1.5rem; }
+@media (max-width: 768px) { .steps-row { flex-direction: column; } }
+.step {
+  flex: 1; text-align: center; padding: 1.5rem;
+  border-radius: var(--radius-lg); background: var(--c-surface);
+  border: 1px solid var(--c-border); box-shadow: var(--shadow-card);
+  position: relative;
+}
+.step-num {
+  width: 2.5rem; height: 2.5rem; border-radius: 50%; margin: 0 auto 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-accent-subtle); color: var(--c-accent-text);
+  font-size: 1rem; font-weight: 700;
+}
+.step h3 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.375rem; }
+.step p { font-size: 0.8125rem; color: var(--c-text-muted); line-height: 1.5; }
+.step-arrow {
+  position: absolute; top: 2rem; right: -1.125rem; color: var(--c-text-muted); opacity: 0.3;
+}
+@media (max-width: 768px) { .step-arrow { display: none; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   FAQ
+   ═══════════════════════════════════════════════════════════════ */
+.faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.5rem; }
+.faq-item {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.15s;
+}
+.faq-item:hover { border-color: var(--c-border); }
+.faq-item.open { border-color: var(--c-accent); }
+.faq-q {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; font-size: 0.9375rem; font-weight: 500;
+  cursor: pointer; text-align: left; transition: background 0.15s;
+}
+.faq-q:hover { background: var(--c-border-light); }
+.faq-arrow { width: 1.25rem; height: 1.25rem; color: var(--c-text-muted); flex-shrink: 0; transition: transform 0.2s; }
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+.faq-a { padding: 0 1.25rem 1.25rem; font-size: 0.875rem; color: var(--c-text-secondary); line-height: 1.7; display: none; }
+.faq-item.open .faq-a { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Footer
+   ═══════════════════════════════════════════════════════════════ */
+.footer { background: var(--c-surface); border-top: 1px solid var(--c-border); margin-top: 3rem; }
+.footer-grid {
+  max-width: 1120px; margin: 0 auto; padding: 3rem 2rem;
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2rem;
+}
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+.footer-brand p { font-size: 0.8125rem; color: var(--c-text-muted); margin-top: 0.75rem; line-height: 1.6; }
+.footer-col h4 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-text-muted); margin-bottom: 0.875rem; }
+.footer-col li { margin-bottom: 0.5rem; }
+.footer-col a { font-size: 0.8125rem; color: var(--c-text-secondary); transition: color 0.15s; }
+.footer-col a:hover { color: var(--c-text); }
+.footer-theme-row { display: flex; gap: 0.25rem; }
+.footer-theme-row button {
+  padding: 0.25rem 0.625rem; border-radius: 4px; font-size: 0.75rem;
+  color: var(--c-text-muted); border: 1px solid var(--c-border); transition: all 0.15s;
+}
+.footer-theme-row button:hover { border-color: var(--c-text-muted); }
+.footer-theme-row button.active { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+.footer-bottom {
+  max-width: 1120px; margin: 0 auto; padding: 1.25rem 2rem;
+  border-top: 1px solid var(--c-border-light); text-align: center;
+  font-size: 0.75rem; color: var(--c-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Modal
+   ═══════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal {
+  width: 100%; max-width: 420px; border-radius: var(--radius-lg);
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--c-border-light);
+}
+.modal-head h3 { font-size: 1rem; font-weight: 600; }
+.modal-close {
+  width: 1.75rem; height: 1.75rem; border-radius: 6px; display: flex;
+  align-items: center; justify-content: center; color: var(--c-text-muted); transition: all 0.15s;
+}
+.modal-close:hover { background: var(--c-border-light); color: var(--c-text); }
+.modal-body { padding: 1.5rem; }
+.modal-foot { padding: 1rem 1.5rem; border-top: 1px solid var(--c-border-light); display: flex; justify-content: flex-end; gap: 0.75rem; }
+.form-group { margin-bottom: 1.25rem; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { display: block; font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.375rem; color: var(--c-text); }
+.tier-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.tier-option {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; border-radius: var(--radius);
+  border: 1px solid var(--c-border); cursor: pointer; transition: all 0.15s;
+}
+.tier-option:hover { border-color: var(--c-text-muted); }
+.tier-option--selected { border-color: var(--c-accent); background: var(--c-accent-subtle); }
+.tier-opt-left h4 { font-size: 0.875rem; font-weight: 500; }
+.tier-opt-left span { font-size: 0.75rem; color: var(--c-text-muted); }
+.tier-opt-price { font-size: 0.9375rem; font-weight: 600; }
+.tier-opt-radio {
+  width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid var(--c-border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s;
+}
+.tier-option--selected .tier-opt-radio { border-color: var(--c-accent); }
+.tier-option--selected .tier-opt-radio::after { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--c-accent); }
+
+.success-box { text-align: center; padding: 1rem; }
+.success-box-icon {
+  width: 3rem; height: 3rem; border-radius: 50%; margin: 0 auto 1rem;
+  background: var(--c-success-bg); color: var(--c-success);
+  display: flex; align-items: center; justify-content: center;
+}
+.success-box-icon svg { width: 1.5rem; height: 1.5rem; }
+.success-box h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.success-box p { font-size: 0.8125rem; color: var(--c-text-muted); }
+
+/* ═══════════════════════════════════════════════════════════════
+   View switching
+   ═══════════════════════════════════════════════════════════════ */
+#view-landing, #view-product { display: block; }
+#view-product { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-inner">
+    <a href="#" class="header-logo" onclick="showLanding()">
+      <div class="header-logo-icon">SK</div>
+      SoftKey
+    </a>
+    <nav class="header-nav">
+      <a href="#" onclick="showLanding()">首页</a>
+      <a href="#" onclick="showProduct('hermes-panel')">Hermes Panel</a>
+      <a href="#" onclick="showProduct('codeforge')">CodeForge</a>
+      <a href="#" onclick="showProduct('datavault')">DataVault</a>
+      <a href="#how-it-works" onclick="showLanding()">购买流程</a>
+    </nav>
+    <div class="header-right">
+      <button class="btn-theme" onclick="cycleTheme()" title="切换主题">
+        <svg id="icon-sun" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg id="icon-moon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <a href="/login" class="btn-text">登录</a>
+      <a href="/register" class="btn-primary">免费注册</a>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════
+   VIEW: Landing Page
+   ══════════════════════════════════════════════════════════════ -->
+<div id="view-landing">
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>为软件产品提供专业的 License 管理
+    </div>
+    <h1 class="hero-title">将你的软件功能<br>变成 <span>可持续的收入</span></h1>
+    <p class="hero-desc">一行代码集成 Ed25519 签名验证，支持多产品、多方案定价、设备绑定、在线激活。让付费功能真正产生价值。</p>
+    <div class="hero-actions">
+      <a href="/register" class="btn-primary btn-primary--lg">免费注册</a>
+      <a href="#products-anchor" class="btn-outline btn-outline--lg">
+        浏览产品
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+      </a>
+    </div>
+    <div class="hero-mockup-wrap">
+      <div class="hero-mockup">
+        <div class="hero-mockup-topbar">
+          <span class="hero-mockup-dot"></span><span class="hero-mockup-dot"></span><span class="hero-mockup-dot"></span>
+          <span class="hero-mockup-addr">softkey.local</span>
+        </div>
+        <div class="hero-mockup-body">
+          <div class="hero-mockup-sidebar">
+            <div class="hero-mockup-side-item"><span class="hero-mockup-side-dot"></span> 我的订单</div>
+            <div class="hero-mockup-side-item"><span class="hero-mockup-side-dot"></span> 我的 License</div>
+            <div class="hero-mockup-side-item"><span class="hero-mockup-side-dot"></span> 管理后台</div>
+            <div class="hero-mockup-side-item"><span class="hero-mockup-side-dot"></span> 账户设置</div>
+          </div>
+          <div class="hero-mockup-main">
+            <div class="hero-mockup-card">
+              <div class="hero-mockup-avatar"></div>
+              <div class="hero-mockup-lines">
+                <div class="hero-mockup-line"></div>
+                <div class="hero-mockup-line"></div>
+              </div>
+            </div>
+            <div class="hero-mockup-card">
+              <div class="hero-mockup-avatar"></div>
+              <div class="hero-mockup-lines">
+                <div class="hero-mockup-line"></div>
+                <div class="hero-mockup-line"></div>
+              </div>
+            </div>
+            <div class="hero-mockup-card">
+              <div class="hero-mockup-avatar"></div>
+              <div class="hero-mockup-lines">
+                <div class="hero-mockup-line"></div>
+                <div class="hero-mockup-line"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust bar -->
+<div class="trust-bar">
+  <div class="container">
+    <p class="trust-bar-label">技术保障</p>
+    <div class="trust-bar-items">
+      <span class="trust-bar-item"><span class="trust-bar-dot"></span> Ed25519 数字签名</span>
+      <span class="trust-bar-item"><span class="trust-bar-dot"></span> TLS 证书锁定</span>
+      <span class="trust-bar-item"><span class="trust-bar-dot"></span> 设备指纹绑定</span>
+      <span class="trust-bar-item"><span class="trust-bar-dot"></span> 100% 本地验证</span>
+    </div>
+  </div>
+</div>
+
+<!-- Products -->
+<section class="section" id="products-anchor">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">产品 & 方案</span>
+      <h2 class="section-title">选择你需要 License 的产品</h2>
+      <p class="section-desc">每个产品有独立的方案体系，按需购买，单独管理</p>
+    </div>
+    <div class="product-grid">
+      <div class="product-card">
+        <div class="product-card-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="product-card-info">
+          <h3>Hermes Panel</h3>
+          <p>AI Agent 控制面板，本地部署。提供对话、工作区、MCP 集成、定时任务等丰富功能。</p>
+          <div class="product-card-tags">
+            <span class="product-card-tag">Tauri 桌面端</span>
+            <span class="product-card-tag">NPX 命令行</span>
+            <span class="product-card-tag--accent">3 个方案</span>
+          </div>
+        </div>
+        <a href="#" class="btn-outline" onclick="showProduct('hermes-panel'); return false;">查看详情 →</a>
+      </div>
+
+      <div class="product-card">
+        <div class="product-card-icon" style="background:linear-gradient(135deg,#059669,#10b981)">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        </div>
+        <div class="product-card-info">
+          <h3>CodeForge</h3>
+          <p>智能代码生成工具，集成主流 IDE。模板市场、团队协作、CI/CD 集成。</p>
+          <div class="product-card-tags">
+            <span class="product-card-tag">VS Code 插件</span>
+            <span class="product-card-tag">JetBrains 插件</span>
+            <span class="product-card-tag--accent">3 个方案</span>
+          </div>
+        </div>
+        <a href="#" class="btn-outline" onclick="showProduct('codeforge'); return false;">查看详情 →</a>
+      </div>
+
+      <div class="product-card">
+        <div class="product-card-icon" style="background:linear-gradient(135deg,#d97706,#f59e0b)">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <div class="product-card-info">
+          <h3>DataVault</h3>
+          <p>本地数据加密备份工具，支持定时快照、增量备份、云端同步。</p>
+          <div class="product-card-tags">
+            <span class="product-card-tag">桌面应用</span>
+            <span class="product-card-tag">CLI 工具</span>
+            <span class="product-card-tag--accent">2 个方案</span>
+          </div>
+        </div>
+        <a href="#" class="btn-outline" onclick="showProduct('datavault'); return false;">查看详情 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="section" style="background:var(--c-surface)">
+  <div class="container">
+    <div class="section-header" style="text-align:center">
+      <span class="section-eyebrow">为什么选择 SoftKey</span>
+      <h2 class="section-title" style="max-width:none">安全、可靠、专业</h2>
+      <p class="section-desc" style="margin:0 auto">行业标准的安全体系，让你的软件 License 管理无懈可击</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h3>Ed25519 数字签名</h3>
+        <p>数学级别的安全保障。没有签发私钥就无法伪造 License，对抗任何篡改和破解。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <h3>一证一机</h3>
+        <p>设备指纹 + OS 双重绑定，防止 License 共享滥用。换设备时可自助解绑重绑。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        </div>
+        <h3>30 天离线缓冲</h3>
+        <p>激活后 30 天内可离线使用。每 7 天后台静默校验，无感续期，无惧断网。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how-it-works" class="section">
+  <div class="container">
+    <div class="section-header" style="text-align:center">
+      <span class="section-eyebrow">购买流程</span>
+      <h2 class="section-title" style="max-width:none">三步完成，即刻激活</h2>
+      <p class="section-desc" style="margin:0 auto">从下单到激活，全程不到 5 分钟</p>
+    </div>
+    <div class="steps-row" style="max-width:900px;margin:0 auto">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>选择产品 & 方案</h3>
+        <p>浏览产品列表，选择需要的软件和 License 方案</p>
+        <svg class="step-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-4-4l4 4-4 4"/></svg>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>注册 & 下单</h3>
+        <p>创建 SoftKey 账号，确认方案后提交订单</p>
+        <svg class="step-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-4-4l4 4-4 4"/></svg>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>获取 & 激活</h3>
+        <p>管理员签发后在「我的 License」下载文件，导入软件即激活</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section" style="background:var(--c-surface)">
+  <div class="container">
+    <div class="section-header" style="text-align:center">
+      <span class="section-eyebrow">常见问题</span>
+      <h2 class="section-title" style="max-width:none">还有疑问？</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item open">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          License 绑定设备后可以换电脑吗？
+          <svg class="faq-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">可以。先在旧设备上取消激活（软件设置页一键操作），然后在新设备上用同一 License 文件重新激活即可。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          购买后如何获取 License 文件？
+          <svg class="faq-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">登录 SoftKey 后进入「我的 License」页面，找到对应产品的 License，点击下载即可获取 .key 文件。管理员签发后 License 文件立即可用。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          可以为我的软件产品接入 SoftKey 吗？
+          <svg class="faq-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">可以。SoftKey 的 Ed25519 签名 + TLS 锁定 + 设备指纹架构可以适配任何本地部署的软件。联系我们来讨论接入方案。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /view-landing -->
+
+<!-- ══════════════════════════════════════════════════════════════
+   VIEW: Product Detail Page
+   ══════════════════════════════════════════════════════════════ -->
+<div id="view-product">
+  <section class="prod-hero">
+    <div class="container">
+      <div class="prod-hero-inner">
+        <div class="prod-hero-text">
+          <span class="section-eyebrow" id="prod-eyebrow">产品</span>
+          <h1 id="prod-name">Hermes Panel</h1>
+          <p id="prod-desc">AI Agent 控制面板，本地部署，无需云端中转。提供对话、工作区、MCP 集成、定时任务等丰富功能。</p>
+          <div class="hero-actions" style="justify-content:flex-start">
+            <button class="btn-primary btn-primary--lg" onclick="openOrder()">立即下单</button>
+            <a href="/register" class="btn-outline btn-outline--lg">免费注册</a>
+          </div>
+        </div>
+        <div class="prod-hero-image">
+          <div class="prod-hero-image-placeholder" id="prod-image">产品截图</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">功能详情</h2>
+        <p class="section-desc" id="prod-features-desc"></p>
+      </div>
+      <div class="prod-features" id="prod-features-list"></div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="section" style="background:var(--c-surface)">
+    <div class="container">
+      <div class="section-header" style="text-align:center">
+        <span class="section-eyebrow">方案 & 定价</span>
+        <h2 class="section-title" style="max-width:none">选择适合你的方案</h2>
+        <p class="section-desc" style="margin:0 auto">随时升级，按需解锁更多功能</p>
+      </div>
+      <div class="pricing-row" id="prod-pricing" style="max-width:900px;margin:0 auto"></div>
+    </div>
+  </section>
+
+  <!-- Back link -->
+  <div class="container" style="padding:2rem 0;text-align:center">
+    <a href="#" class="btn-outline" onclick="showLanding();return false">← 返回产品列表</a>
+  </div>
+</div><!-- /view-product -->
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="#" class="header-logo" onclick="showLanding()">
+        <div class="header-logo-icon">SK</div>
+        SoftKey
+      </a>
+      <p>为软件开发者提供专业的 License 管理平台。Ed25519 签名，多产品支持，本地验证。</p>
+    </div>
+    <div class="footer-col">
+      <h4>产品</h4>
+      <ul>
+        <li><a href="#" onclick="showProduct('hermes-panel')">Hermes Panel</a></li>
+        <li><a href="#" onclick="showProduct('codeforge')">CodeForge</a></li>
+        <li><a href="#" onclick="showProduct('datavault')">DataVault</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>支持</h4>
+      <ul>
+        <li><a href="#faq" onclick="showLanding()">常见问题</a></li>
+        <li><a href="#how-it-works" onclick="showLanding()">购买流程</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>外观</h4>
+      <div class="footer-theme-row">
+        <button onclick="setTheme('light')" id="btn-light">☀️ 亮色</button>
+        <button onclick="setTheme('dark')" id="btn-dark">🌙 暗色</button>
+        <button onclick="setTheme('auto')" id="btn-auto" class="active">🖥️ 自动</button>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 SoftKey. All rights reserved.</div>
+</footer>
+
+<!-- Order Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">创建订单</h3>
+      <button class="modal-close" onclick="closeOrder()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalStep1">
+      <div class="form-group">
+        <label class="form-label">产品</label>
+        <div style="padding:0.625rem 0.75rem;border-radius:var(--radius);background:var(--c-bg);border:1px solid var(--c-border);font-size:0.875rem;color:var(--c-text);" id="modalProduct"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">方案</label>
+        <div class="tier-options" id="modalTiers"></div>
+      </div>
+    </div>
+    <div class="modal-body" id="modalStep2" style="display:none">
+      <div class="success-box">
+        <div class="success-box-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3>订单创建成功！</h3>
+        <p id="modalSuccessMsg">管理员签发 License 后，可在「我的 License」页面下载。</p>
+        <div style="margin-top:1.25rem;display:flex;gap:0.75rem;justify-content:center">
+          <button class="btn-outline" onclick="closeOrder()">关闭</button>
+          <a href="/login" class="btn-primary">去登录查看</a>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" id="modalFoot">
+      <button class="btn-outline" onclick="closeOrder()">取消</button>
+      <button class="btn-primary" onclick="submitOrder()">确认下单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Theme
+   ═══════════════════════════════════════════════════════════════ */
+function setTheme(m) {
+  document.documentElement.classList.remove('light','dark');
+  document.querySelectorAll('.footer-theme-row button').forEach(b => b.classList.remove('active'));
+  if (m === 'light') { document.documentElement.classList.add('light'); document.getElementById('btn-light').classList.add('active'); }
+  else if (m === 'dark') { document.documentElement.classList.add('dark'); document.getElementById('btn-dark').classList.add('active'); }
+  else { document.getElementById('btn-auto').classList.add('active'); }
+  updateThemeIcon();
+}
+function cycleTheme() {
+  const cl = document.documentElement.classList;
+  if (cl.contains('light')) setTheme('dark');
+  else if (cl.contains('dark')) setTheme('auto');
+  else setTheme('light');
+}
+function updateThemeIcon() {
+  const isDark = document.documentElement.classList.contains('dark') ||
+    (!document.documentElement.classList.contains('light') && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  document.getElementById('icon-sun').style.display = isDark ? 'none' : '';
+  document.getElementById('icon-moon').style.display = isDark ? '' : 'none';
+}
+window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', updateThemeIcon);
+updateThemeIcon();
+
+/* ═══════════════════════════════════════════════════════════════
+   Product Data
+   ═══════════════════════════════════════════════════════════════ */
+const products = {
+  'hermes-panel': {
+    name: 'Hermes Panel',
+    desc: 'AI Agent 控制面板，本地部署，无需云端中转。购买 License 解锁工作区、定时任务、MCP 工具集成等高级功能。',
+    features: [
+      { name: '工作区 (Workspaces)', desc: '多工作区管理，每个工作区独立配置和会话' },
+      { name: '定时任务 (Cron)', desc: '可视化 Cron 编辑器，定时执行 AI 任务' },
+      { name: '记忆管理 (Memory)', desc: '持久化记忆存储，跨会话上下文保持' },
+      { name: 'MCP / 技能 / 插件', desc: '完整的 MCP 工具生态集成，扩展 AI 能力边界' },
+      { name: '模型供应商配置', desc: '灵活切换和管理多个 AI 模型供应商' },
+      { name: '备份与恢复', desc: '一键备份和恢复全部配置和数据' },
+    ],
+    featuresDesc: 'Hermes Panel 的高级功能覆盖了从工作区管理到 MCP 集成的完整工作流。',
+    pricing: [
+      { name: 'Web', price: '免费', period: '', desc: '基础功能，适合试用', features: ['完整对话', '会话历史', '仪表盘统计', '通知中心', '基础设置', '用户管理'], btn: '免费开始', highlight: false },
+      { name: 'Desktop', price: '$29', period: '/年', desc: '专业用户首选', features: ['Web 全部功能', '工作区 & 定时任务', '记忆 & 文件管理', 'MCP/技能/插件', '模型供应商配置', '备份管理'], btn: '立即下单', highlight: true },
+      { name: 'Pro', price: '$79', period: '/年', desc: '全部功能解锁', features: ['Desktop 全部功能', '诊断日志查看', '密钥管理', '沙箱隔离', '网关配置', '优先技术支持'], btn: '立即下单', highlight: false },
+    ]
+  },
+  'codeforge': {
+    name: 'CodeForge',
+    desc: '智能代码生成工具，集成主流 IDE。模板市场、团队协作、CI/CD 集成，提升开发效率。',
+    features: [
+      { name: '模板市场', desc: '丰富的项目模板和市场，一键生成项目骨架' },
+      { name: '团队协作', desc: '多人协作编辑，实时同步代码变更' },
+      { name: 'CI/CD 集成', desc: '内置持续集成和部署流水线' },
+      { name: '高级代码审查', desc: 'AI 驱动的代码审查建议' },
+      { name: '自定义规则引擎', desc: '灵活的自定义代码生成规则' },
+      { name: '优先支持', desc: '专属技术支持通道' },
+    ],
+    featuresDesc: 'CodeForge 的高级功能让团队开发效率倍增，从模板到部署一站式完成。',
+    pricing: [
+      { name: 'Free', price: '免费', period: '', desc: '个人开发使用', features: ['基础代码生成', 'VS Code 插件', '每月 100 次生成'], btn: '免费开始', highlight: false },
+      { name: 'Team', price: '$19', period: '/月', desc: '小团队协作', features: ['Free 全部功能', '团队协作', 'CI/CD 集成', '无限生成次数'], btn: '立即下单', highlight: true },
+      { name: 'Enterprise', price: '$99', period: '/月', desc: '企业级定制', features: ['Team 全部功能', '私有化部署', '自定义规则引擎', 'SSO 集成', 'SLA 保障'], btn: '立即下单', highlight: false },
+    ]
+  },
+  'datavault': {
+    name: 'DataVault',
+    desc: '本地数据加密备份工具，定时快照、增量备份、云端同步，保护你的隐私数据安全。',
+    features: [
+      { name: '定时快照', desc: '按小时/天/周自动创建数据快照' },
+      { name: '增量备份', desc: '仅备份变更的数据，节省存储空间' },
+      { name: '云端同步', desc: '加密同步至 S3/WebDAV/OneDrive' },
+      { name: '端到端加密', desc: 'AES-256-GCM 加密，密钥仅你持有' },
+    ],
+    featuresDesc: 'DataVault 提供企业级的数据保护能力，让你的隐私数据安全无忧。',
+    pricing: [
+      { name: 'Basic', price: '免费', period: '', desc: '个人使用', features: ['本地备份', '每日快照', '1 个备份任务'], btn: '免费开始', highlight: false },
+      { name: 'Pro', price: '$39', period: '/年', desc: '高级用户', features: ['Basic 全部功能', '增量备份', '云端同步', '无限任务', '端到端加密'], btn: '立即下单', highlight: true },
+    ]
+  }
+};
+
+let currentProduct = 'hermes-panel';
+let selectedTierIdx = 0;
+
+function showProduct(key) {
+  currentProduct = key;
+  const p = products[key];
+  if (!p) return;
+  document.getElementById('view-landing').style.display = 'none';
+  document.getElementById('view-product').style.display = 'block';
+  document.getElementById('prod-eyebrow').textContent = '产品详情';
+  document.getElementById('prod-name').textContent = p.name;
+  document.getElementById('prod-desc').textContent = p.desc;
+  document.getElementById('prod-features-desc').textContent = p.featuresDesc;
+
+  // Feature list
+  let featHtml = '';
+  p.features.forEach(f => {
+    featHtml += `<div class="prod-feature-item">
+      <div class="prod-feature-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+      <div><h4>${f.name}</h4><p>${f.desc}</p></div>
+    </div>`;
+  });
+  document.getElementById('prod-features-list').innerHTML = featHtml;
+
+  // Pricing
+  let priceHtml = '';
+  p.pricing.forEach((tier, i) => {
+    priceHtml += `<div class="pricing-card${tier.highlight ? ' pricing-card--highlight' : ''}">
+      <div class="pricing-card-name">${tier.name}</div>
+      <div class="pricing-card-price">${tier.price}<small>${tier.period}</small></div>
+      <div class="pricing-card-desc">${tier.desc}</div>
+      <ul class="pricing-card-features">
+        ${tier.features.map(f => `<li><svg width="14" height="14" fill="none" stroke="var(--c-success)" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>${f}</li>`).join('')}
+      </ul>
+      <button class="${tier.highlight ? 'btn-primary' : 'btn-outline'}" onclick="openOrder('${key}',${i})">${tier.btn}</button>
+    </div>`;
+  });
+  document.getElementById('prod-pricing').innerHTML = priceHtml;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showLanding() {
+  document.getElementById('view-landing').style.display = 'block';
+  document.getElementById('view-product').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Order Modal
+   ═══════════════════════════════════════════════════════════════ */
+function openOrder(productKey, tierIdx) {
+  const key = productKey || currentProduct;
+  currentProduct = key;
+  selectedTierIdx = tierIdx !== undefined ? tierIdx : 1;
+  const p = products[key];
+  if (!p) return;
+  document.getElementById('modalProduct').textContent = p.name;
+  document.getElementById('modalTitle').textContent = '创建订单 — ' + p.name;
+  document.getElementById('modalStep1').style.display = '';
+  document.getElementById('modalStep2').style.display = 'none';
+  document.getElementById('modalFoot').style.display = '';
+
+  let tierHtml = '';
+  p.pricing.forEach((tier, i) => {
+    const sel = i === selectedTierIdx;
+    tierHtml += `<div class="tier-option${sel ? ' tier-option--selected' : ''}" onclick="selectTier(${i}, this)">
+      <div class="tier-opt-left"><h4>${tier.name}</h4><span>${tier.desc}</span></div>
+      <div class="tier-opt-radio"></div>
+      <span class="tier-opt-price">${tier.price}${tier.period ? '<small style="font-size:0.75rem;color:var(--c-text-muted);font-weight:400">'+tier.period+'</small>' : ''}</span>
+    </div>`;
+  });
+  document.getElementById('modalTiers').innerHTML = tierHtml;
+  document.getElementById('orderModal').classList.add('open');
+}
+
+function selectTier(idx, el) {
+  selectedTierIdx = idx;
+  document.querySelectorAll('#modalTiers .tier-option').forEach(e => e.classList.remove('tier-option--selected'));
+  el.classList.add('tier-option--selected');
+}
+
+function submitOrder() {
+  const p = products[currentProduct];
+  const tier = p.pricing[selectedTierIdx];
+  document.getElementById('modalStep1').style.display = 'none';
+  document.getElementById('modalStep2').style.display = '';
+  document.getElementById('modalFoot').style.display = 'none';
+  document.getElementById('modalSuccessMsg').textContent = `${p.name} · ${tier.name}。管理员签发 License 后，可在「我的 License」页面下载。`;
+}
+
+function closeOrder() { document.getElementById('orderModal').classList.remove('open'); }
+document.getElementById('orderModal').addEventListener('click', function(e) { if (e.target === this) closeOrder(); });
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeOrder(); });
+</script>
+</body>
+</html>

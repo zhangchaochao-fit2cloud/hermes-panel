@@ -4,12 +4,14 @@ import {
   NInput,
   NButton,
   NSelect,
-  NEmpty,
   NTag,
   useMessage,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { HEADERS } from '@hermes-panel/shared';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 
 const { t } = useI18n();
@@ -285,15 +287,16 @@ onBeforeUnmount(() => {
       <NButton size="tiny" @click="exportJsonl">{{ t('developer.sse.export') }}</NButton>
     </div>
 
-    <div v-if="errorMsg" class="text-sm text-[var(--color-error,#e88080)] p-3 rounded-md bg-[var(--color-error,#e88080)]/10">
-      {{ errorMsg }}
-    </div>
+    <ErrorBanner
+      v-if="errorMsg"
+      :message="errorMsg"
+      surface="inline"
+    />
 
-    <NEmpty
+    <EmptyState
       v-if="visibleEvents.length === 0"
-      size="small"
-      :description="t('developer.sse.empty')"
-      class="py-10"
+      icon="~"
+      :title="t('developer.sse.empty')"
     />
 
     <div
@@ -314,11 +317,13 @@ onBeforeUnmount(() => {
           <NTag size="tiny" :bordered="false" type="info">{{ ev.name }}</NTag>
           <span class="opacity-60">{{ ev.expanded ? '▾' : '▸' }}</span>
         </div>
-        <pre
+        <CodeBlock
           v-if="ev.expanded"
-          class="mt-1 p-2 rounded bg-[var(--bg-elevate)] overflow-x-auto"
-          style="font-size: 11px"
-        ><code>{{ fmtPayload(ev.payload) }}</code></pre>
+          class="mt-2"
+          :code="fmtPayload(ev.payload)"
+          :lang="ev.name"
+          max-height="260px"
+        />
       </div>
     </div>
   </div>

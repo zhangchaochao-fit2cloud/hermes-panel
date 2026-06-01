@@ -1,4 +1,5 @@
 import Router from '@koa/router';
+import { setCurrentWorkspaceCwd } from '../services/workspace-status.js';
 
 /**
  * Cross-process draft buffer for IDE integrations (VS Code, JetBrains).
@@ -13,6 +14,7 @@ import Router from '@koa/router';
 interface Draft {
   prompt: string;
   source: string;
+  cwd?: string;
   stagedAt: number;
 }
 
@@ -26,7 +28,7 @@ function isExpired(d: Draft): boolean {
 export const draftRouter = new Router();
 
 draftRouter.post('/draft', ctx => {
-  const body = ctx.request.body as { prompt?: string; source?: string; stagedAt?: number } | undefined;
+  const body = ctx.request.body as { prompt?: string; source?: string; cwd?: string; stagedAt?: number } | undefined;
   if (!body?.prompt || typeof body.prompt !== 'string') {
     ctx.status = 400;
     ctx.body = { error: { code: 'BAD_REQUEST', message: 'prompt required' } };
@@ -35,8 +37,10 @@ draftRouter.post('/draft', ctx => {
   current = {
     prompt: body.prompt.slice(0, 200_000),
     source: body.source || 'external',
+    cwd: typeof body.cwd === 'string' ? body.cwd : undefined,
     stagedAt: body.stagedAt || Date.now(),
   };
+  setCurrentWorkspaceCwd(current.cwd);
   ctx.body = { ok: true };
 });
 

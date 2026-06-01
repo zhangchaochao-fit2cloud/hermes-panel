@@ -7,11 +7,13 @@ import {
   NButton,
   NDropdown,
   NTag,
-  NEmpty,
   useMessage,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { HEADERS } from '@hermes-panel/shared';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 import { useDeveloperStore, type DevHistoryEntry } from '@/stores/developer';
 import { genCurl, genFetch } from '@/utils/code-templates';
@@ -321,22 +323,24 @@ function save(): void {
         </span>
       </div>
 
-      <div v-if="responseError" class="text-sm text-[var(--color-error,#e88080)] p-3 rounded-md border border-[var(--color-error,#e88080)]/30 bg-[var(--color-error,#e88080)]/10">
-        {{ responseError }}
-      </div>
-
-      <NEmpty
-        v-else-if="responseStatus === null"
-        size="small"
-        :description="t('developer.playground.responseHint')"
-        class="py-12"
+      <ErrorBanner
+        v-if="responseError"
+        :message="responseError"
+        surface="inline"
       />
 
-      <pre
+      <EmptyState
+        v-else-if="responseStatus === null"
+        icon="↵"
+        :title="t('developer.playground.responseHint')"
+      />
+
+      <CodeBlock
         v-else
-        class="rounded-md bg-[var(--bg-elevate)] p-3 text-xs font-mono overflow-auto"
-        style="max-height: 800px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
-      ><code>{{ responseBody }}</code></pre>
+        :code="responseBody"
+        lang="response"
+        max-height="800px"
+      />
     </div>
   </div>
 </template>

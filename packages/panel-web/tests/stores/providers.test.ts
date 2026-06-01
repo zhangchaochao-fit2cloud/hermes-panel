@@ -127,3 +127,59 @@ describe('providers.addCredential', () => {
     expect(r.error).toBe('INVALID_API_KEY');
   });
 });
+
+describe('providers model inspection', () => {
+  it('loads candidate model inspection metadata from the BFF', async () => {
+    mockedBffFetch.mockResolvedValueOnce({
+      checkedAt: 123,
+      items: [
+        {
+          id: 'openai/gpt-5-mini',
+          provider: 'openrouter',
+          credentialStatus: 'configured',
+          availability: 'ready',
+          isCurrent: false,
+          pricing: {
+            inputPerMillion: 0.15,
+            outputPerMillion: 0.6,
+            currency: 'USD',
+            source: 'openrouter',
+          },
+        },
+      ],
+    });
+    const store = useProvidersStore();
+
+    await store.inspectModels([
+      { id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter' },
+    ]);
+
+    expect(store.inspectionLoading).toBe(false);
+    expect(store.inspectionCheckedAt).toBe(123);
+    expect(store.inspectionFor('openrouter', 'openai/gpt-5-mini')?.availability).toBe('ready');
+    expect(mockedBffFetch).toHaveBeenCalledWith('/api/models/inspect', {
+      method: 'POST',
+      body: JSON.stringify({
+        models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter' }],
+      }),
+      silent: true,
+    });
+  });
+
+  it('loads provider balance without inventing a value for unsupported providers', async () => {
+    mockedBffFetch.mockResolvedValueOnce({
+      provider: 'anthropic',
+      status: 'unsupported',
+      reason: 'PROVIDER_DOES_NOT_EXPOSE_SIMPLE_BALANCE',
+    });
+    const store = useProvidersStore();
+
+    await store.loadProviderBalance('anthropic');
+
+    expect(store.balanceFor('anthropic')).toMatchObject({
+      provider: 'anthropic',
+      status: 'unsupported',
+    });
+    expect(store.balanceLoading).toBe(false);
+  });
+});

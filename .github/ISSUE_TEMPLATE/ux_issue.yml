@@ -1,0 +1,32 @@
+name: UX issue
+description: Report a usability, visual, accessibility, or interaction problem
+title: "[UX]: "
+labels: ["ux"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where in the app did this happen?
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: UX problem
+      description: What felt confusing, slow, noisy, or visually wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected experience
+      description: What should the user experience be?
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshot or recording
+      description: Drag in images or videos if useful.
+

@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, h, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { NDropdown } from 'naive-ui';
 import { useSystemStore } from '@/stores/system';
+import { useAuthStore } from '@/stores/auth';
 import { setLocale } from '@/locales';
 import StatusBadge from './StatusBadge.vue';
 import NotificationBell from './NotificationBell.vue';
 import ModelSwitcher from './ModelSwitcher.vue';
+import GlobalLoadingBar from './GlobalLoadingBar.vue';
 
 defineProps<{
   sidebarCollapsed?: boolean;
@@ -16,9 +19,43 @@ defineProps<{
 const emit = defineEmits<{ (e: 'toggle-sidebar'): void }>();
 
 const system = useSystemStore();
+const auth = useAuthStore();
 const { health, loading } = storeToRefs(system);
+const { user } = storeToRefs(auth);
 const { t, locale } = useI18n();
 const route = useRoute();
+const router = useRouter();
+
+const userInitial = computed(() => {
+  const u = user.value;
+  const src = u?.displayName || 'A';
+  return src.trim().charAt(0).toUpperCase() || 'A';
+});
+
+const userMenuOptions = computed(() => {
+  const u = user.value;
+  const roleLabel = u?.role === 'admin' ? t('auth.admin') : t('auth.member');
+  return [
+    {
+      key: 'header',
+      type: 'render',
+      render: () =>
+        h('div', { class: 'px-3 py-2 min-w-[180px]' }, [
+          h('div', { class: 'text-sm font-medium text-[var(--text-1)] truncate' }, u?.displayName || t('auth.account')),
+          h('div', { class: 'text-xs text-[var(--text-3)] mt-0.5' }, roleLabel),
+        ]),
+    },
+    { key: 'divider', type: 'divider' },
+    { key: 'logout', label: t('auth.logout') },
+  ];
+});
+
+async function onUserMenuSelect(key: string): Promise<void> {
+  if (key === 'logout') {
+    await auth.logout();
+    void router.replace({ name: 'login' });
+  }
+}
 
 let pollHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -77,7 +114,7 @@ function showCheatsheet(): void {
 
 <template>
   <header
-    class="app-topbar border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center gap-3 flex-shrink-0"
+    class="app-topbar relative border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center gap-3 flex-shrink-0"
     data-tauri-drag-region
   >
     <button
@@ -112,6 +149,21 @@ function showCheatsheet(): void {
     <ModelSwitcher />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />
+    <NDropdown
+      v-if="user"
+      trigger="click"
+      :options="userMenuOptions"
+      @select="onUserMenuSelect"
+    >
+      <button
+        type="button"
+        class="topbar-user-button"
+        :title="user.displayName ?? t('auth.account')"
+        :aria-label="t('auth.account')"
+      >
+        {{ userInitial }}
+      </button>
+    </NDropdown>
     <button
       type="button"
       class="topbar-icon-button"
@@ -162,5 +214,6 @@ function showCheatsheet(): void {
         {{ locale === 'zh-CN' ? '中' : 'EN' }}
       </span>
     </button>
+    <GlobalLoadingBar />
   </header>
 </template>

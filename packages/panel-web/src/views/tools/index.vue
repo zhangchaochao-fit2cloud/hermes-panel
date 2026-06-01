@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NInput, NTabs, NTabPane, NSkeleton, useMessage } from 'naive-ui';
+import { NInput, NTabs, NTabPane, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useToolsStore } from '@/stores/tools';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ToolCard from '@/components/tools/ToolCard.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
 import SkillTable from '@/components/tools/SkillTable.vue';
 import SkillMarketplace from '@/components/tools/SkillMarketplace.vue';
 import McpServerList from '@/components/tools/McpServerList.vue';
@@ -82,12 +84,14 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
           </div>
 
           <div v-if="loadingTools" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            <NSkeleton v-for="i in 6" :key="i" :height="100" />
+            <ThemedSkeleton v-for="i in 6" :key="i" height="100px" />
           </div>
 
-          <div v-else-if="filteredTools.length === 0" class="py-12 text-center text-sm text-[var(--text-3)]">
-            {{ t('tools.empty') }}
-          </div>
+          <EmptyState
+            v-else-if="filteredTools.length === 0"
+            :title="t('tools.empty')"
+            :description="t('tools.emptyHint')"
+          >🔧</EmptyState>
 
           <div v-else class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <ToolCard

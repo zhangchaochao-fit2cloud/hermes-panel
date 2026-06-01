@@ -5,6 +5,13 @@ on:
     branches: [main, master]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test (${{ matrix.os }} / node ${{ matrix.node }})
@@ -25,5 +32,38 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm build
+
+      - name: Install Linux Tauri deps
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            libsecret-1-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm
+
+      - name: Build release-critical packages
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          pnpm --filter @hermes-panel/shared build
+          pnpm --filter @hermes-panel/bff build
+          pnpm --filter @hermes-panel/web build
+          pnpm --filter hermes-panel-vscode build
+          pnpm --filter @hermes-panel/desktop build
+          make release-npm
+          ./scripts/smoke-npm-package.sh
+
+      - name: Docker build test
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          docker build -t hermes-panel:ci-test .
+          docker images hermes-panel:ci-test

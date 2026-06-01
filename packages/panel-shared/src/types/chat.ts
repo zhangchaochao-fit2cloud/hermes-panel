@@ -9,8 +9,6 @@ export interface ChatMessage {
   createdAt: number;
   completed: boolean;
   tokenUsage?: TokenUsage;
-  /** UI-only feedback marker for the current panel session */
-  feedback?: 'up' | 'down';
   /** UI-only marker when the user has edited the prompt in panel */
   edited?: boolean;
   /** Best-effort completion timestamp for local duration display */
@@ -51,8 +49,8 @@ export interface TokenUsage {
 export type HermesSSEEvent =
   | { event: 'message.delta'; run_id: string; timestamp: number; delta: string }
   | { event: 'reasoning.available'; run_id: string; timestamp: number; text: string }
-  | { event: 'tool.started'; run_id: string; timestamp: number; tool: string; preview?: string }
-  | { event: 'tool.completed'; run_id: string; timestamp: number; tool: string; duration?: number; error?: boolean }
+  | { event: 'tool.started'; run_id: string; timestamp: number; tool: string; preview?: string; input?: unknown; args?: unknown; arguments?: unknown }
+  | { event: 'tool.completed'; run_id: string; timestamp: number; tool: string; duration?: number; error?: boolean; output?: unknown; result?: unknown; message?: string; errorMessage?: string; input?: unknown; args?: unknown; arguments?: unknown }
   | { event: 'run.completed'; run_id: string; timestamp: number; output?: string; usage?: HermesUsage }
   | { event: 'run.error'; run_id: string; timestamp: number; error: string }
   // Allow forward-compat: unknown events are skipped silently

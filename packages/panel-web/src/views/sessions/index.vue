@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import {
-  NSkeleton,
   NButton,
   NInput,
   useMessage,
@@ -12,6 +11,8 @@ import {
 } from 'naive-ui';
 import type { SessionSummary } from '@hermes-panel/shared';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import SessionFilters from '@/components/sessions/SessionFilters.vue';
 import SessionTable from '@/components/sessions/SessionTable.vue';
 import SessionGrid from '@/components/sessions/SessionGrid.vue';
@@ -292,25 +293,18 @@ function toggleGroup(s: SessionSource): void {
       />
     </div>
 
-    <!-- error banner -->
-    <div
+    <ErrorBanner
       v-if="error"
-      class="px-6 py-2 text-xs bg-red-500/10 text-red-600 border-b border-red-500/30"
-    >
-      {{ error }}
-      <button
-        class="ml-2 underline opacity-80 hover:opacity-100"
-        @click="store.load({ initial: true })"
-      >
-        {{ t('sessions.retry') }}
-      </button>
-    </div>
+      :message="error"
+      :retry-label="t('sessions.retry')"
+      @retry="store.load({ initial: true })"
+    />
 
     <!-- body -->
     <div class="flex-1 min-h-0 overflow-auto">
       <!-- skeleton (first load) -->
       <div v-if="showInitialSkeleton" class="px-6 py-4 space-y-3">
-        <NSkeleton v-for="i in 5" :key="i" text :repeat="1" :sharp="false" height="48px" />
+        <ThemedSkeleton v-for="i in 5" :key="i" height="48px" />
       </div>
 
       <!-- empty -->

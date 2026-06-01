@@ -2,10 +2,14 @@
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
-  NButton, NTag, NEmpty, NSpin, NModal, NCard, NForm, NFormItem, NInput,
+  NButton, NTag, NModal, NCard, NForm, NFormItem, NInput,
   NCollapse, NCollapseItem, NPopconfirm, useMessage,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
+import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useWebhookStore, type AddWebhookInput, type TestResult } from '@/stores/webhook';
 
 const { t } = useI18n();
@@ -173,39 +177,46 @@ onMounted(() => {
       class="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-500"
     >
       {{ t('developer.webhook.disabledHint') }}
-      <pre
+      <CodeBlock
         v-if="raw"
-        class="mt-2 rounded bg-[var(--bg-elevate)] p-2 text-xs whitespace-pre-wrap text-[var(--text-2)]"
-        style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 220px; overflow: auto;"
-      >{{ raw }}</pre>
+        class="mt-2"
+        :code="raw"
+        lang="webhook"
+        max-height="220px"
+        tone="warning"
+      />
     </div>
 
     <!-- Error banner (e.g. HERMES_CLI_NOT_FOUND) -->
-    <div
+    <ErrorBanner
       v-else-if="error"
-      class="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-500"
-    >
-      {{ t('developer.webhook.errorPrefix') }} {{ error }}
-    </div>
+      :message="`${t('developer.webhook.errorPrefix')} ${error}`"
+      :retry-label="t('developer.webhook.refresh')"
+      surface="inline"
+      @retry="refresh"
+    />
 
     <!-- Loading state with no prior data -->
-    <div v-if="loading && subscriptions.length === 0" class="flex justify-center py-12">
-      <NSpin size="medium" />
+    <div v-if="loading && subscriptions.length === 0" class="grid gap-3">
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4"
+      >
+        <ThemedSkeleton height="16px" :repeat="3" rounded="sm" />
+      </div>
     </div>
 
     <!-- Empty -->
-    <NEmpty
+    <EmptyState
       v-else-if="!disabled && subscriptions.length === 0"
-      size="medium"
-      :description="t('developer.webhook.empty')"
-      class="py-12"
+      icon="◇"
+      :title="t('developer.webhook.empty')"
     >
-      <template #extra>
-        <NButton size="small" type="primary" @click="openAdd">
-          {{ t('developer.webhook.add') }}
-        </NButton>
-      </template>
-    </NEmpty>
+      <NButton size="small" type="primary" @click="openAdd">
+        {{ t('developer.webhook.add') }}
+      </NButton>
+    </EmptyState>
 
     <!-- Subscription cards -->
     <div v-else class="flex flex-col gap-3">
@@ -311,16 +322,19 @@ onMounted(() => {
                   {{ testResults[sub.name].error }}{{ testResults[sub.name].message
                     ? `: ${testResults[sub.name].message}` : '' }}
                 </div>
-                <pre
+                <CodeBlock
                   v-if="testResults[sub.name].stdout"
-                  class="rounded-md bg-[var(--bg-elevate)] p-2 text-xs overflow-auto"
-                  style="max-height: 320px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
-                ><code>{{ testResults[sub.name].stdout }}</code></pre>
-                <pre
+                  :code="testResults[sub.name].stdout ?? ''"
+                  lang="stdout"
+                  max-height="320px"
+                />
+                <CodeBlock
                   v-if="testResults[sub.name].stderr"
-                  class="rounded-md bg-[var(--bg-elevate)] p-2 text-xs overflow-auto text-amber-500"
-                  style="max-height: 240px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
-                ><code>{{ testResults[sub.name].stderr }}</code></pre>
+                  :code="testResults[sub.name].stderr ?? ''"
+                  lang="stderr"
+                  max-height="240px"
+                  tone="warning"
+                />
               </div>
             </NCollapseItem>
           </NCollapse>

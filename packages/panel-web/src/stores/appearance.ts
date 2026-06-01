@@ -8,11 +8,10 @@ export type ThemeMode =
   | 'glass-apple'
   | 'glass-vibrant'
   | 'glass-tokyo'
-  | 'codex-light'
-  | 'codex-dark'
   | 'github-primer'
   | 'glass-minimal';
 export type FontSize = 'small' | 'medium' | 'large';
+export type Density = 'comfortable' | 'compact';
 
 /** Which color family each mode falls into (drives Naive UI dark vs light). */
 const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
@@ -22,8 +21,6 @@ const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
   'glass-apple': false,    // Apple frosted glass uses light text on translucent surfaces over a colorful wallpaper
   'glass-vibrant': false,  // Vibrant uses dark text on translucent white
   'glass-tokyo': true,     // Tokyo night is a dark theme
-  'codex-light': false,
-  'codex-dark': true,
   'github-primer': false,
   'glass-minimal': false,
 };
@@ -32,6 +29,7 @@ const STORAGE_MODE = 'panel.themeMode';
 const STORAGE_COLOR = 'panel.themeColor';
 const STORAGE_FONT = 'panel.fontSize';
 const STORAGE_ROUTE_TABS = 'panel.routeTabsEnabled';
+const STORAGE_DENSITY = 'panel.density';
 
 const DEFAULT_MODE: ThemeMode = 'auto';
 const DEFAULT_COLOR = '#1677ff';
@@ -53,9 +51,10 @@ function readMode(): ThemeMode {
   const v = localStorage.getItem(STORAGE_MODE);
   if (v === 'light' || v === 'dark' || v === 'auto') return v;
   if (v === 'glass-apple' || v === 'glass-vibrant' || v === 'glass-tokyo') return v;
-  if (v === 'codex-light' || v === 'codex-dark' || v === 'github-primer' || v === 'glass-minimal') return v;
-  // Migrate the v0.x value 'minimal-glass' (not prefixed glass-, so it
-  // missed every glass-only style rule) to the renamed 'glass-minimal'.
+  if (v === 'github-primer' || v === 'glass-minimal') return v;
+  // Migrate removed themes to their closest equivalents.
+  if (v === 'codex-light') { localStorage.setItem(STORAGE_MODE, 'light'); return 'light'; }
+  if (v === 'codex-dark')  { localStorage.setItem(STORAGE_MODE, 'dark');  return 'dark';  }
   if (v === 'minimal-glass') {
     localStorage.setItem(STORAGE_MODE, 'glass-minimal');
     return 'glass-minimal';
@@ -78,6 +77,11 @@ function readRouteTabs(): boolean {
   if (v === 'true') return true;
   if (v === 'false') return false;
   return DEFAULT_ROUTE_TABS;
+}
+
+function readDensity(): Density {
+  const v = localStorage.getItem(STORAGE_DENSITY);
+  return v === 'compact' ? 'compact' : 'comfortable';
 }
 
 function prefersDark(): boolean {
@@ -115,6 +119,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
   const color = ref<string>(readColor());
   const fontSize = ref<FontSize>(readFont());
   const routeTabsEnabled = ref<boolean>(readRouteTabs());
+  const density = ref<Density>(readDensity());
 
   // Tracks the current OS color-scheme preference so `effectiveDark` is reactive
   // when the user picks "auto".
@@ -166,6 +171,11 @@ export const useAppearanceStore = defineStore('appearance', () => {
     routeTabsEnabled.value = v;
     localStorage.setItem(STORAGE_ROUTE_TABS, String(v));
   }
+  function setDensity(v: Density): void {
+    density.value = v;
+    localStorage.setItem(STORAGE_DENSITY, v);
+    document.documentElement.setAttribute('data-density', v);
+  }
 
   /**
    * Initialise: read from localStorage, apply to DOM, bind OS listener.
@@ -175,6 +185,7 @@ export const useAppearanceStore = defineStore('appearance', () => {
     applyThemeAttr(mode.value);
     applyBrandColor(color.value);
     applyFontSize(fontSize.value);
+    document.documentElement.setAttribute('data-density', density.value);
     bindOsListener();
   }
 
@@ -188,11 +199,13 @@ export const useAppearanceStore = defineStore('appearance', () => {
     color,
     fontSize,
     routeTabsEnabled,
+    density,
     effectiveDark,
     isGlass,
     setMode,
     setColor,
     setFontSize,
+    setDensity,
     setRouteTabsEnabled,
     init,
   };

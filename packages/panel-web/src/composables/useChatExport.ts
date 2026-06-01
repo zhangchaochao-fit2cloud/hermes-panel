@@ -3,7 +3,7 @@ import type { ChatMessage } from '@hermes-panel/shared';
 import { useSessionStore } from '@/stores/session';
 import { useSessionsStore } from '@/stores/sessions';
 import { chatToMarkdown } from '@/utils/chat-to-md';
-import { renderMarkdown, escapeHtml } from '@/utils/markdown';
+import { escapeHtml } from '@/utils/markdown-controls';
 import { triggerDownload } from '@/utils/download';
 
 /**
@@ -40,7 +40,8 @@ export function useChatExport(messages: Ref<ChatMessage[]>): {
     return sessionsList.items.find(s => s.id === session.sessionId)?.title;
   }
 
-  function asHtml(md: string, title: string | undefined): string {
+  async function asHtml(md: string, title: string | undefined): Promise<string> {
+    const { renderMarkdown } = await import('@/utils/markdown-renderer');
     const body = renderMarkdown(md);
     const css = `body{font-family:-apple-system,system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1f2937}pre{background:#f3f4f6;padding:0.75rem;border-radius:6px;overflow-x:auto}code{background:#f3f4f6;padding:0.1rem 0.3rem;border-radius:3px;font-size:0.9em}h1,h2,h3{margin-top:1.5em}blockquote{border-left:3px solid #d1d5db;margin:0;padding-left:1em;color:#6b7280}`;
     return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title ?? 'Hermes Chat')}</title><style>${css}</style></head><body>${body}</body></html>`;
@@ -71,7 +72,7 @@ export function useChatExport(messages: Ref<ChatMessage[]>): {
     }
     if (fmt === 'html') {
       triggerDownload(
-        new Blob([asHtml(md, title)], { type: 'text/html;charset=utf-8' }),
+        new Blob([await asHtml(md, title)], { type: 'text/html;charset=utf-8' }),
         `${base}.html`,
       );
       return { ok: true, filename: `${base}.html`, format: fmt };

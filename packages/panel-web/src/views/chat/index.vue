@@ -41,11 +41,25 @@ const router = useRouter();
 const { messages } = storeToRefs(session);
 const { state, lastError, lastErrorCode, charsPerSec } = storeToRefs(stream);
 
-const model = ref('hermes-agent');
-const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>('auto');
+const model = ref(localStorage.getItem('panel.chat.lastModel') || 'hermes-agent');
+const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>((localStorage.getItem('panel.chat.lastThinkingSpeed') as 'fast' | 'extended' | 'auto') || 'auto');
 const sending = ref(false);
+const lastSentText = ref('');
 const resumingSession = ref(false);
 const scroller = ref<HTMLElement | null>(null);
+const scrolledUp = ref(false);
+
+function onScroll(): void {
+  const el = scroller.value;
+  if (!el) return;
+  scrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > 120;
+}
+function scrollToBottom(): void {
+  const el = scroller.value;
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+  scrolledUp.value = false;
+}
 const composerRef = ref<InstanceType<typeof Composer> | null>(null);
 const taskPanelOpen = ref(false);
 
@@ -96,6 +110,9 @@ const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === '1');
 watch(sidebarCollapsed, v => {
   localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0');
 });
+
+watch(model, v => { localStorage.setItem('panel.chat.lastModel', v); });
+watch(thinkingSpeed, v => { localStorage.setItem('panel.chat.lastThinkingSpeed', v); });
 
 // hover toolbar 首次发现提示 — 用户进 chat 时显示一行小灰提示
 // "💡 hover 消息可复制/编辑/分支"；点 ✕ 后 localStorage 持久化不再显
@@ -344,7 +361,9 @@ async function onSend(text: string): Promise<void> {
   if (mention) {
     finalText = `${mention.role.promptPrefix}\n\n${mention.rest}`;
   }
-  await stream.send(finalText, model.value);
+  const sentText = finalText;
+  await stream.send(sentText, model.value);
+  composerRef.value?.setText('');
 }
 
 function onStop(): void {
@@ -439,13 +458,14 @@ async function onExportSelect(key: string | number): Promise<void> {
            h-12 保证不抢内容空间；border-b 划分与下方 scroller 的边界。
            Empty state 时仍显示但只展模型名（标题区显占位）。 -->
       <header
-        class="relative flex-shrink-0 h-10 flex items-center px-4 sm:px-6 border-b border-[var(--border)] bg-[var(--bg-page)]"
+        class="chat-header"
       >
         <!-- 移动端汉堡按钮：< md 时显示，点开 drawer overlay。桌面端 drawer 常驻，不需要。 -->
         <button
           v-if="sidebarCollapsed"
-          class="md:hidden h-8 w-8 rounded-md flex items-center justify-center text-[var(--text-2)] hover:bg-[var(--bg-elevate)] -ml-2 mr-1"
+          class="chat-mobile-menu-button md:hidden"
           :title="t('chat.sidebar.expand')"
+          :aria-label="t('chat.sidebar.expand')"
           @click="sidebarCollapsed = false"
         >
           <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
@@ -454,8 +474,8 @@ async function onExportSelect(key: string | number): Promise<void> {
         </button>
         <!-- 中央：标题 + 副标题。virtual session 时显示 cron job 名，
              不另外标"合并视图"，让用户感觉是一条普通会话。 -->
-        <div class="absolute left-1/2 -translate-x-1/2 max-w-[60%] text-center">
-          <div class="text-sm font-medium text-[var(--text-1)] truncate" :title="(isVirtualSession ? currentCronJob?.name : currentSessionMeta?.title) || ''">
+        <div class="chat-header-title-wrap">
+          <div class="chat-header-title" :title="(isVirtualSession ? currentCronJob?.name : currentSessionMeta?.title) || ''">
             {{
               isVirtualSession
                 ? (currentCronJob?.name || currentCronJob?.id || t('chat.header.untitled'))
@@ -464,25 +484,26 @@ async function onExportSelect(key: string | number): Promise<void> {
           </div>
         </div>
         <!-- 右侧：模型 + token + export -->
-        <div class="ml-auto flex items-center gap-2 text-xs text-[var(--text-3)]">
-          <span class="hidden sm:inline-flex items-center gap-1">
-            <span class="opacity-70">{{ t('chat.header.model') }}:</span>
-            <span class="text-[var(--text-2)] font-medium">{{ model }}</span>
+        <div class="chat-header-actions">
+          <span class="chat-header-pill hidden sm:inline-flex">
+            <span class="chat-header-pill-label">{{ t('chat.header.model') }}</span>
+            <span class="chat-header-pill-value">{{ model }}</span>
           </span>
-          <span v-if="messages.length > 0 && session.tokenUsage.total > 0" class="hidden md:inline-flex items-center gap-1">
-            <span class="opacity-70">·</span>
-            <span class="tabular-nums">{{ fmtTokens(session.tokenUsage.total) }} tokens</span>
+          <span v-if="messages.length > 0 && session.tokenUsage.total > 0" class="chat-header-pill hidden md:inline-flex">
+            <span class="chat-header-pill-value tabular-nums">{{ fmtTokens(session.tokenUsage.total) }}</span>
+            <span class="chat-header-pill-label">tokens</span>
           </span>
           <!-- 流式中实时显示 char/s ≈ 估算 token/s（系数 ~0.35） -->
-          <span v-if="state === 'streaming' && charsPerSec > 0" class="inline-flex items-center gap-1 text-[var(--brand-600)]">
-            <span class="opacity-70">·</span>
-            <span class="tabular-nums">~{{ Math.round(charsPerSec * 0.35) }} tok/s</span>
+          <span v-if="state === 'streaming' && charsPerSec > 0" class="chat-header-pill is-live">
+            <span class="chat-header-pulse" aria-hidden="true" />
+            <span class="chat-header-pill-value tabular-nums">~{{ Math.round(charsPerSec * 0.35) }}</span>
+            <span class="chat-header-pill-label">tok/s</span>
           </span>
           <button
             v-if="messages.length > 0"
             type="button"
-            class="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-2)] transition-colors hover:bg-[var(--bg-elevate)] hover:text-[var(--text-1)]"
-            :class="{ 'bg-[var(--bg-elevate)] text-[var(--text-1)]': taskPanelOpen }"
+            class="chat-header-icon-button"
+            :class="{ 'is-active': taskPanelOpen }"
             :title="t('chat.taskPanel.title')"
             :aria-label="t('chat.taskPanel.title')"
             @click="taskPanelOpen = !taskPanelOpen"
@@ -501,27 +522,32 @@ async function onExportSelect(key: string | number): Promise<void> {
           >
             <button
               type="button"
-              class="ml-2 inline-flex items-center gap-1 px-2 h-7 rounded-md hover:bg-[var(--bg-elevate)] text-[var(--text-2)] transition-colors"
+              class="chat-export-button"
               :title="t('chat.export.label')"
+              :aria-label="t('chat.export.label')"
             >
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M8 11V3M4 7l4 4 4-4M3 13h10" />
               </svg>
               <span class="hidden lg:inline">{{ t('chat.export.label') }}</span>
+              <svg class="hidden lg:block" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 4.5l3 3 3-3" />
+              </svg>
             </button>
           </NDropdown>
         </div>
       </header>
       <!-- streaming 心跳条：1px 细线在 header 下，呼吸 + 滑动让用户知道 AI 还在工作 -->
       <div class="chat-streaming-strip" :class="{ 'is-active': state === 'streaming' || state === 'creating' || state === 'reconnecting' }" />
-      <div ref="scroller" class="relative flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div class="relative flex-1 flex flex-col min-h-0">
+        <div ref="scroller" class="relative flex-1 overflow-y-auto px-4 py-6 sm:px-6" @scroll="onScroll">
         <div
           v-if="resumingSession"
           class="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-page)]/70 backdrop-blur-[1px]"
         >
           <NSpin size="small" />
         </div>
-        <div class="max-w-2xl mx-auto">
+        <div class="chat-conversation-column">
           <EmptyState
             v-if="messages.length === 0"
             :title="t('chat.empty.title')"
@@ -595,6 +621,17 @@ async function onExportSelect(key: string | number): Promise<void> {
             />
           </template>
         </div>
+
+        <!-- Scroll-to-bottom button -->
+        <button
+          v-if="scrolledUp"
+          type="button"
+          class="scroll-bottom-btn"
+          @click="scrollToBottom"
+          aria-label="滚动到底部"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
       </div>
       <ChatNavigator
         v-if="messages.length > 1"
@@ -612,13 +649,14 @@ async function onExportSelect(key: string | number): Promise<void> {
         :stream-state="state"
         :open="taskPanelOpen"
       />
+      </div>
       <!-- 悬浮 composer：无 border-t，靠 padding 与 messages 拉开距离；
            Composer 自身已有 card 样式，外层用 transparent 让阴影自然外溢。 -->
       <div
         class="flex-shrink-0 px-4 pt-2 pb-4 sm:px-6 bg-[var(--bg-page)]"
         style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"
       >
-        <div class="chat-composer-stack max-w-2xl mx-auto">
+        <div class="chat-composer-stack chat-composer-column">
           <!-- 上一条 assistant 含 A/B/C 选项时显示快捷选项区 -->
           <div
             v-if="lastAssistantOptions.length > 0"
@@ -661,6 +699,7 @@ async function onExportSelect(key: string | number): Promise<void> {
             v-model:model="model"
             v-model:thinking-speed="thinkingSpeed"
             :sending="sending"
+            :last-sent-text="lastSentText"
             @send="onSend"
             @stop="onStop"
           />
@@ -671,6 +710,156 @@ async function onExportSelect(key: string | number): Promise<void> {
 </template>
 
 <style scoped>
+.chat-header {
+  position: relative;
+  display: flex;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 54%, transparent), transparent 92%),
+    var(--bg-page);
+  padding: 0 16px;
+}
+
+.chat-mobile-menu-button,
+.chat-header-icon-button,
+.chat-export-button {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.chat-mobile-menu-button {
+  width: 30px;
+  margin-left: -6px;
+  margin-right: 4px;
+}
+
+.chat-header-icon-button {
+  width: 30px;
+}
+
+.chat-export-button {
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chat-mobile-menu-button:hover,
+.chat-mobile-menu-button:focus-visible,
+.chat-header-icon-button:hover,
+.chat-header-icon-button:focus-visible,
+.chat-header-icon-button.is-active,
+.chat-export-button:hover,
+.chat-export-button:focus-visible {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--bg-elevate) 86%, transparent);
+  color: var(--text-1);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.chat-header-icon-button.is-active {
+  border-color: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-elevate));
+  color: var(--brand-600);
+}
+
+.chat-export-button:hover,
+.chat-export-button:focus-visible {
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.chat-header-title-wrap {
+  position: absolute;
+  left: 50%;
+  max-width: min(520px, 46vw);
+  min-width: 0;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.chat-header-title {
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header-actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.chat-header-pill {
+  height: 28px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 56%, transparent);
+  border-radius: 999px;
+  padding: 0 9px;
+  background: color-mix(in srgb, var(--bg-card) 62%, transparent);
+  color: var(--text-3);
+}
+
+.chat-header-pill.is-live {
+  border-color: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+  color: var(--brand-600);
+}
+
+.chat-header-pill-label {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.chat-header-pill-value {
+  min-width: 0;
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--text-2);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-header-pill.is-live .chat-header-pill-value,
+.chat-header-pill.is-live .chat-header-pill-label {
+  color: var(--brand-600);
+}
+
+.chat-header-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--brand-500);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-500) 12%, transparent);
+}
+
 /* streaming 心跳条 — header 下方一条扫光，inactive 时占 1px 透明保位 */
 .chat-streaming-strip {
   height: 1px;
@@ -714,6 +903,16 @@ async function onExportSelect(key: string | number): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.chat-conversation-column,
+.chat-composer-column {
+  width: min(100%, 940px);
+  margin-inline: auto;
+}
+
+.chat-composer-column {
+  width: min(100%, 900px);
 }
 
 .chat-option-rail {
@@ -904,5 +1103,31 @@ async function onExportSelect(key: string | number): Promise<void> {
   .chat-context-team :deep(.role-id) {
     display: none;
   }
+}
+
+.scroll-bottom-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: var(--bg-card);
+  color: var(--text-2);
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+.scroll-bottom-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-bottom-btn { transition: none; }
 }
 </style>

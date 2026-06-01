@@ -26,6 +26,10 @@ function getConfig(): PanelConfig {
  * Until the BFF endpoint is wired, we fall back to opening the Panel with the
  * draft as a query param (URL: hermes-panel:// or http://127.0.0.1:5666/#/chat?draft=...).
  */
+function workspaceCwd(): string | undefined {
+  return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
 async function stagePrompt(prompt: string, cfg: PanelConfig): Promise<boolean> {
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -33,7 +37,7 @@ async function stagePrompt(prompt: string, cfg: PanelConfig): Promise<boolean> {
     const res = await fetch(`${cfg.bffUrl}/api/draft`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ prompt, source: 'vscode', stagedAt: Date.now() }),
+      body: JSON.stringify({ prompt, source: 'vscode', cwd: workspaceCwd(), stagedAt: Date.now() }),
     });
     return res.ok;
   } catch {

@@ -5,6 +5,7 @@ import { useMessage } from 'naive-ui';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import CronStatusBar from '@/components/cron/CronStatusBar.vue';
 import CronCard from '@/components/cron/CronCard.vue';
 import CreateJobModal from '@/components/cron/CreateJobModal.vue';
@@ -98,18 +99,12 @@ async function onRemove(job: CronJob): Promise<void> {
       />
     </div>
 
-    <div
+    <ErrorBanner
       v-if="error"
-      class="app-error-banner px-6 py-2 text-xs border-b"
-    >
-      {{ error }}
-      <button
-        class="ml-2 underline opacity-80 hover:opacity-100"
-        @click="store.load({ initial: true })"
-      >
-        {{ t('common.retry') }}
-      </button>
-    </div>
+      :message="error"
+      :retry-label="t('common.retry')"
+      @retry="store.load({ initial: true })"
+    />
 
     <div class="flex-1 min-h-0 px-6 py-4">
       <div v-if="showInitialSkeleton" class="grid gap-4 grid-cols-1 lg:grid-cols-2">

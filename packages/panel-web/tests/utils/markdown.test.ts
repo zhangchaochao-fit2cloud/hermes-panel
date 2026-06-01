@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handleMarkdownCodeCopyClick,
+  handleMarkdownControlClick,
   hydrateMarkdownCodeBlocks,
+  hydrateMarkdownControls,
   renderMarkdown,
 } from '@/utils/markdown';
+import { extractMarkdownImages, stripMarkdownImages } from '@/utils/markdown-images';
 
 /**
  * Tests for the markdown renderer used in assistant messages.
@@ -14,6 +17,7 @@ import {
 
 const codeCopyLabels = {
   copy: 'Copy',
+  copyImage: 'Copy image',
   copied: 'Copied',
   copyFailed: 'Copy failed',
 };
@@ -114,6 +118,78 @@ describe('renderMarkdown — code copy controls', () => {
 
     expect(button.getAttribute('aria-label')).toBe('Copy');
     expect(button.classList.contains('is-copied')).toBe(false);
+  });
+});
+
+describe('renderMarkdown — image previews and copy controls', () => {
+  it('wraps markdown images with a copy image button', () => {
+    const out = renderMarkdown('![screen](data:image/png;base64,aGVsbG8=)');
+
+    expect(out).toContain('class="md-image-frame"');
+    expect(out).toContain('data-md-image-copy');
+    expect(out).toContain('data-md-image-src="data:image/png;base64,aGVsbG8="');
+    expect(out).toContain('alt="screen"');
+  });
+
+  it('rejects unsafe image schemes', () => {
+    const out = renderMarkdown('![bad](javascript:alert(1))');
+
+    expect(out).not.toContain('<img');
+    expect(out).not.toContain('data-md-image-copy');
+    expect(out).not.toContain('href="javascript:');
+  });
+
+  it('hydrates image copy buttons with localized labels', () => {
+    const root = document.createElement('div');
+    root.innerHTML = renderMarkdown('![screen](data:image/png;base64,aGVsbG8=)');
+
+    hydrateMarkdownControls(root, {
+      copy: '复制',
+      copyImage: '复制图片',
+      copied: '已复制',
+      copyFailed: '复制失败',
+    });
+
+    const button = root.querySelector<HTMLButtonElement>('[data-md-image-copy]');
+    expect(button).not.toBeNull();
+    expect(button?.getAttribute('aria-label')).toBe('复制图片');
+    expect(button?.querySelector('[data-md-image-copy-label]')?.textContent).toBe('复制图片');
+  });
+
+  it('falls back to copying the image URL when binary clipboard is unavailable', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const root = document.createElement('div');
+    root.innerHTML = renderMarkdown('![screen](/assets/screen.png)');
+    const button = root.querySelector<HTMLButtonElement>('[data-md-image-copy]');
+    if (!button) throw new Error('Expected markdown image copy button');
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'target', { value: button });
+    const handled = await handleMarkdownControlClick(event, codeCopyLabels);
+
+    expect(handled).toBe(true);
+    expect(writeText).toHaveBeenCalledWith('/assets/screen.png');
+    expect(button.getAttribute('aria-label')).toBe('Copied');
+  });
+});
+
+describe('markdown image extraction helpers', () => {
+  it('extracts safe markdown images for history previews', () => {
+    const images = extractMarkdownImages('one ![a](/a.png) two ![bad](javascript:alert(1)) ![b](https://x.test/b.webp)');
+
+    expect(images).toEqual([
+      { alt: 'a', src: '/a.png' },
+      { alt: 'b', src: 'https://x.test/b.webp' },
+    ]);
+  });
+
+  it('strips markdown image payloads from text previews', () => {
+    expect(stripMarkdownImages('hello\n\n![shot](data:image/png;base64,aGVsbG8=)\n\nworld')).toBe('hello\n\nworld');
   });
 });
 

@@ -8,12 +8,13 @@ import {
   NDrawer,
   NDrawerContent,
   NInput,
-  NSkeleton,
   useDialog,
   useMessage,
 } from 'naive-ui';
 import { useMemoryStore } from '@/stores/memory';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import FileTree from '@/components/memory/FileTree.vue';
 import FileEditor from '@/components/memory/FileEditor.vue';
 import FileInfoPanel from '@/components/memory/FileInfoPanel.vue';
@@ -223,16 +224,12 @@ watch(files, (next) => {
 
 <template>
   <div class="h-full w-full flex flex-col bg-[var(--bg-page)]">
-    <!-- Optional error banner (non-empty-state errors only) -->
-    <div
+    <ErrorBanner
       v-if="showErrorBanner"
-      class="app-error-banner px-4 py-2 text-xs border-b flex items-center gap-2"
-    >
-      <span>{{ listError ?? listErrorCode }}</span>
-      <button class="underline opacity-80 hover:opacity-100" @click="store.loadList()">
-        {{ t('common.retry') }}
-      </button>
-    </div>
+      :message="listError ?? listErrorCode ?? t('common.unknownError')"
+      :retry-label="t('common.retry')"
+      @retry="store.loadList()"
+    />
 
     <!-- Empty state: memory dir missing -->
     <div v-if="showEmptyState" class="flex-1 min-h-0">
@@ -249,7 +246,7 @@ watch(files, (next) => {
 
     <!-- Initial loading skeleton -->
     <div v-else-if="!initialized || (listLoading && files.length === 0)" class="flex-1 min-h-0 p-6">
-      <NSkeleton text :repeat="6" height="20px" />
+      <ThemedSkeleton :repeat="6" height="20px" />
     </div>
 
     <!-- Main 3-column layout -->

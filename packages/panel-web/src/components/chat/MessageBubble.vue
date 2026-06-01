@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import type { ChatMessage } from '@hermes-panel/shared';
 import {
-  computed, nextTick, onMounted, ref, watch,
+  computed, nextTick, onMounted, onBeforeUnmount, ref, watch,
 } from 'vue';
-import { NButton, useMessage } from 'naive-ui';
+import { useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { useBreakpoint } from '@/composables/use-breakpoint';
 import {
-  handleMarkdownCodeCopyClick,
-  hydrateMarkdownCodeBlocks,
-  renderMarkdown,
-} from '@/utils/markdown';
+  handleMarkdownControlClick,
+  hydrateMarkdownControls,
+} from '@/utils/markdown-controls';
+import { extractMarkdownImages, stripMarkdownImages } from '@/utils/markdown-images';
 import { getToolCallFacts } from '@/utils/tool-call-facts';
 import { relativeTime, absoluteTime, type Locale } from '@/utils/relative-time';
 import ToolCallCard from './ToolCallCard.vue';
@@ -59,7 +58,7 @@ function autoResizeEditor(): void {
   const el = editTextareaRef.value;
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = `${Math.min(el.scrollHeight, 320)}px`;
+  el.style.height = `${Math.min(el.scrollHeight, 520)}px`;
 }
 function onEditorKey(e: KeyboardEvent): void {
   if (e.isComposing) return;
@@ -74,7 +73,7 @@ function onEditorKey(e: KeyboardEvent): void {
 
 const { t, locale } = useI18n();
 const toast = useMessage();
-const { isMobile } = useBreakpoint();
+const router = useRouter();
 const proseRef = ref<HTMLElement | null>(null);
 const rootRef = ref<HTMLElement | null>(null);
 const selectionBubble = ref<{ text: string; left: number; top: number } | null>(null);
@@ -82,7 +81,7 @@ const selectionBubble = ref<{ text: string; left: number; top: number } | null>(
 const isUser = computed(() => props.message.role === 'user');
 const isAssistant = computed(() => props.message.role === 'assistant');
 
-type ActionIcon = 'copy' | 'edit' | 'regenerate' | 'thumbsUp' | 'thumbsDown' | 'branch';
+type ActionIcon = 'copy' | 'edit' | 'regenerate' | 'branch';
 
 const actionIcons: Record<ActionIcon, string[]> = {
   copy: [
@@ -98,14 +97,6 @@ const actionIcons: Record<ActionIcon, string[]> = {
     'M4 18v-5h5',
     'M18 11a6 6 0 0 0-10.2-4.2L4 10',
     'M6 13a6 6 0 0 0 10.2 4.2L20 14',
-  ],
-  thumbsUp: [
-    'M7 21H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3',
-    'M7 10l4-8 1.8.9a2 2 0 0 1 1.1 2.1L13 9h5.4a2 2 0 0 1 2 2.3l-1.1 7A3 3 0 0 1 16.4 21H7V10Z',
-  ],
-  thumbsDown: [
-    'M7 3H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3',
-    'M7 14l4 8 1.8-.9a2 2 0 0 0 1.1-2.1L13 15h5.4a2 2 0 0 0 2-2.3l-1.1-7A3 3 0 0 0 16.4 3H7v11Z',
   ],
   branch: [
     'M6 3v5a4 4 0 0 0 4 4h1',
@@ -123,18 +114,35 @@ const actionIcons: Record<ActionIcon, string[]> = {
  * markdown-it is robust against partial input, so streaming half-formed
  * fences still render gracefully (the unclosed token shows as text).
  */
-const renderedHtml = computed(() =>
-  isAssistant.value ? renderMarkdown(props.message.content) : '',
+const renderedHtml = ref('');
+let renderSeq = 0;
+
+watch([() => props.message.content, isAssistant], async ([content, assistant]) => {
+  const seq = ++renderSeq;
+  if (!assistant) {
+    renderedHtml.value = '';
+    return;
+  }
+  const { renderMarkdown } = await import('@/utils/markdown-renderer');
+  if (seq !== renderSeq) return;
+  renderedHtml.value = renderMarkdown(content);
+}, { immediate: true });
+const userImagePreviews = computed(() =>
+  isUser.value ? extractMarkdownImages(props.message.content, 4) : [],
+);
+const userDisplayContent = computed(() =>
+  isUser.value ? stripMarkdownImages(props.message.content) || props.message.content : props.message.content,
 );
 
 const codeCopyLabels = computed(() => ({
   copy: t('common.copy'),
+  copyImage: t('common.copyImage'),
   copied: t('common.copied'),
   copyFailed: t('common.copyFailed'),
 }));
 
 function refreshMarkdownCodeBlocks(): void {
-  hydrateMarkdownCodeBlocks(proseRef.value, codeCopyLabels.value);
+  hydrateMarkdownControls(proseRef.value, codeCopyLabels.value);
 }
 
 onMounted(() => {
@@ -147,21 +155,25 @@ watch([renderedHtml, locale], async () => {
 });
 
 function onMarkdownClick(event: MouseEvent): void {
-  void handleMarkdownCodeCopyClick(event, codeCopyLabels.value);
+  void handleMarkdownControlClick(event, codeCopyLabels.value);
 }
 
 /**
- * Summary label for the reasoning <details>. Mirrors the Codex
- * "已处理 1m 7s" / "Thought for 1m 7s" pattern. Duration is best-effort
- * from `reasoningDurationMs` (if the stream store has it) — fall back
- * to a label without time if not available.
+ * Summary label for the reasoning <details> and activity strip.
+ * Always shows processing duration when available.
  */
-const reasoningSummaryLabel = computed(() => {
-  const ms = (props.message as unknown as { reasoningDurationMs?: number }).reasoningDurationMs;
-  if (!props.message.completed) return t('chat.activity.processing');
-  if (typeof ms === 'number' && ms > 0) {
-    return t('chat.reasoningWithTime', { time: fmtDuration(ms) });
+const processingDurationMs = computed(() => {
+  const completedAt = (props.message as unknown as { completedAt?: number }).completedAt;
+  if (typeof completedAt === 'number' && completedAt > props.message.createdAt) {
+    return completedAt - props.message.createdAt;
   }
+  return activityDurationMs.value || 0;
+});
+
+const reasoningSummaryLabel = computed(() => {
+  if (!props.message.completed) return t('chat.activity.processing');
+  const ms = processingDurationMs.value;
+  if (ms > 0) return t('chat.reasoningWithTime', { time: fmtDuration(ms) });
   return t('chat.reasoningDone');
 });
 const activitySummaryLabel = computed(() =>
@@ -179,8 +191,27 @@ const activityDurationMs = computed(() => {
 });
 const runningActivityLabel = computed(() => {
   const running = toolCalls.value.filter(tc => tc.status === 'running' || tc.status === 'pending');
-  if (running.some(tc => getToolCallFacts(tc).category === 'search')) return t('chat.activity.searching');
-  if (running.length > 0) return t('chat.activity.running');
+  const primary = running[0];
+  if (primary) {
+    const facts = getToolCallFacts(primary);
+    const file = facts.files[0];
+    const skill = facts.skills[0];
+    if (facts.category === 'edit' || facts.category === 'write') {
+      return file
+        ? t('chat.activity.editingFile', { file })
+        : t('chat.toolCall.action.running.edit');
+    }
+    if (facts.category === 'search') return t('chat.activity.searching');
+    if (facts.category === 'shell') return t('chat.activity.runningCommand');
+    if (facts.category === 'skill') {
+      return skill
+        ? t('chat.activity.callingSkill', { name: skill })
+        : t('chat.toolCall.action.running.skill');
+    }
+    if (facts.category === 'memory') return t('chat.toolCall.action.running.memory');
+    return t('chat.activity.running');
+  }
+  if (props.isStreaming || !props.message.completed) return t('chat.activity.thinking');
   return t('chat.activity.processing');
 });
 const completedActivityLabel = computed(() => {
@@ -219,11 +250,24 @@ const activityChips = computed(() => {
   return chips.slice(0, 6);
 });
 const hasActivityStrip = computed(() => activityChips.value.length > 0);
-const shouldCollapseToolCalls = computed(() =>
-  props.message.completed && toolCalls.value.length > 2,
+const hasSkillToolCalls = computed(() =>
+  toolCalls.value.some(tc => getToolCallFacts(tc).category === 'skill'),
+);
+const shouldGroupToolCalls = computed(() =>
+  toolCalls.value.length > 0
+  && (props.message.completed || hasSkillToolCalls.value || toolCalls.value.length > 1),
+);
+const toolCallGroupOpen = computed(() =>
+  !props.message.completed && !hasSkillToolCalls.value,
 );
 const toolDetailsLabel = computed(() =>
   t('chat.activity.details', { n: toolCalls.value.length }),
+);
+const shouldShowLiveStatus = computed(() =>
+  isAssistant.value
+  && !props.message.completed
+  && !props.message.reasoning
+  && toolCalls.value.length === 0,
 );
 
 function fmtDuration(ms: number): string {
@@ -342,13 +386,24 @@ function addSelectionToComposer(): void {
 
 // 把 user prompt 安排为定时任务：通过 sessionStorage 携带 prompt 到 /cron 页，
 // 那边 mount 时检查并打开 CreateJobModal 预填。
-const router = useRouter();
 function scheduleAsCron(): void {
   try {
     sessionStorage.setItem('panel.pendingCronPrompt', props.message.content);
   } catch { /* ignore */ }
   void router.push('/cron');
 }
+
+// ─── Context menu ───
+const ctxMenu = ref<{ x: number; y: number } | null>(null);
+function onCtx(e: MouseEvent): void { e.preventDefault(); ctxMenu.value = { x: e.clientX, y: e.clientY }; }
+function closeCtx(): void { ctxMenu.value = null; }
+function ctxCopy(): void { copyContent(); closeCtx(); }
+function ctxEdit(): void { startEdit(); closeCtx(); }
+function ctxQuote(): void { emit('add-selection', `> ${props.message.content.replace(/\n/g, '\n> ')}\n\n`); closeCtx(); }
+function ctxBranch(): void { emit('branch', props.message.id); closeCtx(); }
+onMounted(() => { document.addEventListener('click', closeCtx); });
+onBeforeUnmount(() => { document.removeEventListener('click', closeCtx); });
+
 </script>
 
 <template>
@@ -363,44 +418,36 @@ function scheduleAsCron(): void {
   <div
     ref="rootRef"
     class="group relative w-full message-enter cv-auto"
-    :class="isUser ? 'message--user mb-3 flex justify-end' : 'message--assistant mb-6'"
+    :class="isUser ? ['message--user mb-3 flex', isEditing ? 'justify-center' : 'justify-end'] : 'message--assistant mb-6'"
     :data-msg-id="message.id"
     @mouseup="scheduleSelectionCapture"
     @keyup="scheduleSelectionCapture"
+    @contextmenu="onCtx"
   >
     <!-- User branch: pill bubble (chip-like) anchored right -->
-    <div v-if="isUser" class="message-user-wrap relative max-w-[min(76%,680px)]">
-      <!-- hover toolbar - 编辑态时隐藏 -->
-      <div
-        v-if="!isMobile && !isEditing"
-        class="message-toolbar absolute -top-7 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10"
-      >
-        <NButton quaternary circle size="tiny" class="message-action-button" :title="t('chat.message.copy')" :aria-label="t('chat.message.copy')" @click="copyContent">
-          <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path v-for="path in actionIcons.copy" :key="path" :d="path" />
-          </svg>
-        </NButton>
-        <NButton quaternary circle size="tiny" class="message-action-button" :title="t('chat.message.edit')" :aria-label="t('chat.message.edit')" @click="startEdit">
-          <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path v-for="path in actionIcons.edit" :key="path" :d="path" />
-          </svg>
-        </NButton>
-        <NButton quaternary circle size="tiny" class="message-action-button" :title="t('chat.message.branch')" :aria-label="t('chat.message.branch')" @click="onBranch">
-          <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path v-for="path in actionIcons.branch" :key="path" :d="path" />
-          </svg>
-        </NButton>
-        <NButton quaternary circle size="tiny" class="message-action-button" :title="t('chat.message.scheduleCron')" :aria-label="t('chat.message.scheduleCron')" @click="scheduleAsCron">
-          <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M16 3v4M8 3v4M3 11h18" />
-          </svg>
-        </NButton>
-      </div>
-
+    <div
+      v-if="isUser"
+      class="message-user-wrap relative"
+      :class="isEditing ? 'is-editing' : 'max-w-[min(82%,760px)]'"
+    >
       <!-- 阅读模式 -->
-      <div v-if="!isEditing" class="user-message-chip">
-        <div class="whitespace-pre-wrap text-[14px] font-normal leading-[1.55]">{{ message.content }}</div>
+      <div v-if="!isEditing" class="user-message-chip" @dblclick="startEdit">
+        <div
+          v-if="userImagePreviews.length"
+          class="user-message-images"
+          :class="{ 'mb-2': userDisplayContent }"
+        >
+          <img
+            v-for="image in userImagePreviews"
+            :key="image.src"
+            class="user-message-image"
+            :src="image.src"
+            :alt="image.alt"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <div v-if="userDisplayContent" class="whitespace-pre-wrap text-[14px] font-normal leading-[1.55]">{{ userDisplayContent }}</div>
         <div
           v-if="isEdited"
           class="mt-1 text-[11px] opacity-50 italic"
@@ -409,29 +456,57 @@ function scheduleAsCron(): void {
       <!-- hover 显示相对时间，不抢戏 -->
       <div
         v-if="!isEditing"
-        class="user-message-time text-[10px] text-[var(--text-3)] mt-1 text-right opacity-0 group-hover:opacity-100 transition-opacity"
+        class="user-message-meta"
         :title="fmtAbsoluteTime(message.createdAt)"
-      >{{ userRelativeTime }}</div>
+      >
+        <span class="user-message-time">{{ userRelativeTime }}</span>
+        <div class="user-message-actions">
+          <button type="button" class="user-message-action" :title="t('chat.message.copy')" :aria-label="t('chat.message.copy')" @click="copyContent">
+            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path v-for="path in actionIcons.copy" :key="path" :d="path" />
+            </svg>
+            <span>{{ t('chat.message.copy') }}</span>
+          </button>
+          <button type="button" class="user-message-action" :title="t('chat.message.edit')" :aria-label="t('chat.message.edit')" @click="startEdit">
+            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path v-for="path in actionIcons.edit" :key="path" :d="path" />
+            </svg>
+            <span>{{ t('chat.message.edit') }}</span>
+          </button>
+          <button type="button" class="user-message-action" :title="t('chat.message.branch')" :aria-label="t('chat.message.branch')" @click="onBranch">
+            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path v-for="path in actionIcons.branch" :key="path" :d="path" />
+            </svg>
+            <span>{{ t('chat.message.branch') }}</span>
+          </button>
+          <button type="button" class="user-message-action user-message-action--icon" :title="t('chat.message.scheduleCron')" :aria-label="t('chat.message.scheduleCron')" @click="scheduleAsCron">
+            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M16 3v4M8 3v4M3 11h18" />
+            </svg>
+          </button>
+        </div>
+      </div>
 
       <!-- 编辑模式：textarea + 保存/取消 -->
       <div v-else class="message-edit-card">
         <textarea
           ref="editTextareaRef"
           v-model="editDraft"
-          class="message-edit-textarea w-full resize-none bg-transparent text-[14px] leading-[1.55] outline-none border-0"
-          rows="2"
+          class="message-edit-textarea"
+          rows="6"
           @input="autoResizeEditor"
           @keydown="onEditorKey"
         />
-        <div class="mt-2 flex items-center justify-end gap-2">
+        <div class="message-edit-actions">
           <button
             type="button"
-            class="px-3 py-1 text-xs rounded-md text-[var(--text-2)] hover:bg-[var(--bg-card)]"
+            class="message-edit-button"
             @click="cancelEdit"
           >{{ t('common.cancel') }}</button>
           <button
             type="button"
-            class="px-3 py-1 text-xs rounded-md bg-[var(--brand-500)] text-white hover:bg-[var(--brand-600)] disabled:opacity-50"
+            class="message-edit-button is-primary"
             :disabled="!editDraft.trim()"
             @click="saveEdit"
           >{{ t('chat.message.saveAndResend') }}</button>
@@ -442,7 +517,7 @@ function scheduleAsCron(): void {
     <!-- Assistant branch: bare prose, no card. 不展示 hover toolbar —
          agent 回复用户只看不操作，复制由文本选中走系统粘贴板，反馈/分支
          等高级操作走右键或后续菜单。 -->
-    <div v-else class="assistant-flow relative max-w-[min(780px,100%)]">
+    <div v-else class="assistant-flow relative max-w-[min(920px,100%)]">
       <!-- reasoning (collapsed by default — Codex "已处理 ▾" style)
            完成后 summary 默认弱显示（opacity 0.4），hover assistant 块才完全可见，
            避免每条消息都显眼一个"已处理"。 -->
@@ -479,11 +554,19 @@ function scheduleAsCron(): void {
           >{{ chip }}</span>
         </span>
       </div>
+      <div
+        v-else-if="shouldShowLiveStatus"
+        class="mb-3 activity-strip activity-strip--live"
+      >
+        <span class="live-dot" aria-hidden="true" />
+        <span class="activity-strip__label">{{ runningActivityLabel }}</span>
+      </div>
 
       <!-- tool calls (inline between paragraphs, grouped when completed/noisy) -->
       <details
-        v-if="shouldCollapseToolCalls"
+        v-if="shouldGroupToolCalls"
         class="mb-3 tool-call-group"
+        :open="toolCallGroupOpen"
       >
         <summary class="tool-call-group__summary">
           <span>{{ toolDetailsLabel }}</span>
@@ -555,24 +638,53 @@ function scheduleAsCron(): void {
       <!-- footer (time + tokens + cost + duration) — small, low-weight, only when completed -->
       <div
         v-if="message.completed && (message.tokenUsage || true)"
-        class="message-footer mt-2 text-[11px] text-[var(--text-3)] flex items-center gap-2 flex-wrap"
+        class="message-footer mt-2"
       >
-        <span>{{ fmtTime(message.createdAt) }}</span>
-        <template v-if="tokenTotal != null">
-          <span>·</span>
-          <span :title="tokenBreakdownTitle">{{ t('chat.message.tokens', { n: tokenTotal }) }}</span>
-        </template>
-        <template v-if="costLabel">
-          <span>·</span>
-          <span>{{ costLabel }}</span>
-        </template>
-        <template v-if="durationLabel">
-          <span>·</span>
-          <span>{{ durationLabel }}</span>
-        </template>
+        <div class="message-footer-meta">
+          <span>{{ fmtTime(message.createdAt) }}</span>
+          <template v-if="tokenTotal != null">
+            <span>·</span>
+            <span :title="tokenBreakdownTitle">{{ t('chat.message.tokens', { n: tokenTotal }) }}</span>
+          </template>
+          <template v-if="costLabel">
+            <span>·</span>
+            <span>{{ costLabel }}</span>
+          </template>
+          <template v-if="durationLabel">
+            <span>·</span>
+            <span>{{ durationLabel }}</span>
+          </template>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Context menu -->
+  <Teleport to="body">
+    <div
+      v-if="ctxMenu"
+      class="ctx-menu"
+      :style="{ left: `${ctxMenu.x}px`, top: `${ctxMenu.y}px` }"
+      @click.stop
+    >
+      <button v-if="isUser" class="ctx-item" @click="ctxEdit">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>{{ t('chat.message.edit') }}</span>
+      </button>
+      <button class="ctx-item" @click="ctxCopy">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>{{ t('chat.message.copy') }}</span>
+      </button>
+      <button class="ctx-item" @click="ctxQuote">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5h3v6H3V5zm7 0h3v6h-3V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <span>{{ t('chat.message.quote') }}</span>
+      </button>
+      <button class="ctx-item" @click="ctxBranch">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 2v4a3 3 0 0 0 3 3h1m-1 7v-4a3 3 0 0 1 3-3h1m-3-4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>{{ t('chat.message.branch') }}</span>
+      </button>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -620,6 +732,10 @@ function scheduleAsCron(): void {
 .message-user-wrap {
   transition: transform var(--dur-fast) var(--ease);
 }
+.message-user-wrap.is-editing {
+  width: min(100%, 940px);
+  max-width: min(100%, 940px);
+}
 .message--user:hover .message-user-wrap {
   transform: translateY(-1px);
 }
@@ -637,42 +753,204 @@ function scheduleAsCron(): void {
   padding: 10px 14px;
   box-shadow:
     0 8px 24px color-mix(in srgb, var(--text-1) 5%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 95%, transparent);
   transition:
     border-color var(--dur-fast) var(--ease),
     box-shadow var(--dur-fast) var(--ease),
     background-color var(--dur-fast) var(--ease);
 }
+.user-message-chip {
+  border-color: color-mix(in srgb, var(--brand-500) 0%, var(--border));
+}
 .message--user:hover .user-message-chip {
   border-color: color-mix(in srgb, var(--brand-500) 22%, var(--border));
   box-shadow:
     0 10px 28px color-mix(in srgb, var(--text-1) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, transparent);
+}
+.user-message-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 6px;
+  max-width: 360px;
+}
+.user-message-image {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 11px;
+  background: var(--md-image-bg);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--border) 86%, transparent),
+    var(--shadow-1);
 }
 .message-edit-card {
-  border-color: color-mix(in srgb, var(--brand-500) 58%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--bg-card) 92%, var(--brand-500) 4%);
-}
-.message-toolbar {
-  padding: 2px;
-  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  box-sizing: border-box;
+  width: 100%;
+  border-color: color-mix(in srgb, var(--brand-500) 28%, var(--border));
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, var(--bg-elevate) 68%, transparent)),
+    var(--bg-card);
+  padding: 12px;
   box-shadow:
-    0 10px 28px color-mix(in srgb, var(--text-1) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
-  backdrop-filter: blur(12px);
+    0 18px 48px color-mix(in srgb, var(--text-1) 9%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--brand-500) 5%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 95%, transparent);
 }
-.message-action-button {
-  --n-width: 26px !important;
-  --n-height: 26px !important;
-  --n-padding: 0 !important;
-  --n-text-color: var(--text-3) !important;
-  --n-text-color-hover: var(--text-1) !important;
-  --n-text-color-pressed: var(--text-1) !important;
-  --n-color-hover: var(--bg-elevate) !important;
-  --n-color-pressed: color-mix(in srgb, var(--bg-elevate) 76%, var(--text-1)) !important;
+.message-edit-textarea {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  max-height: 520px;
+  resize: none;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-page) 58%, transparent);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.65;
+  outline: none;
+  padding: 12px 13px;
+  scrollbar-color: color-mix(in srgb, var(--text-3) 44%, transparent) transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.message-edit-textarea:focus {
+  border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border));
+  background: color-mix(in srgb, var(--bg-page) 72%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-500) 9%, transparent);
+}
+.message-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+.message-edit-button {
+  display: inline-flex;
+  min-width: 72px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-elevate) 58%, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 12px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.message-edit-button:hover,
+.message-edit-button:focus-visible {
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-elevate) 88%, transparent);
+  color: var(--text-1);
+  outline: none;
+  transform: translateY(-1px);
+}
+.message-edit-button.is-primary {
+  border-color: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  background: var(--brand-500);
+  color: white;
+}
+.message-edit-button.is-primary:hover,
+.message-edit-button.is-primary:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-600) 36%, transparent);
+  background: var(--brand-600);
+  color: white;
+}
+.message-edit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+.user-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--text-3);
+  font-size: 10px;
+  opacity: 0.72;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.message--user:hover .user-message-meta,
+.message--user:focus-within .user-message-meta {
+  opacity: 1;
+}
+.user-message-time {
+  flex: 0 0 auto;
+}
+.user-message-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  padding: 2px;
+  opacity: 0.58;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+.message--user:hover .user-message-actions,
+.message--user:focus-within .user-message-actions {
+  border-color: color-mix(in srgb, var(--brand-500) 20%, var(--border));
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  opacity: 1;
+}
+.user-message-action {
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 7px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.user-message-action:hover {
+  background: color-mix(in srgb, var(--brand-500) 9%, transparent);
+  color: var(--brand-600);
+  transform: translateY(-1px);
+}
+.user-message-action--icon {
+  width: 24px;
+  justify-content: center;
+  padding: 0;
+}
+@media (max-width: 640px) {
+  .user-message-action span {
+    display: none;
+  }
+
+  .user-message-action {
+    width: 24px;
+    justify-content: center;
+    padding: 0;
+  }
 }
 .message-action-icon {
   width: 14px;
@@ -681,11 +959,6 @@ function scheduleAsCron(): void {
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-.message-action-button.is-active-feedback {
-  --n-text-color: var(--brand-600) !important;
-  --n-text-color-hover: var(--brand-600) !important;
-  --n-color: color-mix(in srgb, var(--brand-500) 10%, transparent) !important;
 }
 .reasoning-block summary::-webkit-details-marker {
   display: none;
@@ -748,10 +1021,38 @@ function scheduleAsCron(): void {
     background-color var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease);
 }
+.activity-strip--live {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+}
 .activity-strip__label {
   flex-shrink: 0;
   color: var(--text-2);
   font-weight: 500;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--brand-500);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-500) 14%, transparent);
+  animation: live-dot-pulse 1.2s ease-in-out infinite;
+}
+@keyframes live-dot-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.86);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
 }
 .activity-chips {
   display: inline-flex;
@@ -835,6 +1136,12 @@ function scheduleAsCron(): void {
   color: var(--brand-600);
 }
 .message-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: 11px;
   opacity: 0;
   transform: translateY(-2px);
   transition:
@@ -849,6 +1156,47 @@ function scheduleAsCron(): void {
 .message-footer span {
   white-space: nowrap;
 }
+.message-footer-meta {
+  display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.assistant-message-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  padding: 2px;
+}
+.assistant-message-action {
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 7px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.assistant-message-action:hover {
+  background: color-mix(in srgb, var(--brand-500) 9%, transparent);
+  color: var(--brand-600);
+  transform: translateY(-1px);
+}
 .quality-score {
   color: var(--text-3);
 }
@@ -860,5 +1208,41 @@ function scheduleAsCron(): void {
 .risk-score {
   color: var(--color-warning);
   font-weight: 500;
+}
+
+/* ─── Context menu ─── */
+.ctx-menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 10px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-3);
+  backdrop-filter: blur(12px);
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.ctx-item:hover {
+  background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+  color: var(--text-1);
+}
+.ctx-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 </style>

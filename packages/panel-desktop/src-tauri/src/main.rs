@@ -3,6 +3,7 @@
 mod hermes;
 mod bff;
 mod tray;
+mod license;
 
 fn main() {
     let app = tauri::Builder::default()
@@ -11,6 +12,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             hermes::hermes_status,
             bff::bff_info,
+            license::validate_license,
+            license::verify_activation_response,
+            license::get_device_fingerprint_cmd,
         ])
         .setup(|app| {
             bff::ensure_started(app.handle());
