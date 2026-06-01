@@ -8,6 +8,7 @@ import {
 import {
   generatePlan, getReadyTasks, markTaskDone, markTaskFailed, isPlanComplete, formatPlanSummary,
 } from '../services/orchestrator.js';
+import { createGoal, getContinuationPrompt, recordAudit } from '../services/goal-engine.js';
 import { getHermesHome } from '../services/hermes-home.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -144,10 +145,23 @@ chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
   ctx.body = { userMessage: userMsg, agentReplies };
 });
 
-// Orchestrator: generate a plan and auto-dispatch
+// Orchestrator: generate a goal-limited plan and auto-dispatch
 chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
-  const body = ctx.request.body as { request: string; roles: string[] } | undefined;
+  const body = ctx.request.body as {
+    request: string; roles: string[]; tokenBudgetK?: number; turnBudget?: number;
+    scopeBoundary?: string; doneWhen?: string[]; stopIf?: string[];
+  } | undefined;
   if (!body?.request) { ctx.status = 400; ctx.body = { error: { code: 'BAD_REQUEST' } }; return; }
+
+  // Create a Goal with budget control
+  const goal = createGoal({
+    objective: body.request,
+    tokenBudgetK: body.tokenBudgetK ?? 100,
+    turnBudget: body.turnBudget ?? 10,
+    scopeBoundary: body.scopeBoundary,
+    doneWhen: body.doneWhen,
+    stopIf: body.stopIf,
+  });
 
   const plan = generatePlan(body.request, body.roles ?? []);
 
@@ -172,11 +186,24 @@ chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
     dispatched.push({ taskId: task.id, msgId: mid, role: task.role });
   }
 
-  // Fire-and-forget: call Hermes for each dispatched task
+  // Fire-and-forget with budget control
   Promise.allSettled(
     dispatched.map(async ({ taskId, msgId }) => {
       try {
+        // Check budget before each task
+        getContinuationPrompt(goal);
+        if (goal.status === 'budget_limited') {
+          addChatRoomMessage({
+            id: randomUUID(), room_id: ctx.params.id,
+            role: 'agent', agent_name: 'goal-engine', agent_icon: '💰',
+            content: `⚠️ Token 预算已耗尽。当前目标「${body.request}」暂停。已完成 ${plan.subtasks.filter(t => t.status === 'done' || t.status === 'failed').length}/${plan.subtasks.length} 个任务。`,
+          });
+          return;
+        }
+
         const response = await callHermesAgent(body.request);
+        const tokensEstimate = Math.ceil(response.length / 3);
+        recordAudit(goal, { action: `Task: ${body.request.slice(0, 100)}`, result: response.slice(0, 200), tokensThisTurn: tokensEstimate, timestamp: Math.floor(Date.now() / 1000) });
         const { getPanelDb } = await import('../services/panel-db.js');
         getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(response, msgId);
         markTaskDone(plan, taskId, response);
@@ -201,10 +228,15 @@ chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
 
         // Check if plan is complete
         if (isPlanComplete(plan)) {
+          goal.status = 'completed';
+          goal.updatedAt = Math.floor(Date.now() / 1000);
+          const tokenMsg = goal.tokenBudgetK > 0
+            ? `\n💰 Token 消耗: ${goal.tokensUsed.toLocaleString()} / ${(goal.tokenBudgetK * 1000).toLocaleString()}`
+            : '';
           addChatRoomMessage({
             id: randomUUID(), room_id: ctx.params.id,
             role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯',
-            content: `✅ 所有任务已完成！共执行了 ${plan.subtasks.length} 个子任务。`,
+            content: `✅ 所有任务已完成！共执行 ${plan.subtasks.length} 个子任务，${goal.turnsUsed} 轮。${tokenMsg}`,
           });
         }
       } catch (err) {
