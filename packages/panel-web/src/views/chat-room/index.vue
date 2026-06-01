@@ -29,13 +29,20 @@ function fmtTime(ts: number): string {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function parseMentions(text: string): Array<{ name: string; icon: string }> {
+function parseMentions(text: string): Array<{ name: string; icon: string; prompt: string }> {
   const re = /@(\w[\w-]*)/g;
   const seen = new Set<string>();
-  const result: Array<{ name: string; icon: string }> = [];
+  const result: Array<{ name: string; icon: string; prompt: string }> = [];
   for (const m of text.matchAll(re)) {
     const name = m[1];
-    if (!seen.has(name)) { seen.add(name); result.push(store.getAgentInfo(name, workspaces.activeId)); }
+    if (!seen.has(name)) {
+      seen.add(name);
+      const info = store.getAgentInfo(name, workspaces.activeId);
+      const systemPrompt = info.promptPrefix
+        ? `${info.promptPrefix}\n\n用户问题: ${text}`
+        : text;
+      result.push({ name, icon: info.icon, prompt: systemPrompt });
+    }
   }
   return result;
 }
@@ -135,7 +142,10 @@ const mentionHint = computed(() => {
           <span class="room-header-name">{{ activeRoom.name }}</span>
           <span class="room-header-workspace">{{ activeRoom.workspace_name || '通用' }}</span>
         </div>
-        <span class="room-header-count">{{ store.messages.length }} 条消息</span>
+        <div class="flex items-center gap-3">
+          <span v-if="store.streaming" class="streaming-indicator">Agent 回复中...</span>
+          <span class="room-header-count">{{ store.messages.length }} 条消息</span>
+        </div>
       </header>
 
       <div ref="scroller" class="message-list">
@@ -322,6 +332,16 @@ const mentionHint = computed(() => {
 .composer-row { display: flex; align-items: flex-end; gap: 8px; }
 .composer-row :deep(.n-input) { flex: 1; }
 .send-btn { flex-shrink: 0; }
+.streaming-indicator {
+  font-size: 11px; color: var(--brand-500); font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+.streaming-indicator::before {
+  content: ''; width: 6px; height: 6px; border-radius: 999px;
+  background: var(--brand-500);
+  animation: stream-pulse 1.2s ease-in-out infinite;
+}
+@keyframes stream-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
 /* ─── Modal ─── */
 .create-modal { background: var(--bg-card); border-radius: 16px; padding: 24px; width: 400px; }
