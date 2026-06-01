@@ -48,6 +48,20 @@ const lastSentText = ref('');
 const resumingSession = ref(false);
 const scroller = ref<HTMLElement | null>(null);
 const scrolledUp = ref(false);
+const compressing = ref(false);
+
+async function handleCompress(): Promise<void> {
+  const sid = session.sessionId;
+  if (!sid || compressing.value) return;
+  compressing.value = true;
+  try {
+    const result = await bffFetch<{ savedTokens: number; compressedCount: number }>(`/api/sessions/${sid}/compress`, { method: 'POST' });
+    message.success(`已压缩 ${result.compressedCount} 条消息，节省 ${result.savedTokens.toLocaleString()} tokens`, { duration: 3000 });
+    // Reload session to get compressed messages
+    await loadSession(sid);
+  } catch { message.warning('压缩失败'); }
+  finally { compressing.value = false; }
+}
 
 function onScroll(): void {
   const el = scroller.value;
@@ -499,6 +513,14 @@ async function onExportSelect(key: string | number): Promise<void> {
             <span class="chat-header-pill-value tabular-nums">~{{ Math.round(charsPerSec * 0.35) }}</span>
             <span class="chat-header-pill-label">tok/s</span>
           </span>
+          <button
+            v-if="messages.length > 20 && session.sessionId"
+            type="button"
+            class="chat-header-icon-button"
+            :title="compressing ? '压缩中...' : '压缩历史消息，节省 Token'"
+            :disabled="compressing"
+            @click="handleCompress"
+          >🗜️</button>
           <button
             v-if="messages.length > 0"
             type="button"

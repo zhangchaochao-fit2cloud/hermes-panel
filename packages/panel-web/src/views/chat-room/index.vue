@@ -4,6 +4,7 @@ import { NButton, NInput, NModal, NPopconfirm, NSpin, useMessage } from 'naive-u
 import { useChatRoomsStore } from '@/stores/chat-rooms';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
+import { getNextSteps, type WorkflowStep } from '@/data/workflows';
 import EmptyState from '@/components/shared/EmptyState.vue';
 
 const msg = useMessage();
@@ -96,6 +97,25 @@ const mentionHint = computed(() => {
   if (!part) return roles.value.slice(0, 6);
   return roles.value.filter(r => r.id.includes(part) || r.name.includes(part)).slice(0, 6);
 });
+
+// After latest agent message, suggest next workflow step
+const nextSteps = computed<WorkflowStep[]>(() => {
+  const msgs = store.messages;
+  if (msgs.length === 0) return [];
+  const lastAgent = [...msgs].reverse().find(m => m.role === 'agent' && m.agent_name);
+  if (!lastAgent?.agent_name) return [];
+  const wsId = workspaces.activeId;
+  if (!wsId) return [];
+  return getNextSteps(wsId, lastAgent.agent_name);
+});
+
+function continueWorkflow(step: WorkflowStep): void {
+  store.sendMessage(
+    store.activeRoomId!,
+    step.trigger.replace('{{input}}', input.value || '请开始'),
+    parseMentions(`@${step.role} ${step.description}`),
+  );
+}
 
 const quickStarts = computed(() => {
   if (!roles.value.length) return [];
@@ -225,6 +245,17 @@ function selectRoom(id: string): void {
             </div>
           </div>
         </template>
+      </div>
+
+      <!-- Workflow: next step suggestions -->
+      <div v-if="nextSteps.length && !store.streaming" class="workflow-next">
+        <span class="workflow-next-label">下一步建议</span>
+        <button
+          v-for="step in nextSteps"
+          :key="step.role"
+          class="workflow-next-btn"
+          @click="continueWorkflow(step)"
+        >{{ step.description }} →</button>
       </div>
 
       <footer v-if="store.activeRoomId" class="room-composer">
@@ -411,6 +442,21 @@ function selectRoom(id: string): void {
   animation: stream-pulse 1.2s ease-in-out infinite;
 }
 @keyframes stream-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ─── Workflow next step ─── */
+.workflow-next {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 24px; border-top: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--brand-500) 4%, var(--bg-card));
+}
+.workflow-next-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.workflow-next-btn {
+  font-size: 12px; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--brand-500); background: transparent;
+  color: var(--brand-600); cursor: pointer; font-weight: 500;
+  transition: all 150ms var(--ease);
+}
+.workflow-next-btn:hover { background: var(--brand-500); color: #fff; }
 
 /* ─── Modal ─── */
 .create-modal { background: var(--bg-card); border-radius: 16px; padding: 24px; width: 400px; }
