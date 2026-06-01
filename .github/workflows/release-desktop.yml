@@ -137,24 +137,34 @@ jobs:
 
       # 把产物按 versioned 命名收集到 ./release-artifacts/
       - name: Collect bundles (Mac)
-        if: startsWith(matrix.platform, 'mac-')
+        if: startsWith(matrix.platform, 'macos-')
         shell: bash
         run: |
           mkdir -p release-artifacts
           VER=$(node -p "require('./packages/panel-desktop/package.json').version")
           BASE=packages/panel-desktop/src-tauri/target/${{ matrix.target }}/release/bundle
+          # Try signed DMG first
           DMG=$(find "$BASE/dmg" -name "*.dmg" 2>/dev/null | head -1 || true)
-          APP=$(find "$BASE/macos" -name "*.app" -maxdepth 2 2>/dev/null | head -1 || true)
-          TGZ=$(find "$BASE/macos" -name "*.app.tar.gz" 2>/dev/null | head -1 || true)
-          SIG=$(find "$BASE/macos" -name "*.app.tar.gz.sig" 2>/dev/null | head -1 || true)
-          [ -n "$DMG" ] && cp "$DMG" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.dmg" || true
-          [ -n "$APP" ] && ditto -c -k --sequesterRsrc --keepParent "$APP" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.zip"
-          [ -n "$TGZ" ] && cp "$TGZ" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.tar.gz" || true
-          [ -n "$SIG" ] && cp "$SIG" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.tar.gz.sig" || true
+          if [ -n "$DMG" ]; then
+            cp "$DMG" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.dmg"
+          else
+            # Create unsigned DMG from .app bundle
+            APP=$(find "$BASE/macos" -name "*.app" -maxdepth 2 2>/dev/null | head -1 || true)
+            if [ -n "$APP" ]; then
+              APP_NAME=$(basename "$APP")
+              VOL_NAME="Hermes Panel v$VER"
+              TMP_DMG="/tmp/hermes-panel-tmp.dmg"
+              hdiutil create -volname "$VOL_NAME" -srcfolder "$APP" -ov -format UDZO "$TMP_DMG"
+              hdiutil convert "$TMP_DMG" -format UDZO -o "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.dmg"
+              rm -f "$TMP_DMG"
+              # Also create .app.zip as secondary
+              ditto -c -k --sequesterRsrc --keepParent "$APP" "release-artifacts/Hermes-Panel-v$VER-${{ matrix.platform }}.app.zip"
+            fi
+          fi
           ls -lh release-artifacts/
 
       - name: Collect bundles (Linux)
-        if: matrix.platform == 'linux-x64'
+        if: matrix.platform == 'linux-amd64'
         shell: bash
         run: |
           mkdir -p release-artifacts
@@ -169,7 +179,7 @@ jobs:
           ls -lh release-artifacts/
 
       - name: Collect bundles (Windows)
-        if: matrix.platform == 'win-x64'
+        if: matrix.platform == 'windows-amd64'
         shell: bash
         run: |
           mkdir -p release-artifacts
