@@ -7,7 +7,7 @@
       <table class="compare-table">
         <thead><tr><th>功能模块</th><th>Web（免费）</th><th>Desktop（License）</th></tr></thead>
         <tbody>
-          <tr v-for="r in rows" :key="r.name" :style="r.divider ? 'border-top:2px solid var(--border)' : ''">
+          <tr v-for="r in rows" :key="r.name" :style="r.divider ? 'border-top:2px solid var(--border-default)' : ''">
             <td>{{ r.name }}</td>
             <td><span v-if="r.web" class="check">✓</span><span v-else class="na">—</span></td>
             <td><span v-if="r.desktop" class="check">✓</span><span v-else class="na">—</span></td>
@@ -77,24 +77,24 @@ const rows = [
 <style scoped>
 h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; }
 .lead { font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 2rem; }
-h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default); }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
 ul { padding-left: 1.25rem; margin-bottom: 1rem; }
 li { color: var(--text-secondary); line-height: 1.8; margin-bottom: .375rem; }
-a { color: var(--accent-text); }
+a { color: var(--accent); }
 a:hover { text-decoration: underline; }
 
-.compare-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin: 1rem 0 2rem; }
+.compare-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--border-default); margin: 1rem 0 2rem; }
 .compare-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
-.compare-table th { padding: .625rem 1rem; font-size: .75rem; font-weight: 600; color: var(--text-muted); text-align: left; background: var(--bg-subtle); border-bottom: 1px solid var(--border); }
+.compare-table th { padding: .625rem 1rem; font-size: .75rem; font-weight: 600; color: var(--text-muted); text-align: left; background: var(--bg-hover); border-bottom: 1px solid var(--border-default); }
 .compare-table th:not(:first-child) { text-align: center; }
-.compare-table td { padding: .5rem 1rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-light); }
+.compare-table td { padding: .5rem 1rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle); }
 .compare-table td:not(:first-child) { text-align: center; }
 .compare-table tr:last-child td { border-bottom: 0; }
 .check { color: #22c55e; font-weight: 600; }
 .na { color: var(--text-muted); opacity: .25; }
 
-.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; flex-wrap: wrap; }
+.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: .75rem; flex-wrap: wrap; }
 .next-link {
   padding: .5rem 1rem; border-radius: 8px; background: var(--accent); color: #fff !important;
   font-size: .875rem; font-weight: 500; transition: all .15s; text-decoration: none !important;

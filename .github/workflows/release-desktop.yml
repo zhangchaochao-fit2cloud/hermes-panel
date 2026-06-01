@@ -6,7 +6,7 @@ name: Release
 #   ② workflow_dispatch      → 手动跑，需在 inputs 填 release_tag
 #
 # 产物矩阵（全部上传到 Draft Release）：
-#   - macOS arm64 + macOS x86_64 + macOS universal:  .dmg + .app.tar.gz
+#   - macOS arm64 + macOS x86_64:  .dmg + .app.tar.gz
 #   - Windows x86_64:                                .msi + .exe (NSIS)
 #   - Linux x86_64:                                  .deb + .AppImage + .rpm
 #   - npm 包 (跨平台):                                hermes-panel-VER.tgz
@@ -56,10 +56,6 @@ jobs:
             platform: mac-x64
             target: x86_64-apple-darwin
             args: --target x86_64-apple-darwin
-          - os: macos-14
-            platform: mac-universal
-            target: universal-apple-darwin
-            args: --target universal-apple-darwin
           - os: ubuntu-22.04
             platform: linux-x64
             target: x86_64-unknown-linux-gnu
@@ -85,11 +81,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
-      # universal 需要两个 target 都装
-      - name: Add x86_64 target for mac-universal
-        if: matrix.platform == 'mac-universal'
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -128,6 +119,7 @@ jobs:
         run: pnpm --filter @hermes-panel/web build
 
       - name: Build Tauri bundle
+        continue-on-error: ${{ matrix.os == 'macos-14' }}
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}

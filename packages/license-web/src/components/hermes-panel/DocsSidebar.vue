@@ -151,13 +151,13 @@ const sections = [
 <style scoped>
 .docs-sidebar {
   width: 260px; min-height: 100vh; flex-shrink: 0;
-  background: var(--bg-raised); border-right: 1px solid var(--border);
+  background: var(--bg-elevated); border-right: 1px solid var(--border-default);
   display: flex; flex-direction: column; overflow-y: auto;
   position: sticky; top: 0; max-height: 100vh;
 }
 
 .sidebar-brand {
-  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-default);
 }
 .sidebar-logo { display: flex; align-items: center; gap: .5rem; }
 .sidebar-logo-icon {
@@ -165,7 +165,7 @@ const sections = [
   background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
   display: flex; align-items: center; justify-content: center; color: #fff;
 }
-.sidebar-logo-text { font-size: .875rem; font-weight: 700; color: var(--text); }
+.sidebar-logo-text { font-size: .875rem; font-weight: 700; color: var(--text-primary); }
 
 .sidebar-nav { flex: 1; padding: .5rem .625rem; overflow-y: auto; }
 
@@ -177,8 +177,8 @@ const sections = [
   font-size: .8125rem; font-weight: 600; color: var(--text-secondary);
   transition: all .15s; cursor: pointer; text-align: left;
 }
-.nav-section-title:hover { color: var(--text); background: var(--bg-subtle); }
-.nav-section-title--open { color: var(--text); }
+.nav-section-title:hover { color: var(--text-primary); background: var(--bg-hover); }
+.nav-section-title--open { color: var(--text-primary); }
 .nav-section-title--link { font-weight: 500; }
 .nav-section-icon { display: flex; align-items: center; flex-shrink: 0; opacity: .5; }
 .nav-section-chevron {
@@ -193,9 +193,9 @@ const sections = [
   font-size: .8125rem; color: var(--text-muted); border-radius: 6px;
   transition: all .15s; line-height: 1.5;
 }
-.nav-link:hover { color: var(--text); background: var(--bg-subtle); }
+.nav-link:hover { color: var(--text-primary); background: var(--bg-hover); }
 .nav-link--active {
-  color: var(--accent-text); background: var(--accent-soft); font-weight: 500;
+  color: var(--accent); background: var(--accent-soft); font-weight: 500;
 }
 
 /* Mobile */

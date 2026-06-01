@@ -83,18 +83,18 @@ import DocsLayout from '@/components/hermes-panel/DocsLayout.vue';
 <style scoped>
 h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; }
 .lead { font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.7; }
-h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default); }
 h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 .75rem; }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
 ul { padding-left: 1.25rem; margin-bottom: 1rem; }
 li { color: var(--text-secondary); line-height: 1.8; margin-bottom: .375rem; }
-a { color: var(--accent-text); }
+a { color: var(--accent); }
 a:hover { text-decoration: underline; }
 
 .cards-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; margin: 1rem 0; }
 @media (max-width: 700px) { .cards-3 { grid-template-columns: 1fr; } }
 .info-card {
-  padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border);
+  padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default);
   display: flex; flex-direction: column; gap: .5rem;
 }
 .info-card strong { font-size: .875rem; color: var(--text); }
@@ -102,14 +102,14 @@ a:hover { text-decoration: underline; }
 
 .arch-diagram { margin: 1rem 0 2rem; }
 .arch-layer {
-  padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border);
+  padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default);
   display: flex; flex-direction: column; gap: .25rem;
 }
 .arch-layer strong { font-size: .875rem; color: var(--text); }
 .arch-layer span { font-size: .8125rem; color: var(--text-muted); }
-.arch-arrow { text-align: center; padding: .5rem 0; font-size: 1rem; color: var(--accent-text); }
+.arch-arrow { text-align: center; padding: .5rem 0; font-size: 1rem; color: var(--accent); }
 
-.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); }
 .next-link {
   display: inline-flex; align-items: center; gap: .375rem;
   padding: .5rem 1rem; border-radius: 8px; background: var(--accent); color: #fff !important;

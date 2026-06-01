@@ -49,7 +49,7 @@ const sidebarOpen = ref(false);
 <style scoped>
 .docs-layout {
   min-height: 100vh; display: flex;
-  background: var(--bg); color: var(--text);
+  background: var(--bg-base); color: var(--text-primary);
 }
 
 /* Sidebar overlay */
@@ -71,18 +71,18 @@ const sidebarOpen = ref(false);
 .docs-topbar {
   display: none; align-items: center; gap: .75rem;
   padding: .75rem 1rem; position: sticky; top: 0; z-index: 30;
-  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  background: var(--bg-card); border-bottom: 1px solid var(--border-default);
 }
 @media (max-width: 768px) {
   .docs-topbar { display: flex; }
 }
-.docs-topbar-title { font-size: .875rem; font-weight: 600; color: var(--text); flex: 1; }
+.docs-topbar-title { font-size: .875rem; font-weight: 600; color: var(--text-primary); flex: 1; }
 .docs-topbar-home { font-size: .75rem; color: var(--text-muted); }
-.docs-topbar-home:hover { color: var(--accent-text); }
+.docs-topbar-home:hover { color: var(--accent); }
 .hamburger-btn {
   padding: .25rem; border-radius: 4px; color: var(--text-secondary); transition: all .15s;
 }
-.hamburger-btn:hover { background: var(--bg-subtle); color: var(--text); }
+.hamburger-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* Content area */
 .docs-content {
@@ -94,13 +94,13 @@ const sidebarOpen = ref(false);
 
 /* Footer */
 .docs-footer {
-  margin-top: auto; border-top: 1px solid var(--border);
-  background: var(--bg-raised);
+  margin-top: auto; border-top: 1px solid var(--border-default);
+  background: var(--bg-elevated);
 }
 .docs-footer-inner {
   max-width: 860px; margin: 0 auto; padding: 1.25rem 2rem;
   display: flex; align-items: center; gap: 1.5rem;
   font-size: .75rem; color: var(--text-muted);
 }
-.docs-footer-inner a:hover { color: var(--text); }
+.docs-footer-inner a:hover { color: var(--text-primary); }
 </style>

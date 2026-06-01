@@ -61,15 +61,15 @@ describe('appearance.readMode migration', () => {
 describe('appearance.setMode', () => {
   it('persists to localStorage and sets data-theme on documentElement', () => {
     const store = useAppearanceStore();
-    store.setMode('codex-dark');
-    expect(localStorage.getItem('panel.themeMode')).toBe('codex-dark');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('codex-dark');
+    store.setMode('dark');
+    expect(localStorage.getItem('panel.themeMode')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
   it('removes data-theme attr when mode resolves to "light"', () => {
     const store = useAppearanceStore();
-    store.setMode('codex-dark');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('codex-dark');
+    store.setMode('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     store.setMode('light');
     expect(document.documentElement.getAttribute('data-theme')).toBeNull();
   });
@@ -93,7 +93,7 @@ describe('appearance.isGlass', () => {
 
   it('returns false for non-glass themes', () => {
     const store = useAppearanceStore();
-    for (const m of ['light', 'dark', 'auto', 'codex-light', 'codex-dark', 'github-primer'] as const) {
+    for (const m of ['light', 'dark', 'auto', 'github-primer'] as const) {
       store.setMode(m);
       expect(store.isGlass).toBe(false);
     }
@@ -122,10 +122,10 @@ describe('appearance.effectiveDark', () => {
     expect(store.effectiveDark).toBe(true);
   });
 
-  it('"codex-light" is light regardless of OS preference', () => {
+  it('"light" is light regardless of OS preference', () => {
     setMatchMedia(true);
     const store = useAppearanceStore();
-    store.setMode('codex-light');
+    store.setMode('light');
     expect(store.effectiveDark).toBe(false);
   });
 });

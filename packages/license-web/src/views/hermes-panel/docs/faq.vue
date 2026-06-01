@@ -37,10 +37,10 @@ h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .
 .faq-item { margin-bottom: 2rem; }
 h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: .5rem; color: var(--text); }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
-a { color: var(--accent-text); }
+a { color: var(--accent); }
 a:hover { text-decoration: underline; }
 
-.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; flex-wrap: wrap; }
+.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: .75rem; flex-wrap: wrap; }
 .next-link {
   padding: .5rem 1rem; border-radius: 8px; background: var(--accent); color: #fff !important;
   font-size: .875rem; font-weight: 500; transition: all .15s; text-decoration: none !important;

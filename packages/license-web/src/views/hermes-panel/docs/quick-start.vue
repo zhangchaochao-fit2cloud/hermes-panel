@@ -59,24 +59,24 @@ import DocsLayout from '@/components/hermes-panel/DocsLayout.vue';
 <style scoped>
 h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; }
 .lead { font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 2rem; }
-h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default); }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
 ul { padding-left: 1.25rem; margin-bottom: 1rem; }
 li { color: var(--text-secondary); line-height: 1.8; margin-bottom: .375rem; }
-code { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg-subtle); padding: .125rem .375rem; border-radius: 4px; font-size: .8125rem; color: var(--accent-text); border: 1px solid var(--border); }
-pre { margin: 1rem 0; padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); overflow-x: auto; }
+code { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg-hover); padding: .125rem .375rem; border-radius: 4px; font-size: .8125rem; color: var(--accent); border: 1px solid var(--border-default); }
+pre { margin: 1rem 0; padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default); overflow-x: auto; }
 pre code { border: none; padding: 0; background: none; display: block; line-height: 1.7; }
 .callout { padding: 1rem 1.25rem; border-radius: 10px; background: var(--accent-soft); border: 1px solid rgba(99,102,241,.15); margin: 1rem 0; display: flex; flex-direction: column; gap: .25rem; }
-.callout strong { font-size: .8125rem; color: var(--accent-text); }
+.callout strong { font-size: .8125rem; color: var(--accent); }
 .callout span { font-size: .8125rem; color: var(--text-muted); }
-a { color: var(--accent-text); }
+a { color: var(--accent); }
 a:hover { text-decoration: underline; }
-.env-table-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin: 1rem 0; }
+.env-table-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--border-default); margin: 1rem 0; }
 .env-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
-.env-table th { padding: .625rem 1rem; text-align: left; font-size: .75rem; color: var(--text-muted); background: var(--bg-subtle); border-bottom: 1px solid var(--border); }
-.env-table td { padding: .625rem 1rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-light); }
+.env-table th { padding: .625rem 1rem; text-align: left; font-size: .75rem; color: var(--text-muted); background: var(--bg-hover); border-bottom: 1px solid var(--border-default); }
+.env-table td { padding: .625rem 1rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle); }
 .env-table tr:last-child td { border-bottom: 0; }
-.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; flex-wrap: wrap; }
+.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: .75rem; flex-wrap: wrap; }
 .next-link {
   padding: .5rem 1rem; border-radius: 8px; background: var(--accent); color: #fff !important;
   font-size: .875rem; font-weight: 500; transition: all .15s; text-decoration: none !important;

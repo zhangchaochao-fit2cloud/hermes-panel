@@ -53,24 +53,24 @@ import DocsLayout from '@/components/hermes-panel/DocsLayout.vue';
 <style scoped>
 h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; }
 .lead { font-size: 1.0625rem; color: var(--text-secondary); margin-bottom: 2rem; }
-h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h2 { font-size: 1.375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default); }
 h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 .75rem; }
 p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 1rem; }
 ul { padding-left: 1.25rem; margin-bottom: 1rem; }
 li { color: var(--text-secondary); line-height: 1.8; margin-bottom: .375rem; }
-code { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg-subtle); padding: .125rem .375rem; border-radius: 4px; font-size: .8125rem; color: var(--accent-text); border: 1px solid var(--border); }
-pre { margin: 1rem 0; padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); overflow-x: auto; }
+code { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg-hover); padding: .125rem .375rem; border-radius: 4px; font-size: .8125rem; color: var(--accent); border: 1px solid var(--border-default); }
+pre { margin: 1rem 0; padding: 1rem 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default); overflow-x: auto; }
 pre code { border: none; padding: 0; background: none; display: block; line-height: 1.7; }
-a { color: var(--accent-text); }
+a { color: var(--accent); }
 a:hover { text-decoration: underline; }
 
 .cards-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; margin: 1rem 0; }
 @media (max-width: 700px) { .cards-3 { grid-template-columns: 1fr; } }
-.info-card { padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); display: flex; flex-direction: column; gap: .5rem; }
+.info-card { padding: 1.25rem; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-default); display: flex; flex-direction: column; gap: .5rem; }
 .info-card strong { font-size: .875rem; color: var(--text); }
 .info-card span { font-size: .8125rem; color: var(--text-muted); line-height: 1.6; }
 
-.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; flex-wrap: wrap; }
+.next-steps { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: .75rem; flex-wrap: wrap; }
 .next-link { padding: .5rem 1rem; border-radius: 8px; background: var(--accent); color: #fff !important; font-size: .875rem; font-weight: 500; transition: all .15s; text-decoration: none !important; }
 .next-link:hover { opacity: .9; }
 </style>
