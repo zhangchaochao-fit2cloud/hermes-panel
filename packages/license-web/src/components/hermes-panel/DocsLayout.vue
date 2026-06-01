@@ -224,11 +224,6 @@ function scrollToTop() {
 }
 </script>
 
-<style>
-/* Global (non-scoped) for docs.css to apply to slotted content */
-@import '@/styles/docs.css';
-</style>
-
 <style scoped>
 .docs-layout {
   min-height: 100vh; display: flex;

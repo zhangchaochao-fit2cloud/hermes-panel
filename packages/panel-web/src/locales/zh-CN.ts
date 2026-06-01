@@ -13,6 +13,7 @@ export default {
     tools: '工具',
     files: '文件管理',
     developer: '开发者',
+    chatRoom: '群聊',
     channels: '渠道',
     settings: '设置',
     notAvailable: '不可用',

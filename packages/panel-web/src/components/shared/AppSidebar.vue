@@ -66,6 +66,7 @@ const icons = {
   tools: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z',
   channels: 'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm11 0h3v3h-3v-3Zm5 0h2v2h-2v-2Zm-3 5h2v2h-2v-2Z',
   developer: 'm8 18-6-6 6-6m8 0 6 6-6 6M14 4l-4 16',
+  'chat-room': 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6 2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm3 6v2a4 4 0 0 1-4 4',
   settings: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
 } as const;
 
@@ -81,6 +82,7 @@ const items = computed<MenuItem[]>(() => [
     disabled: !caps.has('memory'), disabledReason: t('nav.disabled.memory'), badge: caps.has('memory') ? undefined : t('nav.notAvailable') },
   { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools' },
   { key: 'channels', iconPath: icons.channels, label: t('nav.channels'), path: '/channels' },
+  { key: 'chat-room', iconPath: icons['chat-room'], label: t('nav.chatRoom'), path: '/chat-room' },
   { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer' },
   { key: 'settings', iconPath: icons.settings, label: t('nav.settings'), path: '/settings' },
 ]);

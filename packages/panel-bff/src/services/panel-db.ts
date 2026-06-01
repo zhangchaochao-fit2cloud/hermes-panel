@@ -166,6 +166,26 @@ CREATE TABLE IF NOT EXISTS agent_evaluations (
 );
 CREATE INDEX IF NOT EXISTS idx_agent_evals_agent ON agent_evaluations(agent_name, workspace_name);
 CREATE INDEX IF NOT EXISTS idx_agent_evals_time ON agent_evaluations(created_at);
+
+-- Group Chat
+CREATE TABLE IF NOT EXISTS chat_rooms (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  workspace_name TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_room_messages (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL REFERENCES chat_rooms(id),
+  role TEXT NOT NULL CHECK(role IN ('user','agent')),
+  agent_name TEXT,
+  agent_icon TEXT,
+  content TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_crm_room ON chat_room_messages(room_id);
 `;
 
 export function getPanelDb(): Database.Database {
@@ -624,4 +644,64 @@ export function getAgentEvaluationStats(agent_name: string, workspace_name: stri
     WHERE agent_name = ? AND workspace_name = ? AND created_at >= ?
   `).get(agent_name, workspace_name, cutoff) as { avg_quality: number; avg_hallucination: number; total_evals: number };
   return row;
+}
+
+// ============================================================
+// Chat Rooms
+// ============================================================
+
+export interface ChatRoomRow {
+  id: string;
+  name: string;
+  workspace_name: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface ChatRoomMessageRow {
+  id: string;
+  room_id: string;
+  role: 'user' | 'agent';
+  agent_name: string | null;
+  agent_icon: string | null;
+  content: string;
+  created_at: number;
+}
+
+export function listChatRooms(): ChatRoomRow[] {
+  const db = getPanelDb();
+  return db.prepare('SELECT * FROM chat_rooms ORDER BY updated_at DESC').all() as ChatRoomRow[];
+}
+
+export function createChatRoom(room: { id: string; name: string; workspace_name?: string }): ChatRoomRow {
+  const db = getPanelDb();
+  const now = Math.floor(Date.now() / 1000);
+  db.prepare(`
+    INSERT INTO chat_rooms (id, name, workspace_name, created_at, updated_at)
+    VALUES (@id, @name, @workspace_name, @created_at, @updated_at)
+  `).run({ ...room, workspace_name: room.workspace_name ?? null, created_at: now, updated_at: now });
+  return db.prepare('SELECT * FROM chat_rooms WHERE id = ?').get(room.id) as ChatRoomRow;
+}
+
+export function deleteChatRoom(id: string): boolean {
+  const db = getPanelDb();
+  db.prepare('DELETE FROM chat_room_messages WHERE room_id = ?').run(id);
+  const r = db.prepare('DELETE FROM chat_rooms WHERE id = ?').run(id);
+  return r.changes > 0;
+}
+
+export function getChatRoomMessages(roomId: string, limit = 100): ChatRoomMessageRow[] {
+  const db = getPanelDb();
+  return db.prepare('SELECT * FROM chat_room_messages WHERE room_id = ? ORDER BY created_at ASC LIMIT ?').all(roomId, limit) as ChatRoomMessageRow[];
+}
+
+export function addChatRoomMessage(msg: { id: string; room_id: string; role: 'user' | 'agent'; agent_name?: string; agent_icon?: string; content: string }): ChatRoomMessageRow {
+  const db = getPanelDb();
+  const now = Math.floor(Date.now() / 1000);
+  db.prepare(`
+    INSERT INTO chat_room_messages (id, room_id, role, agent_name, agent_icon, content, created_at)
+    VALUES (@id, @room_id, @role, @agent_name, @agent_icon, @content, @created_at)
+  `).run({ ...msg, agent_name: msg.agent_name ?? null, agent_icon: msg.agent_icon ?? null, created_at: now });
+  db.prepare('UPDATE chat_rooms SET updated_at = ? WHERE id = ?').run(now, msg.room_id);
+  return db.prepare('SELECT * FROM chat_room_messages WHERE id = ?').get(msg.id) as ChatRoomMessageRow;
 }
