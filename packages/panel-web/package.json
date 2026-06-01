@@ -14,7 +14,7 @@
   "dependencies": {
     "@hermes-panel/shared": "workspace:*",
     "@monaco-editor/loader": "^1.7.0",
-    "echarts": "5.5.1",
+    "echarts": "6.1.0",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.2.0",
     "monaco-editor": "^0.55.1",
