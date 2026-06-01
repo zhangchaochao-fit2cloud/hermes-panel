@@ -4,21 +4,39 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
     groups:
       npm-minor-patch:
         update-types:
           - minor
           - patch
+    ignore:
+      # Node >=23 required — stay on compatible versions
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # Stay on Vue 3.x compatible versions
+      - dependency-name: "vue-tsc"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: cargo
     directory: /packages/panel-desktop/src-tauri
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
     groups:
       cargo-minor-patch:
         update-types:
           - minor
           - patch
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
