@@ -17,6 +17,7 @@ describe('router lazy views', () => {
       '/developer',
       '/files',
       '/goals',
+      '/lessons',
       '/login',
       '/memory',
       '/sandbox',
