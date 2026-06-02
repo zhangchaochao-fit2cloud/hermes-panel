@@ -2,7 +2,9 @@ import Router from '@koa/router';
 import {
   listLessons, getLesson, createLesson, updateLesson, deleteLesson,
   findRelevantLessons, recordUsage, extractLessonsFromConversation,
+  extractLessonsWithLLM,
 } from '../services/lessons.js';
+import { getSessionToken } from '../lib/token.js';
 
 export const lessonsRouter = new Router();
 
@@ -56,4 +58,27 @@ lessonsRouter.post('/lessons/extract', async ctx => {
   const { messages } = ctx.request.body as { messages?: Array<{ role: string; content: string }> } | undefined ?? {};
   if (!messages || !Array.isArray(messages)) { ctx.status = 400; return; }
   ctx.body = extractLessonsFromConversation(messages);
+});
+
+// Smart extraction using LLM
+lessonsRouter.post('/lessons/extract-smart', async ctx => {
+  const { messages, model } = ctx.request.body as { messages?: Array<{ role: string; content: string }>; model?: string } | undefined ?? {};
+  if (!messages || !Array.isArray(messages)) { ctx.status = 400; return; }
+
+  const base = `http://127.0.0.1:${process.env.BFF_PORT || 5667}`;
+  const token = getSessionToken();
+
+  async function callLLM(prompt: string): Promise<string> {
+    const res = await fetch(`${base}/api/hermes/v1/runs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-panel-token': token },
+      body: JSON.stringify({ model: model || 'claude-haiku-4-5', input: prompt, stream: false }),
+    });
+    if (!res.ok) throw new Error(`LLM call failed: ${res.status}`);
+    const data = await res.json() as { output?: string };
+    return data.output ?? '';
+  }
+
+  const results = await extractLessonsWithLLM(messages, callLLM);
+  ctx.body = results;
 });

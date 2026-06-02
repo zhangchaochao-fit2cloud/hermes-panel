@@ -184,6 +184,63 @@ export function extractLessonsFromConversation(messages: Array<{ role: string; c
   return suggestions;
 }
 
+/**
+ * Wraps regex-based extraction with a default confidence value
+ * for compatibility with the LLM extraction return type.
+ */
+function fallbackWithConfidence(
+  messages: Array<{ role: string; content: string }>,
+): Array<{ trigger: string; lesson: string; tags: string[]; confidence: number }> {
+  return extractLessonsFromConversation(messages).map(l => ({ ...l, confidence: 0.5 }));
+}
+
+/**
+ * LLM-assisted lesson extraction.
+ * Falls back to regex-based extraction if LLM is unavailable.
+ */
+export async function extractLessonsWithLLM(
+  messages: Array<{ role: string; content: string }>,
+  callLLM: (prompt: string) => Promise<string>,
+): Promise<Array<{ trigger: string; lesson: string; tags: string[]; confidence: number }>> {
+  const conversationSummary = messages
+    .slice(-20) // last 20 messages to stay within context
+    .map(m => `[${m.role}]: ${m.content.slice(0, 200)}`)
+    .join('\n');
+
+  const prompt = `Analyze this conversation and extract reusable lessons learned.
+For each lesson, identify:
+- trigger: what situation/keyword would indicate this lesson is relevant (short phrase)
+- lesson: what was learned (1-2 sentences, actionable)
+- tags: relevant technology/domain tags (array of strings)
+- confidence: how confident you are this is a real lesson (0.5-0.9)
+
+Return ONLY a JSON array: [{"trigger":"...","lesson":"...","tags":[...],"confidence":0.X}]
+If no clear lessons, return [].
+
+Conversation:
+${conversationSummary}`;
+
+  try {
+    const raw = await callLLM(prompt);
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return fallbackWithConfidence(messages);
+    const parsed = JSON.parse(jsonMatch[0]) as Array<{ trigger: string; lesson: string; tags: string[]; confidence: number }>;
+    if (!Array.isArray(parsed) || parsed.length === 0) return fallbackWithConfidence(messages);
+    // Validate and clamp
+    return parsed
+      .filter(l => l.trigger && l.lesson)
+      .map(l => ({
+        trigger: String(l.trigger).slice(0, 100),
+        lesson: String(l.lesson).slice(0, 300),
+        tags: Array.isArray(l.tags) ? l.tags.map(String).slice(0, 5) : [],
+        confidence: Math.min(0.9, Math.max(0.5, Number(l.confidence) || 0.7)),
+      }))
+      .slice(0, 5);
+  } catch {
+    return fallbackWithConfidence(messages);
+  }
+}
+
 function extractTags(text: string): string[] {
   const tags: string[] = [];
   const patterns: Array<[RegExp, string]> = [
