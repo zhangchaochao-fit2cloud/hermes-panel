@@ -7,6 +7,7 @@ import AppSidebar from '@/components/shared/AppSidebar.vue';
 import AppTopbar from '@/components/shared/AppTopbar.vue';
 import AppRouteTabs from '@/components/shared/AppRouteTabs.vue';
 import EventStreamPanel from '@/components/shared/EventStreamPanel.vue';
+import GlobalSearchModal from '@/components/shared/GlobalSearchModal.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 
 const { t } = useI18n();
@@ -82,6 +83,7 @@ const pageOwnsScroll = computed(() => route.path === '/chat' || route.path === '
       <EventStreamPanel v-if="showStream && visibleHere" />
     </div>
   </div>
+  <GlobalSearchModal />
 </template>
 
 <style scoped>

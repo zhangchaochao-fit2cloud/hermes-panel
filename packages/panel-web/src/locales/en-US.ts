@@ -1468,6 +1468,14 @@ export default {
     setupFailed: 'Setup failed',
     loginFailed: 'Login failed',
   },
+  search: {
+    title: 'Global Search',
+    placeholder: 'Search all session message content...',
+    noResults: 'No matching messages',
+    minChars: 'Enter at least 2 characters',
+    resultCount: 'Found {count} messages',
+    openSession: 'Open session',
+  },
   sandbox: {
     title: 'Sandbox',
     subtitle: 'Docker sandbox terminal',

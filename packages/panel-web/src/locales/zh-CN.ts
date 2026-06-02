@@ -1453,6 +1453,14 @@ export default {
     setupFailed: '设置失败',
     loginFailed: '登录失败',
   },
+  search: {
+    title: '全局搜索',
+    placeholder: '搜索所有会话消息内容...',
+    noResults: '没有匹配的消息',
+    minChars: '请输入至少 2 个字符',
+    resultCount: '找到 {count} 条消息',
+    openSession: '打开会话',
+  },
   sandbox: {
     title: 'Sandbox',
     subtitle: 'Docker sandbox terminal',
