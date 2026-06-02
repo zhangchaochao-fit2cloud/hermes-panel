@@ -16,6 +16,7 @@ import MonthlyPaceCard from '@/components/dashboard/MonthlyPaceCard.vue';
 import UsageCard from '@/components/dashboard/UsageCard.vue';
 import CostIntelligenceCard from '@/components/dashboard/CostIntelligenceCard.vue';
 import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
+import ToolUsageCard from '@/components/dashboard/ToolUsageCard.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
@@ -189,6 +190,9 @@ const todayUsdLabel = computed(() => {
           <ModelPieChart :data="models" :dark="dark" :loading="modelsLoading" />
         </div>
       </section>
+
+      <!-- Tool usage heatmap -->
+      <ToolUsageCard />
 
       <!-- Recent sessions -->
       <RecentSessions :sessions="sessions" :loading="sessionsLoading" />

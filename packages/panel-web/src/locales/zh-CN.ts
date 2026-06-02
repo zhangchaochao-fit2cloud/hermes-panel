@@ -577,7 +577,7 @@ export default {
     },
     view: { table: '表格', grid: '卡片' },
     groupBy: { title: '按来源分组', grouped: '已分组', none: '未分组' },
-    col: { source: '来源', title: '标题', model: '模型', messages: '消息数', tokens: 'Token', updatedAt: '更新时间' },
+    col: { source: '来源', title: '标题', model: '模型', messages: '消息数', tokens: 'Token', quality: '质量', updatedAt: '更新时间' },
     action: { open: '继续对话', rename: '重命名', export: '导出 JSONL', delete: '删除' },
     exportAll: '导出筛选结果',
     exportFailed: '导出失败',
@@ -678,6 +678,10 @@ export default {
         missing: '未设置 — 部分功能（如 chat / cron）会失败',
         hint: '在 设置 → 模型与供应商 中粘贴 API key',
       },
+      deep: '深度检测',
+      deepRunning: '检测中...',
+      deepResult: '延迟 {ms}ms',
+      deepFailed: '检测失败',
     },
     hermesEndpoints: {
       title: 'Hermes 实例',
@@ -882,6 +886,12 @@ export default {
       noCost: '—',
       tokensSuffix: 'tok',
       costSuffix: 'USD',
+    },
+    toolUsage: {
+      title: '🔧 工具使用',
+      subtitle: '近 30 天',
+      noData: '暂无工具调用数据',
+      calls: '{n} 次调用',
     },
     health: {
       title: '系统健康',

@@ -36,3 +36,31 @@ systemRouter.get('/system/health', async ctx => {
   };
   ctx.body = body;
 });
+
+systemRouter.get('/system/health/deep', async ctx => {
+  const bffResult = { ok: true, latencyMs: 0 };
+
+  let hermesOk = false;
+  let hermesLatencyMs = 0;
+  let hermesError: string | undefined;
+
+  const base = process.env.HERMES_API_BASE ?? `http://127.0.0.1:${PORTS.HERMES_API}`;
+  const start = Date.now();
+  try {
+    const res = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5000) });
+    hermesLatencyMs = Date.now() - start;
+    hermesOk = res.ok;
+    if (!res.ok) hermesError = `HTTP ${res.status}`;
+  } catch (err) {
+    hermesLatencyMs = Date.now() - start;
+    hermesError = (err as Error).message;
+  }
+
+  const overall = hermesOk ? 'healthy' : hermesError ? 'down' : 'degraded';
+
+  ctx.body = {
+    bff: bffResult,
+    hermes: { ok: hermesOk, latencyMs: hermesLatencyMs, ...(hermesError ? { error: hermesError } : {}) },
+    overall,
+  };
+});

@@ -5,6 +5,7 @@ import { bffFetch } from '@/api/bff';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor } from '@/data/roles';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useI18n } from 'vue-i18n';
 
 interface Goal {
@@ -90,6 +91,7 @@ function budgetPct(g: Goal): number {
 </script>
 
 <template>
+  <ViewErrorBoundary name="goals">
   <div class="goals-page px-6 py-6 max-w-[1400px] mx-auto">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -236,6 +238,7 @@ function budgetPct(g: Goal): number {
       </div>
     </NModal>
   </div>
+  </ViewErrorBoundary>
 </template>
 
 <style scoped>

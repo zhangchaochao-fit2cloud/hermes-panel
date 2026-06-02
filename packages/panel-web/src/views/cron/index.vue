@@ -5,6 +5,7 @@ import { useMessage } from 'naive-ui';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import CronStatusBar from '@/components/cron/CronStatusBar.vue';
 import CronCard from '@/components/cron/CronCard.vue';
@@ -82,6 +83,7 @@ async function onRemove(job: CronJob): Promise<void> {
 </script>
 
 <template>
+  <ViewErrorBoundary name="cron">
   <div class="flex flex-col min-h-full bg-[var(--bg-page)]">
     <CronStatusBar
       :total="total"
@@ -138,6 +140,7 @@ async function onRemove(job: CronJob): Promise<void> {
 
     <CreateJobModal v-model:show="createModalOpen" :initial-prompt="pendingPrompt" />
   </div>
+  </ViewErrorBoundary>
 </template>
 
 <style scoped>

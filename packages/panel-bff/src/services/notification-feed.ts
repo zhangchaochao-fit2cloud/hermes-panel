@@ -107,3 +107,51 @@ export function clearAll(): void {
 export function unreadCount(): number {
   return buffer.filter(e => !e.read).length;
 }
+
+// Deduplication: only fire once per day per threshold crossing
+let lastAlertDay = '';
+
+export function checkTokenAlert(): NotificationEvent | null {
+  const db = getDb();
+  if (!db) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastAlertDay === today) return null; // already alerted today
+
+  // Get today's token count
+  const startOfToday = (() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() / 1000;
+  })();
+  const todayRow = db.prepare(`
+    SELECT COALESCE(SUM(input_tokens + output_tokens), 0) AS tokens
+    FROM sessions WHERE started_at >= ?
+  `).get(startOfToday) as { tokens: number };
+
+  // Get 7-day average (excluding today)
+  const sevenDaysAgo = startOfToday - 7 * 86400;
+  const weekRow = db.prepare(`
+    SELECT COALESCE(SUM(input_tokens + output_tokens), 0) AS tokens,
+           COUNT(DISTINCT strftime('%Y-%m-%d', started_at, 'unixepoch')) AS days
+    FROM sessions WHERE started_at >= ? AND started_at < ?
+  `).get(sevenDaysAgo, startOfToday) as { tokens: number; days: number };
+
+  if (weekRow.days < 2) return null; // not enough history
+  const dailyAvg = weekRow.tokens / weekRow.days;
+  if (dailyAvg <= 0) return null;
+
+  const ratio = todayRow.tokens / dailyAvg;
+  if (ratio < 2.0) return null; // not a spike
+
+  lastAlertDay = today;
+  const ev: NotificationEvent = {
+    id: `token-alert-${today}`,
+    type: 'hermes.health',
+    title: `⚠️ Token usage spike detected`,
+    body: `Today: ${todayRow.tokens.toLocaleString()} tokens (${ratio.toFixed(1)}× avg ${Math.round(dailyAvg).toLocaleString()}/day)`,
+    ts: Date.now(),
+    read: false,
+    context: { todayTokens: todayRow.tokens, avgDaily: Math.round(dailyAvg), ratio: Number(ratio.toFixed(2)) },
+  };
+  pushEvent(ev);
+  return ev;
+}
