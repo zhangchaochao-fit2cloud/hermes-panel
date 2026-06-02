@@ -21,6 +21,7 @@ import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
 import PromptTemplatesBar from '@/components/chat/PromptTemplatesBar.vue';
 import ToolsStatusBar from '@/components/chat/ToolsStatusBar.vue';
 import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
+import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useSessionsStore } from '@/stores/sessions';
 import { useAssistantOptions } from '@/composables/useAssistantOptions';
 import { useCronAggregateView } from '@/composables/useCronAggregateView';
@@ -460,6 +461,7 @@ async function onExportSelect(key: string | number): Promise<void> {
 </script>
 
 <template>
+  <ViewErrorBoundary name="chat">
   <div class="flex h-full w-full overflow-hidden bg-[var(--bg-page)]">
     <ChatSessionsDrawer
       v-model:collapsed="sidebarCollapsed"
@@ -729,6 +731,7 @@ async function onExportSelect(key: string | number): Promise<void> {
       </div>
     </main>
   </div>
+  </ViewErrorBoundary>
 </template>
 
 <style scoped>

@@ -678,6 +678,10 @@ export default {
         missing: '未设置 — 部分功能（如 chat / cron）会失败',
         hint: '在 设置 → 模型与供应商 中粘贴 API key',
       },
+      deep: '深度检测',
+      deepRunning: '检测中...',
+      deepResult: '延迟 {ms}ms',
+      deepFailed: '检测失败',
     },
     hermesEndpoints: {
       title: 'Hermes 实例',

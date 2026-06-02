@@ -678,6 +678,10 @@ export default {
         missing: 'Not set — some features (chat / cron) will fail',
         hint: 'Paste your API key in Settings → Models & Providers',
       },
+      deep: 'Deep Check',
+      deepRunning: 'Checking...',
+      deepResult: 'Latency {ms}ms',
+      deepFailed: 'Check failed',
     },
     hermesEndpoints: {
       title: 'Hermes Endpoints',
