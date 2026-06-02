@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { NButton, NTag, NModal } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import type { ChannelName } from '@hermes-panel/shared';
 import { useChannelsStore } from '@/stores/channels';
 import ChannelCard from '@/components/channels/ChannelCard.vue';
 import ChannelConfigForm from '@/components/channels/ChannelConfigForm.vue';
 
+const { t } = useI18n();
 const store = useChannelsStore();
 const activeChannel = ref<ChannelName | null>(null);
 const showConfig = ref(false);
@@ -36,30 +38,30 @@ async function handleRestart(): Promise<void> {
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">平台渠道配置</h2>
-        <p class="text-sm text-[var(--text-3)]">配置 Hermes Gateway 的消息平台连接，一个面板管理所有渠道</p>
+        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('channels.title') }}</h2>
+        <p class="text-sm text-[var(--text-3)]">{{ t('channels.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <NTag :type="store.gatewayRunning ? 'success' : 'default'" size="small">
-          Gateway {{ store.gatewayRunning ? '运行中' : '已停止' }}
+          Gateway {{ store.gatewayRunning ? t('channels.gatewayRunning') : t('channels.gatewayStopped') }}
         </NTag>
         <NButton
           size="small"
           :loading="store.saving === 'gateway'"
           @click="restartConfirm = true"
-        >重启 Gateway</NButton>
+        >{{ t('channels.restartGateway') }}</NButton>
       </div>
     </div>
 
     <!-- Loading -->
     <div v-if="store.loading" class="flex items-center justify-center py-20">
-      <span class="text-sm text-[var(--text-3)]">加载中...</span>
+      <span class="text-sm text-[var(--text-3)]">{{ t('channels.loading') }}</span>
     </div>
 
     <!-- Error -->
     <div v-else-if="store.error" class="py-20 text-center">
       <p class="text-sm text-[var(--text-3)] mb-3">{{ store.error }}</p>
-      <NButton size="small" @click="store.fetchAll()">重试</NButton>
+      <NButton size="small" @click="store.fetchAll()">{{ t('channels.retry') }}</NButton>
     </div>
 
     <!-- Channel Grid -->
@@ -76,8 +78,8 @@ async function handleRestart(): Promise<void> {
     <!-- Enabled channels summary -->
     <div v-if="store.enabledCount > 0" class="mt-6 p-4 rounded-xl border border-[color-mix(in_srgb,var(--brand-500)_15%,var(--border))] bg-[color-mix(in_srgb,var(--brand-500)_3%,var(--bg-card))]">
       <p class="text-sm text-[var(--text-2)]">
-        已启用 <span class="font-semibold text-[var(--brand-600)]">{{ store.enabledCount }}</span> 个渠道。
-        配置变更后需重启 Gateway 生效。
+        {{ t('channels.enabledSummary', { count: store.enabledCount }) }}
+        {{ t('channels.restartNote') }}
       </p>
     </div>
 
@@ -92,11 +94,11 @@ async function handleRestart(): Promise<void> {
     <!-- Restart Confirm Modal -->
     <NModal :show="restartConfirm" @update:show="restartConfirm = $event">
       <div class="bg-[var(--bg-card)] rounded-xl p-6 max-w-[360px] mx-auto">
-        <h4 class="text-sm font-semibold text-[var(--text-1)] mb-2">重启 Gateway？</h4>
-        <p class="text-xs text-[var(--text-3)] mb-4">重启期间所有渠道连接将短暂中断 (约 3-5 秒)。</p>
+        <h4 class="text-sm font-semibold text-[var(--text-1)] mb-2">{{ t('channels.restartConfirmTitle') }}</h4>
+        <p class="text-xs text-[var(--text-3)] mb-4">{{ t('channels.restartConfirmDesc') }}</p>
         <div class="flex gap-3 justify-end">
-          <NButton size="small" @click="restartConfirm = false">取消</NButton>
-          <NButton size="small" type="primary" :loading="store.saving === 'gateway'" @click="handleRestart">确认重启</NButton>
+          <NButton size="small" @click="restartConfirm = false">{{ t('channels.cancel') }}</NButton>
+          <NButton size="small" type="primary" :loading="store.saving === 'gateway'" @click="handleRestart">{{ t('channels.confirmRestart') }}</NButton>
         </div>
       </div>
     </NModal>

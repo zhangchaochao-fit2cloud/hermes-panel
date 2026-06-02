@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
+
+const { t } = useI18n();
 
 interface CostSuggestion {
   id: string; type: string; title: string; description: string;
@@ -33,14 +36,14 @@ function pctClass(pct: number): string {
 
 <template>
   <div class="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-5">
-    <h3 class="text-sm font-semibold text-[var(--text-1)] mb-4">💰 成本智能</h3>
+    <h3 class="text-sm font-semibold text-[var(--text-1)] mb-4">{{ t('dashboard.costIntelligence.title') }}</h3>
 
     <ThemedSkeleton v-if="loading" height="160px" />
     <template v-else-if="data">
       <!-- Budget bar -->
       <div class="mb-4">
         <div class="flex justify-between text-xs mb-1">
-          <span class="text-[var(--text-3)]">本月已用</span>
+          <span class="text-[var(--text-3)]">{{ t('dashboard.costIntelligence.monthlyUsed') }}</span>
           <span :class="['font-semibold', pctClass((data.monthlyUsed / data.monthlyBudget) * 100)]">
             ${{ data.monthlyUsed.toFixed(2) }} / ${{ data.monthlyBudget }}
           </span>
@@ -53,8 +56,8 @@ function pctClass(pct: number): string {
           />
         </div>
         <div class="text-[10px] text-[var(--text-3)] mt-1">
-          日均 ${{ data.dailyRate.toFixed(2) }} · 预计月末 ${{ data.breakdown.projectedMonthly.toFixed(2) }}
-          <span v-if="data.willExceedBudget" class="text-[var(--color-error)] font-semibold">⚠️ 将超预算</span>
+          {{ t('dashboard.costIntelligence.dailyAvg', { amount: data.dailyRate.toFixed(2) }) }} · {{ t('dashboard.costIntelligence.projected', { amount: data.breakdown.projectedMonthly.toFixed(2) }) }}
+          <span v-if="data.willExceedBudget" class="text-[var(--color-error)] font-semibold">{{ t('dashboard.costIntelligence.willExceed') }}</span>
         </div>
       </div>
 
@@ -73,10 +76,10 @@ function pctClass(pct: number): string {
       <!-- Suggestions -->
       <div v-if="data.suggestions.length" class="border-t border-[var(--border)] pt-3">
         <p class="text-xs font-semibold text-[var(--brand-600)] mb-2">
-          💡 可节省 ${{ data.suggestions.reduce((s, x) => s + x.estimatedSavingsUsd, 0).toFixed(2) }}/月
+          {{ t('dashboard.costIntelligence.canSave', { amount: data.suggestions.reduce((s, x) => s + x.estimatedSavingsUsd, 0).toFixed(2) }) }}
         </p>
         <div v-for="s in data.suggestions.slice(0, 2)" :key="s.id" class="text-xs text-[var(--text-3)] mb-1">
-          {{ s.title }} — 省 ${{ s.estimatedSavingsUsd }}/月 (↓ {{ s.estimatedSavingsPct }}%)
+          {{ s.title }} — {{ t('dashboard.costIntelligence.savePer', { amount: s.estimatedSavingsUsd, pct: s.estimatedSavingsPct }) }}
         </div>
       </div>
     </template>

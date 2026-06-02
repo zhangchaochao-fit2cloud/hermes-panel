@@ -189,8 +189,8 @@ function showCheatsheet(): void {
     <button
       type="button"
       class="topbar-icon-button relative"
-      :title="locale === 'zh-CN' ? 'Switch to English' : '切换到中文'"
-      :aria-label="locale === 'zh-CN' ? 'Switch to English' : '切换到中文'"
+      :title="t('common.switchLocale')"
+      :aria-label="t('common.switchLocale')"
       @click="toggleLocale"
     >
       <svg
@@ -211,7 +211,7 @@ function showCheatsheet(): void {
         class="absolute bottom-0 right-0 text-[9px] font-bold leading-none px-1 rounded-sm bg-[var(--bg-card)] text-[var(--brand-600)] ring-1 ring-[var(--border)]"
         aria-hidden="true"
       >
-        {{ locale === 'zh-CN' ? '中' : 'EN' }}
+        {{ t('common.localeIndicator') }}
       </span>
     </button>
     <GlobalLoadingBar />

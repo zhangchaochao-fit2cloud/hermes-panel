@@ -4,9 +4,12 @@ import {
   NDrawer, NDrawerContent, NForm, NFormItem, NSwitch,
   NInput, NButton, NSpin,
 } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import type { ChannelName, ChannelConfig } from '@hermes-panel/shared';
 import { CHANNEL_META } from '@hermes-panel/shared';
 import { useChannelsStore } from '@/stores/channels';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   name: ChannelName;
@@ -31,7 +34,7 @@ watch(() => [props.name, props.visible], async ([name, vis]) => {
     const cfg = await store.fetchConfig(name as ChannelName);
     config.value = { ...cfg as unknown as Record<string, unknown> };
   } catch {
-    errorMsg.value = '加载配置失败';
+    errorMsg.value = t('channels.config.loadFailed');
   } finally {
     loading.value = false;
   }
@@ -45,12 +48,12 @@ async function save(): Promise<void> {
     await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
     emit('close');
   } catch {
-    errorMsg.value = '保存失败';
+    errorMsg.value = t('channels.config.saveFailed');
   }
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  enabled: '启用',
+  enabled: t('channels.config.fields.enabled'),
   botToken: 'Bot Token',
   appId: 'App ID',
   appSecret: 'App Secret',
@@ -58,15 +61,15 @@ const FIELD_LABELS: Record<string, string> = {
   botSecret: 'Bot Secret',
   accessToken: 'Access Token',
   homeserver: 'Homeserver URL',
-  atMention: '@提及控制',
-  emojiReaction: '表情反应',
-  freeReply: '自由回复',
-  autoThread: '自动创建线程',
-  mentionControl: '提及控制',
-  handleBotMessages: '处理 Bot 消息',
-  mentionMode: '提及模式',
-  channelWhitelist: '频道白名单 (逗号分隔)',
-  channelBlacklist: '频道黑名单 (逗号分隔)',
+  atMention: t('channels.config.fields.atMention'),
+  emojiReaction: t('channels.config.fields.emojiReaction'),
+  freeReply: t('channels.config.fields.freeReply'),
+  autoThread: t('channels.config.fields.autoThread'),
+  mentionControl: t('channels.config.fields.mentionControl'),
+  handleBotMessages: t('channels.config.fields.handleBotMessages'),
+  mentionMode: t('channels.config.fields.mentionMode'),
+  channelWhitelist: t('channels.config.fields.channelWhitelist'),
+  channelBlacklist: t('channels.config.fields.channelBlacklist'),
 };
 
 const BOOLEAN_FIELDS = new Set(['enabled', 'atMention', 'emojiReaction', 'freeReply', 'autoThread', 'mentionControl', 'handleBotMessages']);
@@ -94,7 +97,7 @@ function setArr(key: string, val: string): void {
 
 <template>
   <NDrawer :show="visible" :width="440" placement="right" @update:show="emit('close')">
-    <NDrawerContent :title="`${meta.icon} ${meta.label} 配置`" closable>
+    <NDrawerContent :title="`${meta.icon} ${meta.label} ${t('channels.config.drawerTitle')}`" closable>
       <NSpin v-if="loading" />
       <template v-else>
         <NForm label-placement="top">
@@ -133,13 +136,13 @@ function setArr(key: string, val: string): void {
         <p v-if="errorMsg" class="text-xs text-red-500 mt-3">{{ errorMsg }}</p>
 
         <p class="text-xs text-[var(--text-3)] mt-3 leading-relaxed">
-          配置保存后需重启 Gateway 才能生效。
-          <span v-if="store.enabledCount > 0" class="text-[var(--brand-500)] cursor-pointer hover:underline" @click="store.restartGateway()">立即重启</span>
+          {{ t('channels.config.restartHint') }}
+          <span v-if="store.enabledCount > 0" class="text-[var(--brand-500)] cursor-pointer hover:underline" @click="store.restartGateway()">{{ t('channels.config.restartNow') }}</span>
         </p>
 
         <div class="flex gap-3 mt-4">
-          <NButton type="primary" :loading="isSaving" :disabled="isSaving" @click="save">保存</NButton>
-          <NButton @click="emit('close')">取消</NButton>
+          <NButton type="primary" :loading="isSaving" :disabled="isSaving" @click="save">{{ t('common.save') }}</NButton>
+          <NButton @click="emit('close')">{{ t('common.cancel') }}</NButton>
         </div>
       </template>
     </NDrawerContent>

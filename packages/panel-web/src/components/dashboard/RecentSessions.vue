@@ -30,12 +30,11 @@ function fmtRelative(ts: number): string {
   const min = Math.round(diff / 60_000);
   const hour = Math.round(min / 60);
   const day = Math.round(hour / 24);
-  const zh = locale.value === 'zh-CN';
-  if (min < 1)   return zh ? '刚刚' : 'just now';
-  if (min < 60)  return zh ? `${min} 分钟前` : `${min}m ago`;
-  if (hour < 24) return zh ? `${hour} 小时前` : `${hour}h ago`;
-  if (day < 30)  return zh ? `${day} 天前` : `${day}d ago`;
-  return new Date(ts).toLocaleDateString(zh ? 'zh-CN' : 'en-US', {
+  if (min < 1)   return t('common.justNow');
+  if (min < 60)  return t('common.minutesAgo', { n: min });
+  if (hour < 24) return t('common.hoursAgo', { n: hour });
+  if (day < 30)  return t('common.daysAgo', { n: day });
+  return new Date(ts).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
   });
