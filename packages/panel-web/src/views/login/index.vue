@@ -18,14 +18,21 @@ const loading = ref(false);
 const submitDisabled = computed(() => !password.value.trim() || loading.value);
 
 onMounted(async () => {
-  try {
-    const ctx = await fetchAuthContext();
-    if (ctx.needsBootstrap) {
-      mode.value = 'setup';
+  // Retry up to 5 times with 1s delay — BFF may still be starting on first launch
+  for (let i = 0; i < 5; i++) {
+    try {
+      const ctx = await fetchAuthContext();
+      if (ctx.needsBootstrap) {
+        mode.value = 'setup';
+        return;
+      }
+      // Already has users → show login
+      return;
+    } catch {
+      if (i < 4) await new Promise(r => setTimeout(r, 1000));
     }
-  } catch {
-    // keep login mode as default
   }
+  // All retries exhausted — keep login mode as fallback
 });
 
 async function finish(): Promise<void> {
