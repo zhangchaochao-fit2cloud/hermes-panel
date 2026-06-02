@@ -17,6 +17,7 @@ import UsageCard from '@/components/dashboard/UsageCard.vue';
 import CostIntelligenceCard from '@/components/dashboard/CostIntelligenceCard.vue';
 import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
 import ToolUsageCard from '@/components/dashboard/ToolUsageCard.vue';
+import OrchestrationCompareCard from '@/components/dashboard/OrchestrationCompareCard.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
@@ -193,6 +194,9 @@ const todayUsdLabel = computed(() => {
 
       <!-- Tool usage heatmap -->
       <ToolUsageCard />
+
+      <!-- Orchestration comparison -->
+      <OrchestrationCompareCard />
 
       <!-- Recent sessions -->
       <RecentSessions :sessions="sessions" :loading="sessionsLoading" />

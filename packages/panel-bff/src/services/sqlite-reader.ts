@@ -289,6 +289,50 @@ export function toolUsage(days: number = 30): ToolUsageRow[] {
   }));
 }
 
+export interface OrchestrationStats {
+  totalOrchestrated: number;
+  totalSingle: number;
+  avgTokensOrchestrated: number;
+  avgTokensSingle: number;
+  avgMessagesOrchestrated: number;
+  avgMessagesSingle: number;
+  orchestrationSavingsPct: number; // negative = orchestration used more
+}
+
+export function orchestrationStats(): OrchestrationStats {
+  const db = getDb();
+  if (!db) return { totalOrchestrated: 0, totalSingle: 0, avgTokensOrchestrated: 0, avgTokensSingle: 0, avgMessagesOrchestrated: 0, avgMessagesSingle: 0, orchestrationSavingsPct: 0 };
+
+  // Heuristic: orchestrated sessions have tool_call_count >= 3 AND message_count >= 6
+  const orch = db.prepare(`
+    SELECT COUNT(*) as total,
+           COALESCE(AVG(input_tokens + output_tokens), 0) as avgTokens,
+           COALESCE(AVG(message_count), 0) as avgMessages
+    FROM sessions WHERE tool_call_count >= 3 AND message_count >= 6
+  `).get() as { total: number; avgTokens: number; avgMessages: number };
+
+  const single = db.prepare(`
+    SELECT COUNT(*) as total,
+           COALESCE(AVG(input_tokens + output_tokens), 0) as avgTokens,
+           COALESCE(AVG(message_count), 0) as avgMessages
+    FROM sessions WHERE tool_call_count < 3 OR message_count < 6
+  `).get() as { total: number; avgTokens: number; avgMessages: number };
+
+  const savingsPct = single.avgTokens > 0
+    ? Math.round((1 - orch.avgTokens / single.avgTokens) * 100)
+    : 0;
+
+  return {
+    totalOrchestrated: orch.total,
+    totalSingle: single.total,
+    avgTokensOrchestrated: Math.round(orch.avgTokens),
+    avgTokensSingle: Math.round(single.avgTokens),
+    avgMessagesOrchestrated: Math.round(orch.avgMessages),
+    avgMessagesSingle: Math.round(single.avgMessages),
+    orchestrationSavingsPct: savingsPct,
+  };
+}
+
 export function monthlyPace(): MonthlyPace {
   const db = getDb();
   const now = new Date();

@@ -6,6 +6,7 @@ import {
   cacheStats,
   monthlyPace,
   toolUsage,
+  orchestrationStats,
 } from '../services/sqlite-reader.js';
 
 export const statsRouter = new Router();
@@ -36,4 +37,8 @@ statsRouter.get('/stats/pace', ctx => {
 statsRouter.get('/stats/tools', ctx => {
   const days = Math.min(Math.max(1, Number(ctx.query.days ?? 30)), 365);
   ctx.body = toolUsage(days);
+});
+
+statsRouter.get('/stats/orchestration', ctx => {
+  ctx.body = orchestrationStats();
 });
