@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { ChannelStatus, ChannelName } from '@hermes-panel/shared';
 import { CHANNEL_META } from '@hermes-panel/shared';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   channel: ChannelStatus;
@@ -42,7 +45,7 @@ const meta = CHANNEL_META[props.channel.name];
           class="inline-block w-2 h-2 rounded-full"
           :class="channel.enabled ? 'bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.25)]' : 'bg-[var(--text-3)]'"
         />
-        <span class="text-xs text-[var(--text-3)]">{{ channel.enabled ? '已启用' : '未启用' }}</span>
+        <span class="text-xs text-[var(--text-3)]">{{ channel.enabled ? t('channels.card.enabled') : t('channels.card.disabled') }}</span>
       </div>
     </div>
     <p class="text-xs text-[var(--text-3)] leading-relaxed line-clamp-2">{{ meta.description }}</p>

@@ -2,12 +2,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import AppSidebar from '@/components/shared/AppSidebar.vue';
 import AppTopbar from '@/components/shared/AppTopbar.vue';
 import AppRouteTabs from '@/components/shared/AppRouteTabs.vue';
 import EventStreamPanel from '@/components/shared/EventStreamPanel.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 
+const { t } = useI18n();
 const route = useRoute();
 const appearance = useAppearanceStore();
 const { routeTabsEnabled } = storeToRefs(appearance);
@@ -60,7 +62,7 @@ const pageOwnsScroll = computed(() => route.path === '/chat' || route.path === '
   <!-- Offline banner -->
   <div v-if="isOffline" class="offline-banner" role="alert">
     <span class="offline-dot" />
-    <span>网络已断开，部分功能不可用</span>
+    <span>{{ t('common.offlineBanner') }}</span>
   </div>
   <div class="h-[100dvh] w-full flex overflow-hidden bg-[var(--bg-page)]">
     <AppSidebar v-model:collapsed="sidebarCollapsed" />

@@ -5,6 +5,7 @@ import { bffFetch } from '@/api/bff';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor } from '@/data/roles';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import { useI18n } from 'vue-i18n';
 
 interface Goal {
   id: string; objective: string; scopeBoundary: string;
@@ -17,6 +18,7 @@ interface Goal {
 }
 
 const msg = useMessage();
+const { t } = useI18n();
 const workspaces = useWorkspacesStore();
 const goals = ref<Goal[]>([]);
 const loading = ref(false);
@@ -25,7 +27,7 @@ const selectedGoal = ref<Goal | null>(null);
 
 const form = ref({
   objective: '',
-  scopeBoundary: '不要修改与目标无关的文件',
+  scopeBoundary: t('goals.scopeDefault'),
   doneWhen: '',
   stopIf: '',
   tokenBudgetK: '100',
@@ -51,9 +53,9 @@ async function handleCreate(): Promise<void> {
     body: JSON.stringify({ ...form.value, doneWhen, stopIf, tokenBudgetK: Number(form.value.tokenBudgetK)||100, turnBudget: Number(form.value.turnBudget)||8 }),
   });
   showCreate.value = false;
-  form.value = { objective: '', scopeBoundary: '不要修改与目标无关的文件', doneWhen: '', stopIf: '', tokenBudgetK: '100', turnBudget: '8' };
+  form.value = { objective: '', scopeBoundary: t('goals.scopeDefault'), doneWhen: '', stopIf: '', tokenBudgetK: '100', turnBudget: '8' };
   await fetchGoals();
-  msg.success('目标已创建');
+  msg.success(t('goals.created'));
 }
 
 async function handlePause(id: string): Promise<void> {
@@ -78,7 +80,7 @@ function statusColor(s: string): 'info' | 'warning' | 'error' | 'success' | 'def
   return map[s] || 'default';
 }
 function statusLabel(s: string): string {
-  const map: Record<string, string> = { active: '执行中', paused: '已暂停', budget_limited: '预算耗尽', completed: '已完成', failed: '失败' };
+  const map: Record<string, string> = { active: t('goals.statusActive'), paused: t('goals.statusPaused'), budget_limited: t('goals.statusBudgetLimited'), completed: t('goals.statusCompleted'), failed: t('goals.statusFailed') };
   return map[s] || s;
 }
 
@@ -91,16 +93,16 @@ function budgetPct(g: Goal): number {
   <div class="goals-page px-6 py-6 max-w-[1400px] mx-auto">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">🎯 目标管理</h2>
-        <p class="text-sm text-[var(--text-3)]">创建自主执行目标，设置预算和验收条件，让 AI 自己完成</p>
+        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('goals.title') }}</h2>
+        <p class="text-sm text-[var(--text-3)]">{{ t('goals.subtitle') }}</p>
       </div>
-      <NButton type="primary" @click="showCreate = true">+ 新建目标</NButton>
+      <NButton type="primary" @click="showCreate = true">{{ t('goals.create') }}</NButton>
     </div>
 
     <!-- Goal Grid -->
     <NSpin v-if="loading" size="small" class="flex justify-center py-12" />
     <div v-else-if="goals.length === 0" class="py-16">
-      <EmptyState title="还没有目标" description="创建一个目标，AI 将自动规划并执行，直到达成验收条件或预算耗尽" icon="🎯" />
+      <EmptyState :title="t('goals.emptyTitle')" :description="t('goals.emptyDescription')" icon="🎯" />
     </div>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
@@ -118,7 +120,7 @@ function budgetPct(g: Goal): number {
         <!-- Budget bar -->
         <div class="mb-3">
           <div class="flex justify-between text-[10px] text-[var(--text-3)] mb-1">
-            <span>Token 预算</span>
+            <span>{{ t('goals.tokenBudget') }}</span>
             <span>{{ (g.tokensUsed / 1000).toFixed(1) }}K / {{ g.tokenBudgetK }}K</span>
           </div>
           <NProgress
@@ -131,17 +133,17 @@ function budgetPct(g: Goal): number {
         </div>
 
         <div class="flex items-center gap-4 text-xs text-[var(--text-3)]">
-          <span>轮次 {{ g.turnsUsed }}/{{ g.turnBudget || '∞' }}</span>
-          <span>{{ g.auditLog.length }} 条审计</span>
+          <span>{{ t('goals.turns', { used: g.turnsUsed, budget: g.turnBudget || '∞' }) }}</span>
+          <span>{{ t('goals.auditCount', { n: g.auditLog.length }) }}</span>
         </div>
 
         <!-- Actions -->
         <div class="flex gap-2 mt-3 pt-3 border-t border-[var(--border)]">
-          <NButton v-if="g.status === 'active'" size="tiny" @click.stop="handlePause(g.id)">⏸ 暂停</NButton>
-          <NButton v-if="g.status === 'paused'" size="tiny" type="primary" @click.stop="handleResume(g.id)">▶ 继续</NButton>
+          <NButton v-if="g.status === 'active'" size="tiny" @click.stop="handlePause(g.id)">{{ t('goals.pause') }}</NButton>
+          <NButton v-if="g.status === 'paused'" size="tiny" type="primary" @click.stop="handleResume(g.id)">{{ t('goals.resume') }}</NButton>
           <NPopconfirm @positive-click="handleDelete(g.id)">
-            <template #trigger><NButton size="tiny" type="error" @click.stop>删除</NButton></template>
-            确定删除此目标？
+            <template #trigger><NButton size="tiny" type="error" @click.stop>{{ t('goals.delete') }}</NButton></template>
+            {{ t('goals.deleteConfirm') }}
           </NPopconfirm>
         </div>
       </div>
@@ -154,15 +156,15 @@ function budgetPct(g: Goal): number {
         <NTag :type="statusColor(selectedGoal.status)" size="small" class="mb-3">{{ statusLabel(selectedGoal.status) }}</NTag>
 
         <div class="space-y-2 text-sm">
-          <p><span class="text-[var(--text-3)]">范围限制:</span> {{ selectedGoal.scopeBoundary }}</p>
+          <p><span class="text-[var(--text-3)]">{{ t('goals.scopeLabel') }}</span> {{ selectedGoal.scopeBoundary }}</p>
           <div v-if="selectedGoal.doneWhen.length">
-            <p class="text-[var(--text-3)] mb-1">验收条件:</p>
+            <p class="text-[var(--text-3)] mb-1">{{ t('goals.doneWhenLabel') }}</p>
             <ul class="list-disc list-inside text-[var(--text-2)]">
               <li v-for="(d, i) in selectedGoal.doneWhen" :key="i">{{ d }}</li>
             </ul>
           </div>
           <div v-if="selectedGoal.stopIf.length">
-            <p class="text-[var(--text-3)] mb-1">停止条件:</p>
+            <p class="text-[var(--text-3)] mb-1">{{ t('goals.stopIfLabel') }}</p>
             <ul class="list-disc list-inside text-[var(--text-2)]">
               <li v-for="(s, i) in selectedGoal.stopIf" :key="i">{{ s }}</li>
             </ul>
@@ -171,11 +173,11 @@ function budgetPct(g: Goal): number {
 
         <!-- Audit trail -->
         <div v-if="selectedGoal.auditLog.length" class="mt-4 pt-4 border-t border-[var(--border)]">
-          <p class="text-sm font-semibold text-[var(--text-1)] mb-2">审计记录</p>
+          <p class="text-sm font-semibold text-[var(--text-1)] mb-2">{{ t('goals.auditTitle') }}</p>
           <div class="max-h-[300px] overflow-y-auto space-y-2">
             <div v-for="a in selectedGoal.auditLog" :key="a.turn" class="text-xs p-2 rounded-lg bg-[var(--bg-elevate)]">
               <div class="flex justify-between text-[var(--text-3)] mb-1">
-                <span class="font-semibold">第 {{ a.turn }} 轮</span>
+                <span class="font-semibold">{{ t('goals.auditTurn', { turn: a.turn }) }}</span>
                 <span>{{ a.tokensThisTurn.toLocaleString() }} tokens</span>
               </div>
               <p class="text-[var(--text-2)] font-medium">{{ a.action.slice(0, 200) }}</p>
@@ -185,9 +187,9 @@ function budgetPct(g: Goal): number {
         </div>
 
         <div class="flex gap-2 mt-4 justify-end">
-          <NButton v-if="selectedGoal.status === 'active'" size="small" @click="handlePause(selectedGoal.id)">暂停</NButton>
-          <NButton v-if="selectedGoal.status === 'paused'" size="small" type="primary" @click="handleResume(selectedGoal.id)">继续</NButton>
-          <NButton size="small" @click="selectedGoal = null">关闭</NButton>
+          <NButton v-if="selectedGoal.status === 'active'" size="small" @click="handlePause(selectedGoal.id)">{{ t('goals.pauseBtn') }}</NButton>
+          <NButton v-if="selectedGoal.status === 'paused'" size="small" type="primary" @click="handleResume(selectedGoal.id)">{{ t('goals.resumeBtn') }}</NButton>
+          <NButton size="small" @click="selectedGoal = null">{{ t('goals.close') }}</NButton>
         </div>
       </div>
     </NModal>
@@ -195,41 +197,41 @@ function budgetPct(g: Goal): number {
     <!-- Create modal -->
     <NModal :show="showCreate" @update:show="showCreate = $event">
       <div class="goal-create-modal">
-        <h3 class="text-base font-bold mb-4">新建目标</h3>
+        <h3 class="text-base font-bold mb-4">{{ t('goals.createTitle') }}</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">目标描述 *</label>
-            <NInput v-model:value="form.objective" placeholder="一句话描述要达成的目标" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" />
+            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.objectiveLabel') }}</label>
+            <NInput v-model:value="form.objective" :placeholder="t('goals.objectivePlaceholder')" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" />
           </div>
           <div>
-            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">范围限制</label>
-            <NInput v-model:value="form.scopeBoundary" placeholder="不要修改与目标无关的文件" />
+            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.scopeLabelForm') }}</label>
+            <NInput v-model:value="form.scopeBoundary" :placeholder="t('goals.scopeDefault')" />
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">Token 预算 (K)</label>
+              <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.tokenBudgetLabel') }}</label>
               <NInput v-model:value="form.tokenBudgetK" />
             </div>
             <div>
-              <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">回合上限</label>
+              <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.turnBudgetLabel') }}</label>
               <NInput v-model:value="form.turnBudget" />
             </div>
           </div>
           <div>
-            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">验收条件 (每行一个)</label>
-            <NInput v-model:value="form.doneWhen" type="textarea" placeholder="所有测试通过&#10;PR 已合并&#10;无 lint 错误" :autosize="{ minRows: 2, maxRows: 4 }" />
+            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.doneWhenFormLabel') }}</label>
+            <NInput v-model:value="form.doneWhen" type="textarea" :placeholder="t('goals.doneWhenPlaceholder')" :autosize="{ minRows: 2, maxRows: 4 }" />
           </div>
           <div>
-            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">停止条件 (每行一个)</label>
-            <NInput v-model:value="form.stopIf" type="textarea" placeholder="超过 30 分钟&#10;发现安全问题" :autosize="{ minRows: 2, maxRows: 4 }" />
+            <label class="text-xs font-semibold text-[var(--text-2)] mb-1 block">{{ t('goals.stopIfFormLabel') }}</label>
+            <NInput v-model:value="form.stopIf" type="textarea" :placeholder="t('goals.stopIfPlaceholder')" :autosize="{ minRows: 2, maxRows: 4 }" />
           </div>
           <div v-if="roles.length" class="text-xs text-[var(--text-3)]">
-            可用角色: <span class="text-[var(--brand-600)]">{{ roles.map(r => r.icon + ' ' + r.name).join(', ') }}</span>
+            {{ t('goals.availableRoles') }} <span class="text-[var(--brand-600)]">{{ roles.map(r => r.icon + ' ' + r.name).join(', ') }}</span>
           </div>
         </div>
         <div class="flex gap-2 mt-4 justify-end">
-          <NButton @click="showCreate = false">取消</NButton>
-          <NButton type="primary" :disabled="!form.objective" @click="handleCreate">创建目标</NButton>
+          <NButton @click="showCreate = false">{{ t('goals.cancel') }}</NButton>
+          <NButton type="primary" :disabled="!form.objective" @click="handleCreate">{{ t('goals.submit') }}</NButton>
         </div>
       </div>
     </NModal>

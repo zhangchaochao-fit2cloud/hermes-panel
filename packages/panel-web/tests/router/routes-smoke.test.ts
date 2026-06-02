@@ -10,10 +10,13 @@ describe('router lazy views', () => {
     expect(routes.map((route) => route.path).sort()).toEqual([
       '/channels',
       '/chat',
+      '/chat-room',
+      '/cost',
       '/cron',
       '/dashboard',
       '/developer',
       '/files',
+      '/goals',
       '/login',
       '/memory',
       '/sessions',

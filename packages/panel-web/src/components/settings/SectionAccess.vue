@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { NButton, NInputNumber, NSelect, NTag, useMessage } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import type { LicenseInfo } from '@hermes-panel/shared';
 import { useAuthStore } from '@/stores/auth';
 import {
@@ -9,6 +10,7 @@ import {
   revokeLicense,
 } from '@/api/auth';
 
+const { t } = useI18n();
 const auth = useAuthStore();
 const message = useMessage();
 
@@ -45,53 +47,53 @@ async function onCreateLicense(): Promise<void> {
     : undefined;
   try {
     await createLicense({ tier: licTier.value, expiresAt });
-    message.success('License 已创建');
+    message.success(t('settings.access.createSuccess'));
     await refresh();
   } catch (e) {
-    message.error(e instanceof Error ? e.message : '创建失败');
+    message.error(e instanceof Error ? e.message : t('settings.access.createFailed'));
   }
 }
 
 async function onRevokeLicense(key: string): Promise<void> {
   try {
     await revokeLicense(key);
-    message.success('已吊销');
+    message.success(t('settings.access.revoked'));
     await refresh();
   } catch (e) {
-    message.error(e instanceof Error ? e.message : '操作失败');
+    message.error(e instanceof Error ? e.message : t('settings.access.operationFailed'));
   }
 }
 
 function formatExpiry(ts: number | null): string {
-  if (!ts) return '永不过期';
-  return new Date(ts).toLocaleDateString('zh-CN');
+  if (!ts) return t('settings.access.neverExpires');
+  return new Date(ts).toLocaleDateString(t('settings.access.dateLocale'));
 }
 </script>
 
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between">
-      <h3 class="text-sm font-semibold">License 管理</h3>
+      <h3 class="text-sm font-semibold">{{ t('settings.access.title') }}</h3>
       <NButton size="tiny" quaternary :loading="loading" @click="refresh">
-        刷新
+        {{ t('common.refresh') }}
       </NButton>
     </div>
 
     <template v-if="!auth.isAdmin">
-      <p class="text-sm text-[var(--text-3)]">仅管理员可管理 License。</p>
+      <p class="text-sm text-[var(--text-3)]">{{ t('settings.access.adminOnly') }}</p>
     </template>
 
     <template v-else>
       <div class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
         <div class="flex items-center gap-1 mb-3">
-          <span class="text-sm font-medium">License 密钥</span>
+          <span class="text-sm font-medium">{{ t('settings.access.licenseKeys') }}</span>
           <NTag size="small" :bordered="false">{{ licenses.length }}</NTag>
         </div>
 
         <!-- Create form -->
         <div class="flex flex-wrap items-end gap-2 mb-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[var(--text-3)]">Tier 等级</span>
+            <span class="text-xs text-[var(--text-3)]">{{ t('settings.access.tierLabel') }}</span>
             <NSelect
               v-model:value="licTier"
               :options="tierOptions as any"
@@ -100,11 +102,11 @@ function formatExpiry(ts: number | null): string {
             />
           </div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs text-[var(--text-3)]">过期天数（可选）</span>
-            <NInputNumber v-model:value="licExpiresDays" :min="1" :max="3650" placeholder="永久" size="small" style="width:100px" />
+            <span class="text-xs text-[var(--text-3)]">{{ t('settings.access.expireDays') }}</span>
+            <NInputNumber v-model:value="licExpiresDays" :min="1" :max="3650" :placeholder="t('settings.access.permanent')" size="small" style="width:100px" />
           </div>
           <NButton size="small" type="primary" @click="onCreateLicense">
-            生成 License
+            {{ t('settings.access.generate') }}
           </NButton>
         </div>
 
@@ -126,7 +128,7 @@ function formatExpiry(ts: number | null): string {
                 class="text-[var(--text-3)] truncate hidden sm:inline"
                 :title="lic.boundUserId"
               >
-                已激活
+                {{ t('settings.access.licActivated') }}
               </span>
               <span class="text-[var(--text-3)] truncate hidden sm:inline">
                 {{ formatExpiry(lic.expiresAt) }}
@@ -139,7 +141,7 @@ function formatExpiry(ts: number | null): string {
               type="error"
               @click="onRevokeLicense(lic.key)"
             >
-              吊销
+              {{ t('settings.access.revoke') }}
             </NButton>
           </div>
         </div>

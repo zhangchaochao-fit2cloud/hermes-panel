@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { setLocale } from '@/locales';
 
 const { t, locale } = useI18n();
 
 interface LangOption { value: 'zh-CN' | 'en-US'; label: string }
-const options: LangOption[] = [
-  { value: 'zh-CN', label: '中文（简体）' },
+const options = computed<LangOption[]>(() => [
+  { value: 'zh-CN', label: t('settings.language.zhCN') },
   { value: 'en-US', label: 'English' },
-];
+]);
 
 function pick(v: 'zh-CN' | 'en-US'): void {
   setLocale(v);

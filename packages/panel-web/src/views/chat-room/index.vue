@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, nextTick, watch, computed } from 'vue';
 import { NButton, NInput, NModal, NPopconfirm, NSpin, useMessage } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 import { useChatRoomsStore } from '@/stores/chat-rooms';
 import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
 import { HEADERS } from '@hermes-panel/shared';
@@ -8,6 +9,8 @@ import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
 import { getNextSteps, type WorkflowStep } from '@/data/workflows';
 import EmptyState from '@/components/shared/EmptyState.vue';
+
+const { t } = useI18n();
 
 const msg = useMessage();
 const store = useChatRoomsStore();
@@ -90,10 +93,10 @@ async function handleOrchestrate(): Promise<void> {
     });
 
     const reader = res.body?.getReader();
-    if (!reader) { msg.error('无法连接到编排服务'); return; }
+    if (!reader) { msg.error(t('chatRoom.cannotConnectOrchestrator')); return; }
     const decoder = new TextDecoder();
     let buffer = '';
-    store.addLocalMessage({ id: crypto.randomUUID(), room_id: roomId, role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯', content: '🔍 分析需求中...', created_at: Math.floor(Date.now() / 1000) });
+    store.addLocalMessage({ id: crypto.randomUUID(), room_id: roomId, role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯', content: `🔍 ${t('chatRoom.analyzingRequirements')}`, created_at: Math.floor(Date.now() / 1000) });
 
     while (true) {
       const { done, value } = await reader.read();
@@ -121,9 +124,9 @@ async function handleOrchestrate(): Promise<void> {
                 if (found) found.content = `❌ ${t.description}`;
               }
             }
-            msg.info(`编排进度: ${ev.data.progress.done + ev.data.progress.failed}/${ev.data.progress.total}`);
+            msg.info(t('chatRoom.orchestrationProgress', { done: ev.data.progress.done + ev.data.progress.failed, total: ev.data.progress.total }));
           } else if (ev.event === 'done') {
-            msg.success('编排完成！');
+            msg.success(t('chatRoom.orchestrationDone'));
           }
         } catch { /**/ }
       }
@@ -176,7 +179,7 @@ const nextSteps = computed<WorkflowStep[]>(() => {
 function continueWorkflow(step: WorkflowStep): void {
   store.sendMessage(
     store.activeRoomId!,
-    step.trigger.replace('{{input}}', input.value || '请开始'),
+    step.trigger.replace('{{input}}', input.value || t('chatRoom.pleaseStart')),
     parseMentions(`@${step.role} ${step.description}`),
   );
 }
@@ -185,7 +188,7 @@ const quickStarts = computed(() => {
   if (!roles.value.length) return [];
   const picks = roles.value.slice(0, 4);
   return picks.map(r => ({
-    label: `@${r.id} 帮我分析这个项目`,
+    label: `@${r.id} ${t('chatRoom.quickStartAnalyze')}`,
     icon: r.icon,
   }));
 });
@@ -204,20 +207,20 @@ function selectRoom(id: string): void {
   <div class="chat-room-layout">
     <!-- Mobile toggle -->
     <button v-if="isMobile && store.activeRoomId" class="mobile-sidebar-toggle" @click="sidebarOpen = !sidebarOpen">
-      <span v-if="sidebarOpen">✕</span><span v-else>☰ 房间列表</span>
+      <span v-if="sidebarOpen">✕</span><span v-else>☰ {{ t('chatRoom.roomList') }}</span>
     </button>
 
     <!-- Sidebar -->
-    <aside class="room-sidebar" :class="{ 'is-visible': sidebarOpen }" role="navigation" aria-label="群聊房间列表">
+    <aside class="room-sidebar" :class="{ 'is-visible': sidebarOpen }" role="navigation" :aria-label="t('chatRoom.roomListAria')">
       <div class="sidebar-header">
-        <h3 class="sidebar-title">群聊</h3>
-        <p class="sidebar-subtitle">{{ workspaces.activeWorkspace?.name || '通用' }}</p>
-        <NButton size="small" type="primary" block class="mt-3" @click="showCreate = true" aria-label="新建群聊房间">+ 新建房间</NButton>
+        <h3 class="sidebar-title">{{ t('chatRoom.groupChat') }}</h3>
+        <p class="sidebar-subtitle">{{ workspaces.activeWorkspace?.name || t('chatRoom.general') }}</p>
+        <NButton size="small" type="primary" block class="mt-3" @click="showCreate = true" :aria-label="t('chatRoom.newRoomAria')">{{ t('chatRoom.newRoom') }}</NButton>
       </div>
 
       <!-- Available roles hint -->
       <div v-if="roles.length" class="sidebar-roles">
-        <p class="sidebar-roles-label">可用角色 ({{ roles.length }}) — 输入 @ 召唤</p>
+        <p class="sidebar-roles-label">{{ t('chatRoom.availableRoles', { count: roles.length }) }}</p>
         <div class="sidebar-roles-list">
           <button
             v-for="r in roles"
@@ -239,22 +242,22 @@ function selectRoom(id: string): void {
           :key="room.id"
           class="room-item group"
           :class="{ 'room-item--active': store.activeRoomId === room.id }"
-          :aria-label="`房间: ${room.name}`"
+          :aria-label="t('chatRoom.roomAria', { name: room.name })"
           @click="selectRoom(room.id)"
         >
           <span class="room-icon">#</span>
           <div class="room-info">
             <span class="room-name">{{ room.name }}</span>
-            <span class="room-meta">{{ room.workspace_name || '通用' }} · {{ fmtTime(room.updated_at) }}</span>
+            <span class="room-meta">{{ room.workspace_name || t('chatRoom.general') }} · {{ fmtTime(room.updated_at) }}</span>
           </div>
           <NPopconfirm @positive-click="store.deleteRoom(room.id)">
             <template #trigger>
-              <span class="room-delete-btn" role="button" aria-label="删除房间" @click.stop>×</span>
+              <span class="room-delete-btn" role="button" :aria-label="t('chatRoom.deleteRoomAria')" @click.stop>×</span>
             </template>
-            确定删除此房间？
+            {{ t('chatRoom.deleteRoomConfirm') }}
           </NPopconfirm>
         </button>
-        <EmptyState v-if="!store.loading && store.rooms.length === 0" title="还没有群聊房间" description="创建房间后 @mention 召唤 Agent 协作" />
+        <EmptyState v-if="!store.loading && store.rooms.length === 0" :title="t('chatRoom.emptyTitle')" :description="t('chatRoom.emptyDescription')" />
       </div>
     </aside>
 
@@ -264,20 +267,20 @@ function selectRoom(id: string): void {
         <div class="room-header-left">
           <span class="room-header-icon">#</span>
           <span class="room-header-name">{{ activeRoom.name }}</span>
-          <span class="room-header-workspace">{{ activeRoom.workspace_name || '通用' }}</span>
+          <span class="room-header-workspace">{{ activeRoom.workspace_name || t('chatRoom.general') }}</span>
         </div>
         <div class="flex items-center gap-3">
-          <span v-if="store.streaming" class="streaming-indicator">Agent 回复中...</span>
-          <span class="room-header-count">{{ store.messages.length }} 条消息</span>
+          <span v-if="store.streaming" class="streaming-indicator">{{ t('chatRoom.agentReplying') }}</span>
+          <span class="room-header-count">{{ t('chatRoom.messageCount', { count: store.messages.length }) }}</span>
         </div>
       </header>
 
       <div ref="scroller" class="message-list">
-        <EmptyState v-if="!store.activeRoomId" title="选择或创建一个房间" description="从左侧选择群聊房间开始对话" />
+        <EmptyState v-if="!store.activeRoomId" :title="t('chatRoom.selectRoomTitle')" :description="t('chatRoom.selectRoomDesc')" />
         <div v-else-if="store.messages.length === 0" class="message-empty">
           <span class="message-empty-icon">💬</span>
-          <p class="message-empty-title">开始与 Agent 协作</p>
-          <p class="message-empty-desc">输入消息并用 @ 召唤角色，多个 Agent 可并行回复</p>
+          <p class="message-empty-title">{{ t('chatRoom.startCollabTitle') }}</p>
+          <p class="message-empty-desc">{{ t('chatRoom.startCollabDesc') }}</p>
           <div v-if="quickStarts.length" class="quick-starts">
             <button v-for="qs in quickStarts" :key="qs.label" class="quick-start-btn" @click="insertQuick(qs.label)">
               <span>{{ qs.icon }}</span> {{ qs.label }}
@@ -302,7 +305,7 @@ function selectRoom(id: string): void {
                 <p v-if="msg.content.startsWith('⏳')" class="msg-typing">{{ msg.content }}</p>
                 <p v-else-if="msg.content.startsWith('❌')" class="msg-failed">
                   {{ msg.content }}
-                  <button class="msg-retry-btn" @click="handleRetry(msg.id)">重试</button>
+                  <button class="msg-retry-btn" @click="handleRetry(msg.id)">{{ t('chatRoom.retry') }}</button>
                 </p>
                 <p v-else class="msg-text">{{ msg.content }}</p>
               </div>
@@ -313,7 +316,7 @@ function selectRoom(id: string): void {
 
       <!-- Workflow: next step suggestions -->
       <div v-if="nextSteps.length && !store.streaming" class="workflow-next">
-        <span class="workflow-next-label">下一步建议</span>
+        <span class="workflow-next-label">{{ t('chatRoom.nextStepSuggestion') }}</span>
         <button
           v-for="step in nextSteps"
           :key="step.role"
@@ -323,43 +326,43 @@ function selectRoom(id: string): void {
       </div>
 
       <footer v-if="store.activeRoomId" class="room-composer">
-        <div v-if="mentionHint.length" class="mention-bar" role="listbox" aria-label="可召唤的角色">
+        <div v-if="mentionHint.length" class="mention-bar" role="listbox" :aria-label="t('chatRoom.mentionBarAria')">
           <button
             v-for="r in mentionHint"
             :key="r.id"
             class="mention-chip"
             :class="{ 'mention-chip--active': input.includes('@' + r.id) }"
             role="option"
-            :aria-label="`召唤 ${r.name}`"
+            :aria-label="t('chatRoom.summonAria', { name: r.name })"
             @click="input = input.replace(/@\S*$/, '@' + r.id + ' ')"
           >{{ r.icon }} {{ r.name }}</button>
         </div>
         <div class="composer-row">
-          <NButton v-if="input.trim() && roles.length > 1" size="small" class="flex-shrink-0" @click="handleOrchestrate">🎯 智能编排</NButton>
+          <NButton v-if="input.trim() && roles.length > 1" size="small" class="flex-shrink-0" @click="handleOrchestrate">🎯 {{ t('chatRoom.smartOrchestrate') }}</NButton>
           <NInput
             v-model:value="input"
             type="textarea"
-            :placeholder="mentionHint.length ? 'Enter 发送，继续 @召唤更多角色' : '@角色名 召唤 Agent · Shift+Enter 换行'"
+            :placeholder="mentionHint.length ? t('chatRoom.placeholderWithMention') : t('chatRoom.placeholderDefault')"
             :autosize="{ minRows: 1, maxRows: 4 }"
             :disabled="sending"
             @keydown="onKeydown"
           />
-          <NButton type="primary" :loading="sending" :disabled="!input.trim()" @click="handleSend" class="send-btn">发送</NButton>
+          <NButton type="primary" :loading="sending" :disabled="!input.trim()" @click="handleSend" class="send-btn">{{ t('chatRoom.send') }}</NButton>
         </div>
       </footer>
     </main>
 
     <NModal :show="showCreate" @update:show="showCreate = $event">
       <div class="create-modal">
-        <h3>新建群聊房间</h3>
-        <p class="create-modal-desc">创建房间，@mention 邀请 Workspace 角色协作讨论</p>
-        <NInput v-model:value="newRoomName" placeholder="输入房间名称" size="large" @keydown.enter="handleCreate" />
+        <h3>{{ t('chatRoom.createRoomTitle') }}</h3>
+        <p class="create-modal-desc">{{ t('chatRoom.createRoomDesc') }}</p>
+        <NInput v-model:value="newRoomName" :placeholder="t('chatRoom.roomNamePlaceholder')" size="large" @keydown.enter="handleCreate" />
         <div class="create-modal-roles" v-if="roles.length">
-          可用角色：<span v-for="r in roles" :key="r.id" class="create-modal-role-tag">{{ r.icon }} {{ r.name }}</span>
+          {{ t('chatRoom.availableRolesLabel') }}<span v-for="r in roles" :key="r.id" class="create-modal-role-tag">{{ r.icon }} {{ r.name }}</span>
         </div>
         <div class="create-modal-actions">
-          <NButton @click="showCreate = false">取消</NButton>
-          <NButton type="primary" :disabled="!newRoomName.trim()" @click="handleCreate">创建</NButton>
+          <NButton @click="showCreate = false">{{ t('chatRoom.cancel') }}</NButton>
+          <NButton type="primary" :disabled="!newRoomName.trim()" @click="handleCreate">{{ t('chatRoom.create') }}</NButton>
         </div>
       </div>
     </NModal>

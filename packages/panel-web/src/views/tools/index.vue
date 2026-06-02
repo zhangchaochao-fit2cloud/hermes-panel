@@ -54,7 +54,7 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
   if (ok) {
     message.success(`${enabled ? t('tools.enabled') : t('tools.disabled')} · ${name}`, { duration: 2000 });
   } else {
-    message.error(`切换 ${name} 失败`, { duration: 3000 });
+    message.error(t('tools.toggleFailed', { name }), { duration: 3000 });
   }
 }
 </script>
