@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
 
 const LICENSE_HOME = process.env.LICENSE_SERVER_HOME ?? join(homedir(), '.hermes-license-server');
 
@@ -91,4 +92,22 @@ export function closeLicenseDb(): void {
     try { dbInstance.close(); } catch { /* ignore */ }
     dbInstance = null;
   }
+}
+
+/** Create the initial admin user and API key if none exists. */
+export function seedAdmin(email: string, password: string): { email: string; apiKey: string } {
+  const db = getLicenseDb();
+  const existing = db.prepare('SELECT id FROM admin_users LIMIT 1').get() as { id: string } | undefined;
+  if (existing) {
+    const row = db.prepare('SELECT email, api_key FROM admin_users LIMIT 1').get() as { email: string; api_key: string };
+    return { email: row.email, apiKey: row.api_key };
+  }
+  const id = randomUUID();
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
+  const apiKey = 'lk_' + randomBytes(24).toString('base64url');
+  db.prepare(
+    'INSERT INTO admin_users (id, email, password_hash, password_salt, api_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+  ).run(id, email, hash, salt.toString('hex'), apiKey, Date.now());
+  return { email, apiKey };
 }

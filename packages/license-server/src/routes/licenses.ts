@@ -1,5 +1,6 @@
 import Router from '@koa/router';
-import { issueLicense, listLicenses, listAllLicenses, getLicenseByKey } from '../services/licenses.js';
+import { issueLicense, listLicenses, listAllLicenses, getLicenseByKey, deactivateLicense } from '../services/licenses.js';
+import { getOrder } from '../services/orders.js';
 import { requireUser, requireAdmin } from '../middleware/auth.js';
 
 export const licensesRouter = new Router();
@@ -32,6 +33,12 @@ licensesRouter.post('/licenses/:id/reset', async (ctx) => {
     ctx.status = 404;
     return;
   }
+  if (!lic.boundDevice) {
+    ctx.status = 400;
+    ctx.body = { error: { code: 'NOT_BOUND', message: 'license is not bound to any device' } };
+    return;
+  }
+  deactivateLicense(ctx.params.id, lic.boundDevice);
   ctx.status = 204;
 });
 
@@ -52,7 +59,13 @@ licensesRouter.post('/admin/licenses/issue', async (ctx) => {
     ctx.body = { error: { code: 'INVALID_BODY', message: 'orderId required' } };
     return;
   }
-  const lic = issueLicense(orderId, ctx.state.user.id, tier);
+  const order = getOrder(orderId);
+  if (!order) {
+    ctx.status = 404;
+    ctx.body = { error: { code: 'ORDER_NOT_FOUND', message: 'order not found' } };
+    return;
+  }
+  const lic = issueLicense(orderId, order.userId, tier);
   ctx.status = 201;
   ctx.body = { license: lic };
 });

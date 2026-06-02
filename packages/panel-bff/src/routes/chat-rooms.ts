@@ -29,16 +29,19 @@ function getApiKey(): string {
   return '';
 }
 
-async function callHermesAgent(prompt: string, model = 'hermes-agent'): Promise<string> {
+interface HermesAgentResult {
+  output: string;
+  usage: { inputTokens: number; outputTokens: number; totalTokens: number };
+}
+
+async function callHermesAgent(prompt: string, model = 'hermes-agent'): Promise<HermesAgentResult> {
   const base = getApiBase();
   const key = getApiKey();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (key) headers['Authorization'] = `Bearer ${key}`;
 
-  // Hermes uses /v1/runs for chat completions
   const startRes = await fetch(`${base}/v1/runs`, {
-    method: 'POST',
-    headers,
+    method: 'POST', headers,
     body: JSON.stringify({ model, input: prompt, stream: false }),
   });
   if (!startRes.ok) {
@@ -48,26 +51,34 @@ async function callHermesAgent(prompt: string, model = 'hermes-agent'): Promise<
 
   const { run_id } = await startRes.json() as { run_id: string };
 
-  // Poll for completion (non-streaming mode)
   for (let i = 0; i < 30; i++) {
     await new Promise(r => setTimeout(r, 1000));
     const statusRes = await fetch(`${base}/v1/runs/${run_id}/events`, { headers });
     if (!statusRes.ok) continue;
     const text = await statusRes.text();
-    // Parse SSE events to extract final output
     const lines = text.split('\n');
     let output = '';
+    let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       try {
         const ev = JSON.parse(line.slice(6));
-        if (ev.event === 'run.completed' && ev.output) output = ev.output;
+        if (ev.event === 'run.completed') {
+          output = ev.output || '';
+          if (ev.usage) {
+            usage = {
+              inputTokens: ev.usage.input_tokens || 0,
+              outputTokens: ev.usage.output_tokens || 0,
+              totalTokens: ev.usage.total_tokens || 0,
+            };
+          }
+        }
         if (ev.event === 'run.error') throw new Error(ev.error || 'Run failed');
       } catch (e) { if (e instanceof Error && e.message !== 'Run failed') throw e; }
     }
-    if (output) return output;
+    if (output) return { output, usage };
   }
-  return '(请求超时，Agent 未在 30 秒内返回结果)';
+  return { output: '(请求超时)', usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 } };
 }
 
 chatRoomsRouter.get('/chat-rooms', async ctx => {
@@ -128,10 +139,9 @@ chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
     Promise.allSettled(
       agentPlaceholders.map(async ({ id, name, prompt, model }) => {
         try {
-          const response = await callHermesAgent(prompt, model);
-          // Update the placeholder with real response
+          const res = await callHermesAgent(prompt, model);
           const { getPanelDb } = await import('../services/panel-db.js');
-          getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(response, id);
+          getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(res.output, id);
         } catch (err) {
           const { getPanelDb } = await import('../services/panel-db.js');
           getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?')
@@ -201,12 +211,11 @@ chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
           return;
         }
 
-        const response = await callHermesAgent(body.request);
-        const tokensEstimate = Math.ceil(response.length / 3);
-        recordAudit(goal, { action: `Task: ${body.request.slice(0, 100)}`, result: response.slice(0, 200), tokensThisTurn: tokensEstimate, timestamp: Math.floor(Date.now() / 1000) });
+        const res = await callHermesAgent(body.request);
+        recordAudit(goal, { action: `Task: ${body.request.slice(0, 100)}`, result: res.output.slice(0, 200), tokensThisTurn: res.usage.totalTokens, timestamp: Math.floor(Date.now() / 1000) });
         const { getPanelDb } = await import('../services/panel-db.js');
-        getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(response, msgId);
-        markTaskDone(plan, taskId, response);
+        getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(res.output, msgId);
+        markTaskDone(plan, taskId, res.output);
 
         // Check if there are more tasks to dispatch
         const nextTasks = getReadyTasks(plan);
@@ -219,8 +228,9 @@ chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
           });
           try {
             const r = await callHermesAgent(`基于前面的结果，请完成：${nt.description}`);
-            getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(r, nid);
-            markTaskDone(plan, nt.id, r);
+            getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(r.output, nid);
+            recordAudit(goal, { action: nt.description, result: r.output.slice(0, 200), tokensThisTurn: r.usage.totalTokens, timestamp: Math.floor(Date.now() / 1000) });
+            markTaskDone(plan, nt.id, r.output);
           } catch {
             markTaskFailed(plan, nt.id, 'execution failed');
           }
@@ -246,6 +256,32 @@ chatRoomsRouter.post('/chat-rooms/:id/orchestrate', async ctx => {
   ).catch(() => {});
 
   ctx.body = { plan, planMessage: planMsg, dispatched };
+});
+
+
+// Intent-Driven: accept external events and create Goals
+chatRoomsRouter.post('/chat-rooms/:id/intent', async ctx => {
+  const body = ctx.request.body as { source?: string; title?: string; body?: string; labels?: string[]; repo?: string; priority?: string } | undefined;
+  if (!body?.title) { ctx.status = 400; ctx.body = { error: { code: "BAD_REQUEST", message: "title required" } }; return; }
+  
+  const { processIntent } = await import("../services/intent-driven.js");
+
+  // Use a default set of roles for intent processing
+  const availableRoles = ["architect", "backend", "frontend", "qa", "reviewer", "security"];
+  const result = await processIntent(
+    {
+      source: (body.source as any) || "webhook",
+      title: body.title,
+      body: body.body || "",
+      labels: body.labels,
+      repo: body.repo,
+      priority: (body.priority as any) || "medium",
+    },
+    ctx.params.id,
+    availableRoles,
+  );
+  
+  ctx.body = { ...result, plan: undefined }; // Don't send full plan in response
 });
 
 // SSE endpoint: poll for updates to agent messages

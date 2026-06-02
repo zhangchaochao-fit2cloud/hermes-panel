@@ -6,6 +6,7 @@ import {
   inferProvider,
   type UsageEntry,
 } from '../services/usage-ledger.js';
+import { analyzeCosts } from '../services/cost-intelligence.js';
 
 /**
  * /api/usage — persistent token + cost ledger.
@@ -59,4 +60,9 @@ usageRouter.post('/usage/record', async ctx => {
 
 usageRouter.get('/usage', async ctx => {
   ctx.body = await readUsageSummary();
+});
+
+usageRouter.get('/usage/intelligence', async ctx => {
+  const budget = Number(ctx.query.budget) || 50;
+  ctx.body = analyzeCosts(budget);
 });
