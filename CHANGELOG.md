@@ -10,9 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 ## [Unreleased]
 
 ### Added
-- 平台渠道配置页面 (`/channels`)：Telegram / Discord / Slack / WhatsApp / Matrix / 飞书 / 微信 / 企业微信 8 个渠道统一管理
-- Docker 沙箱执行环境：隔离容器运行 Agent 代码，内存/CPU/网络限制
-- Monaco Editor + 文件浏览器 (`/files` 路由)：三栏布局，懒加载 Monaco
+- **平台渠道配置** (`/channels`)：Telegram / Discord / Slack / WhatsApp / Matrix / 飞书 / 微信 / 企业微信 8 个渠道统一管理
+- **群聊** (`/chat-room`)：@mention 多 Agent 聊天室，SSE 实时流，角色发现面板
+- **Docker 沙箱**：隔离容器运行 Agent 代码，内存/CPU/网络限制
+- **Monaco Editor + 文件浏览器** (`/files`)：三栏布局，懒加载 Monaco
+- **上下文自动压缩**：Token 超阈值自动摘要，70% 触发
+- **Goal 引擎**：Codex/Claude 风格自主目标系统，预算控制 + 完成审计
+- **成本智能引擎**：Dashboard 卡片，模型降级建议，供应商对接
+- **意图驱动开发**：Webhook → 自动分类 → Goal → 自动执行
+- **Orchestrator V2**：LLM 驱动任务分解，迭代循环，SSE 实时进度
+- **28 项 UX 优化**：模型记忆/路由动画/离线横幅/导航快捷键/紧凑模式/模糊搜索/Ctrl+Z撤销/↑历史/@mention补全/滚动按钮/语言标签/双击编辑/拖拽文件/Mermaid图表/Diff高亮/文件路径链接/链接预览/右键菜单/代码Apply/滚动跟随/桌面通知/恢复标签等
+- **CI/CD**：Docker 多架构、Gitee 同步、AI Code Review
+- **Node.exe 打包**：Windows 桌面版零依赖
 - 自建 panel.db 数据库扩展：tasks / workflows / workflow_runs / review_items / agent_states / agent_evaluations 6 张新表
 - 渠道配置 BFF 服务：读写 Hermes config.yaml，含 .bak 备份
 
