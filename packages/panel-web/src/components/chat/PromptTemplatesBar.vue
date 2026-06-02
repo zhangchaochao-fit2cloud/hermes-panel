@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { NPopover, NButton, NInput, useDialog, useMessage } from 'naive-ui';
 import { h } from 'vue';
 import { usePromptTemplatesStore, type PromptTemplate } from '@/stores/prompt-templates';
+import TemplateMarketModal from '@/components/chat/TemplateMarketModal.vue';
 
 const emit = defineEmits<{
   (e: 'pick', content: string): void;
@@ -23,6 +24,7 @@ const dialog = useDialog();
 const message = useMessage();
 
 const open = ref(false);
+const showMarket = ref(false);
 
 function onPick(tpl: PromptTemplate): void {
   emit('pick', tpl.content);
@@ -124,7 +126,11 @@ function onRemove(tpl: PromptTemplate): void {
         <NButton size="tiny" quaternary block @click="onAdd">
           + {{ t('promptTemplates.add') }}
         </NButton>
+        <NButton size="tiny" quaternary block @click="open = false; showMarket = true">
+          {{ t('promptTemplates.browseMarketplace') }}
+        </NButton>
       </div>
     </div>
   </NPopover>
+  <TemplateMarketModal v-model:show="showMarket" />
 </template>
