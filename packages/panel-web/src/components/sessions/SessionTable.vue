@@ -40,6 +40,16 @@ function titleOf(row: SessionSummary): string {
   return displaySessionTitle(row, t('sessions.untitled'));
 }
 
+function qualityScore(row: SessionSummary): number {
+  let score = 50;
+  if (row.tokenTotal > 2000) score += 15;
+  if (row.messageCount > 4) score += 10;
+  if (/opus|sonnet/i.test(row.model)) score += 10;
+  if (row.messageCount <= 1) score -= 10;
+  if (row.tokenTotal < 200) score -= 15;
+  return Math.max(0, Math.min(100, score));
+}
+
 function rowActions(): DropdownOption[] {
   return [
     { key: 'open', label: t('sessions.action.open') },
@@ -121,6 +131,26 @@ const columns = computed<DataTableColumns<SessionSummary>>(() => [
     width: 110,
     align: 'right',
     render: (row): VNodeChild => h('span', { class: 'tabular-nums opacity-80' }, fmtNum(row.tokenTotal)),
+  },
+  {
+    title: t('sessions.col.quality'),
+    key: 'quality',
+    width: 80,
+    align: 'right',
+    render: (row): VNodeChild => {
+      const score = qualityScore(row);
+      const color = score >= 70 ? 'success' : score >= 40 ? 'warning' : 'error';
+      return h(
+        NTag,
+        {
+          size: 'small',
+          bordered: false,
+          type: color,
+          title: 'Local quality estimate',
+        },
+        { default: () => String(score) },
+      );
+    },
   },
   {
     title: t('sessions.col.updatedAt'),

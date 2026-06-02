@@ -575,7 +575,7 @@ export default {
     },
     view: { table: 'Table', grid: 'Grid' },
     groupBy: { title: 'Group by source', grouped: 'Grouped', none: 'Flat' },
-    col: { source: 'Source', title: 'Title', model: 'Model', messages: 'Messages', tokens: 'Tokens', updatedAt: 'Updated' },
+    col: { source: 'Source', title: 'Title', model: 'Model', messages: 'Messages', tokens: 'Tokens', quality: 'Quality', updatedAt: 'Updated' },
     action: { open: 'Open', rename: 'Rename', export: 'Export JSONL', delete: 'Delete' },
     exportAll: 'Export filtered',
     exportFailed: 'Export failed',
@@ -882,6 +882,12 @@ export default {
       noCost: '—',
       tokensSuffix: 'tok',
       costSuffix: 'USD',
+    },
+    toolUsage: {
+      title: '🔧 Tool Usage',
+      subtitle: 'Last 30 days',
+      noData: 'No tool usage data yet',
+      calls: '{n} calls',
     },
     health: {
       title: 'System health',

@@ -261,6 +261,34 @@ export function cacheStats(days: number = 30): CacheStats {
   };
 }
 
+export interface ToolUsageRow {
+  tool: string;
+  count: number;
+  pct: number;
+}
+
+export function toolUsage(days: number = 30): ToolUsageRow[] {
+  const db = getDb();
+  if (!db) return [];
+  const cutoff = (Date.now() / 1000) - days * 86400;
+  const rows = db.prepare(`
+    SELECT tool_name AS tool, COUNT(*) AS call_count
+    FROM messages
+    WHERE tool_name IS NOT NULL AND tool_name != ''
+      AND timestamp >= ?
+    GROUP BY tool_name
+    ORDER BY call_count DESC
+    LIMIT 20
+  `).all(cutoff) as Array<{ tool: string; call_count: number }>;
+
+  const total = rows.reduce((sum, r) => sum + r.call_count, 0);
+  return rows.map(r => ({
+    tool: r.tool,
+    count: r.call_count,
+    pct: total > 0 ? Math.round((r.call_count / total) * 100) : 0,
+  }));
+}
+
 export function monthlyPace(): MonthlyPace {
   const db = getDb();
   const now = new Date();
