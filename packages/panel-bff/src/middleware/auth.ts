@@ -21,6 +21,11 @@ function isPublic(path: string): boolean {
 }
 
 export const authMiddleware: Middleware = async (ctx, next) => {
+  // GET /api/share/:uuid — read a shared session (unauthenticated)
+  if (ctx.method === 'GET' && /^\/api\/share\/[0-9a-f-]{36}$/.test(ctx.path)) {
+    await next();
+    return;
+  }
   if (isPublic(ctx.path)) {
     await next();
     return;
