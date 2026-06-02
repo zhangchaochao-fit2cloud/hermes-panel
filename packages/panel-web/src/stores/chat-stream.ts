@@ -59,10 +59,53 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   }
 
   let handle: SSEHandle | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Keep the last `send()` model around so run.completed can attribute
   // the usage entry to the right model without threading state through dispatch().
   const lastModel = ref<string>('');
+
+  /**
+   * Attempt to reconnect to the SSE stream with exponential backoff.
+   * Only called for network-level failures (HERMES_API_UNREACHABLE).
+   */
+  function attemptReconnect(): void {
+    if (!currentRunId.value || reconnectAttempts.value >= 5) {
+      state.value = 'error';
+      return;
+    }
+    state.value = 'reconnecting';
+    reconnectAttempts.value++;
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.value - 1), 16000);
+
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      handle = consumeSSE(currentRunId.value!, '', {
+        onEvent: (ev: HermesSSEEvent) => {
+          // Successful reconnection — reset state
+          if (state.value === 'reconnecting') {
+            state.value = 'streaming';
+            reconnectAttempts.value = 0;
+          }
+          dispatch(ev);
+        },
+        onError: (msg) => {
+          const code = inferErrorCode(msg);
+          if (code === 'HERMES_API_UNREACHABLE' && reconnectAttempts.value < 5) {
+            attemptReconnect();
+          } else {
+            lastError.value = msg;
+            lastErrorCode.value = code;
+            state.value = 'error';
+          }
+        },
+        onClose: () => {
+          handle = null;
+          if (state.value === 'streaming') state.value = 'done';
+        },
+      });
+    }, delay);
+  }
 
   async function send(input: string, model: string): Promise<void> {
     const session = useSessionStore();
@@ -90,9 +133,14 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
       handle = consumeSSE(run.runId, '', {
         onEvent: (ev: HermesSSEEvent) => dispatch(ev),
         onError: (msg) => {
-          lastError.value = msg;
-          lastErrorCode.value = inferErrorCode(msg);
-          state.value = 'error';
+          const code = inferErrorCode(msg);
+          if (code === 'HERMES_API_UNREACHABLE' && reconnectAttempts.value < 5) {
+            attemptReconnect();
+          } else {
+            lastError.value = msg;
+            lastErrorCode.value = code;
+            state.value = 'error';
+          }
         },
         onClose: () => {
           handle = null;
@@ -194,6 +242,10 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   }
 
   function abort(): void {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
     handle?.close();
     handle = null;
     state.value = 'idle';
