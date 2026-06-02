@@ -37,3 +37,23 @@ modelRouterRouter.post('/model-router/record', async ctx => {
   recordRouting(tier, retried ?? false, keywords ?? []);
   ctx.body = { ok: true };
 });
+
+/** Check if ollama is available locally */
+modelRouterRouter.get('/model-router/local-status', async ctx => {
+  const config = getConfig();
+  if (!config.localModels?.enabled) {
+    ctx.body = { available: false, reason: 'local models disabled' };
+    return;
+  }
+  try {
+    const res = await fetch(`${config.localModels.ollamaBase}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const data = await res.json() as { models?: Array<{ name: string }> };
+      ctx.body = { available: true, models: data.models?.map(m => m.name) ?? [] };
+    } else {
+      ctx.body = { available: false, reason: `HTTP ${res.status}` };
+    }
+  } catch (err) {
+    ctx.body = { available: false, reason: (err as Error).message };
+  }
+});

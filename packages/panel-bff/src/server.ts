@@ -48,6 +48,8 @@ import { templateMarketRouter } from './routes/template-market.js';
 import { intentPipelineRouter } from './routes/intent-pipeline.js';
 import { shareRouter } from './routes/share.js';
 import { syncRouter } from './routes/sync.js';
+import { proactiveRouter } from './routes/proactive.js';
+import { attachmentsRouter } from './routes/attachments.js';
 import { auditMiddleware } from './middleware/audit.js';
 import { auditRouter } from './routes/audit.js';
 
@@ -108,6 +110,8 @@ export function createApp(): Koa {
   router.use(shareRouter.routes(), shareRouter.allowedMethods());
   router.use(syncRouter.routes(), syncRouter.allowedMethods());
   router.use(auditRouter.routes(), auditRouter.allowedMethods());
+  router.use(proactiveRouter.routes(), proactiveRouter.allowedMethods());
+  router.use(attachmentsRouter.routes(), attachmentsRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
