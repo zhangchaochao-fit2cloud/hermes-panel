@@ -1,6 +1,6 @@
 {
   "name": "hermes-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Beautiful Web UI for Hermes Agent",
   "license": "MIT",
   "type": "module",

@@ -2,7 +2,7 @@
   "name": "hermes-panel-vscode",
   "displayName": "Hermes Panel",
   "description": "Send code, selection, or git diff to Hermes Panel from VS Code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "hermes-panel",
   "license": "MIT",
   "engines": {
