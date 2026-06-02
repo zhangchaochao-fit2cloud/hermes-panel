@@ -2,7 +2,8 @@
 import { onMounted, ref, nextTick, watch, computed } from 'vue';
 import { NButton, NInput, NModal, NPopconfirm, NSpin, useMessage } from 'naive-ui';
 import { useChatRoomsStore } from '@/stores/chat-rooms';
-import { bffFetch } from '@/api/bff';
+import { getBffBaseAsync, getPanelTokenAsync } from '@/api/token';
+import { HEADERS } from '@hermes-panel/shared';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
 import { getNextSteps, type WorkflowStep } from '@/data/workflows';
@@ -80,14 +81,54 @@ async function handleOrchestrate(): Promise<void> {
   input.value = '';
   sending.value = true;
   try {
-    await bffFetch(`/api/chat-rooms/${roomId}/orchestrate`, {
+    const base = await getBffBaseAsync();
+    const token = await getPanelTokenAsync();
+    const res = await fetch(`${base}/api/chat-rooms/${roomId}/orchestrate-v2`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json', [HEADERS.PANEL_TOKEN]: token },
       body: JSON.stringify({ request: text, roles: roles.value.map(r => r.id) }),
     });
-    msg.success('已生成编排计划，正在自动执行...');
-    // Reload messages and start SSE to track progress
-    await store.fetchMessages(roomId);
-    store.startStream(roomId);
+
+    const reader = res.body?.getReader();
+    if (!reader) { msg.error('无法连接到编排服务'); return; }
+    const decoder = new TextDecoder();
+    let buffer = '';
+    store.addLocalMessage({ id: crypto.randomUUID(), room_id: roomId, role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯', content: '🔍 分析需求中...', created_at: Math.floor(Date.now() / 1000) });
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      for (const line of buffer.split('\n\n')) {
+        const data = line.replace(/^data: /, '').trim();
+        if (!data) continue;
+        try {
+          const ev = JSON.parse(data);
+          if (ev.event === 'plan') {
+            store.messages[store.messages.length - 1].content = `📋 ${ev.data.reasoning}\n${ev.data.tasks.map((t: any, i: number) => `${i + 1}. **${t.role}** ${t.description}`).join('\n')}`;
+          } else if (ev.event === 'progress') {
+            const msgs = store.messages;
+            const tasks = ev.data.tasks || [];
+            for (let i = 0; i < tasks.length; i++) {
+              const t = tasks[i];
+              if (t.status === 'running' && !msgs.find(m => m.content === `⏳ ${t.description}`)) {
+                store.addLocalMessage({ id: crypto.randomUUID(), room_id: roomId, role: 'agent', agent_name: t.role, agent_icon: '🤖', content: `⏳ ${t.description}`, created_at: Math.floor(Date.now() / 1000) });
+              } else if (t.status === 'done') {
+                const found = msgs.find(m => m.content.startsWith('⏳ ') && m.agent_name === t.role);
+                if (found) found.content = `✅ ${t.description}`;
+              } else if (t.status === 'failed') {
+                const found = msgs.find(m => m.content.startsWith('⏳ ') && m.agent_name === t.role);
+                if (found) found.content = `❌ ${t.description}`;
+              }
+            }
+            msg.info(`编排进度: ${ev.data.progress.done + ev.data.progress.failed}/${ev.data.progress.total}`);
+          } else if (ev.event === 'done') {
+            msg.success('编排完成！');
+          }
+        } catch { /**/ }
+      }
+      buffer = buffer.includes('\n\n') ? buffer.split('\n\n').pop() ?? '' : buffer;
+    }
   } catch (err) {
     msg.error((err as Error).message);
   } finally {
