@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { NDropdown } from 'naive-ui';
 import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
+import ExecutionModePicker from './ExecutionModePicker.vue';
+import { useExecutionMode } from '@/composables/useExecutionMode';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
 import { useSessionStore } from '@/stores/session';
 import { useWorkspacesStore } from '@/stores/workspaces';
@@ -15,6 +17,7 @@ const hotkeys = useHotkeysStore();
 const session = useSessionStore();
 const workspaces = useWorkspacesStore();
 const { isMobile } = useBreakpoint();
+const { permissionPrompt: executionModePrompt } = useExecutionMode();
 
 const props = defineProps<{
   model: string;
@@ -433,9 +436,12 @@ function composeOutgoingText(): string {
 }
 
 function permissionInstruction(): string {
-  if (permissionMode.value === 'auto-review') return t('chat.composer.permissionPrompt.autoReview');
-  if (permissionMode.value === 'full-access') return t('chat.composer.permissionPrompt.fullAccess');
-  return '';
+  // Execution mode prompt always applies; legacy dropdown adds extra constraints.
+  const parts: string[] = [];
+  parts.push(executionModePrompt.value);
+  if (permissionMode.value === 'auto-review') parts.push(t('chat.composer.permissionPrompt.autoReview'));
+  if (permissionMode.value === 'full-access') parts.push(t('chat.composer.permissionPrompt.fullAccess'));
+  return parts.join('\n');
 }
 
 /**
@@ -546,6 +552,9 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
           :disabled="sending"
           @update:value="(v: 'fast' | 'auto' | 'extended' | 'route') => emit('update:thinkingSpeed', v)"
         />
+
+        <!-- Execution mode selector -->
+        <ExecutionModePicker />
       </div>
 
       <!-- spacer -->

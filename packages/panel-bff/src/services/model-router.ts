@@ -27,6 +27,13 @@ export interface RoutingDecision {
   savedVsDefault?: number;  // estimated USD savings vs always using expensive model
 }
 
+export interface LocalModelsConfig {
+  enabled: boolean;
+  ollamaBase: string;
+  preferLocal: boolean;   // when true, route simple tasks to local models
+  localModel: string;
+}
+
 export interface RoutingConfig {
   enabled: boolean;
   models: {
@@ -34,6 +41,7 @@ export interface RoutingConfig {
     medium: string;
     complex: string;
   };
+  localModels: LocalModelsConfig;
   /** Prompt length thresholds (chars) */
   thresholds: {
     simpleMaxChars: number;
@@ -111,7 +119,10 @@ export function routeModel(prompt: string): RoutingDecision {
   }
 
   const { tier, reason, confidence } = detectComplexity(prompt);
-  const model = config.models[tier];
+
+  // Route simple tasks to local model (ollama) when configured
+  const useLocal = config.localModels?.enabled && config.localModels.preferLocal && tier === 'simple';
+  const model = useLocal ? `ollama://${config.localModels.localModel}` : config.models[tier];
 
   // Estimate savings (rough: opus $15/M input, haiku $0.25/M, sonnet $3/M)
   const costPerMToken: Record<ComplexityTier, number> = { simple: 0.25, medium: 3, complex: 15 };
@@ -138,6 +149,12 @@ const DEFAULT_CONFIG: RoutingConfig = {
     medium: 'claude-sonnet-4-5',
     complex: 'claude-opus-4-7',
   },
+  localModels: {
+    enabled: false,
+    ollamaBase: 'http://localhost:11434',
+    preferLocal: false,   // when true, route simple tasks to local models
+    localModel: 'llama3.2',
+  },
   thresholds: {
     simpleMaxChars: 200,
     complexMinChars: 1500,
@@ -155,7 +172,7 @@ export function getConfig(): RoutingConfig {
   if (!existsSync(p)) return DEFAULT_CONFIG;
   try {
     const raw = JSON.parse(readFileSync(p, 'utf8'));
-    return { ...DEFAULT_CONFIG, ...raw, models: { ...DEFAULT_CONFIG.models, ...raw.models }, thresholds: { ...DEFAULT_CONFIG.thresholds, ...raw.thresholds } };
+    return { ...DEFAULT_CONFIG, ...raw, models: { ...DEFAULT_CONFIG.models, ...raw.models }, localModels: { ...DEFAULT_CONFIG.localModels, ...raw.localModels }, thresholds: { ...DEFAULT_CONFIG.thresholds, ...raw.thresholds } };
   } catch { return DEFAULT_CONFIG; }
 }
 
@@ -165,6 +182,7 @@ export function updateConfig(patch: Partial<RoutingConfig>): RoutingConfig {
     ...current,
     ...patch,
     models: { ...current.models, ...(patch.models ?? {}) },
+    localModels: { ...current.localModels, ...(patch.localModels ?? {}) },
     thresholds: { ...current.thresholds, ...(patch.thresholds ?? {}) },
   };
   writeFileSync(configPath(), JSON.stringify(next, null, 2), 'utf8');
