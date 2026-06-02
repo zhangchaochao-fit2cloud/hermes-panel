@@ -8,6 +8,13 @@ import { useUsageStore } from './usage';
 
 export type StreamState = 'idle' | 'creating' | 'streaming' | 'done' | 'error' | 'reconnecting';
 
+interface MatchedLesson {
+  id: string;
+  lesson: string;
+  trigger?: string;
+  confidence?: number;
+}
+
 export const useChatStreamStore = defineStore('chat-stream', () => {
   const state = ref<StreamState>('idle');
   const lastError = ref<string | null>(null);
@@ -70,6 +77,10 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   const routedModel = ref<string | null>(null);   // the model actually used after routing
   const routedTier = ref<string | null>(null);    // 'simple' | 'medium' | 'complex'
   const routedSavings = ref<number>(0);           // estimated savings in USD
+
+  // Self-improving agent: injected lessons from past experience.
+  const injectedLessonIds = ref<string[]>([]);
+  const injectedLessons = ref<Array<{ id: string; lesson: string }>>([]);
 
   /**
    * Attempt to reconnect to the SSE stream with exponential backoff.
@@ -140,6 +151,25 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     }
 
     lastModel.value = model;
+
+    // Self-improving agent: match relevant lessons from past experience.
+    injectedLessonIds.value = [];
+    injectedLessons.value = [];
+    try {
+      const matched = await bffFetch<MatchedLesson[]>(
+        '/api/lessons/match',
+        { method: 'POST', body: JSON.stringify({ prompt: input, max: 3 }) },
+      );
+      if (matched.length > 0) {
+        injectedLessonIds.value = matched.map(l => l.id);
+        injectedLessons.value = matched.map(l => ({ id: l.id, lesson: l.lesson }));
+        const prefix = matched.map(l => `[Based on past experience: ${l.lesson}]`).join('\n');
+        input = `${prefix}\n\n${input}`;
+      }
+    } catch {
+      // Lesson matching is best-effort — never block chat
+    }
+
     session.appendUserMessage(input);
     session.startAssistantMessage();
 
@@ -241,6 +271,14 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
             });
           }
         }
+        // Self-improving agent: mark injected lessons as used (fire-and-forget).
+        for (const lessonId of injectedLessonIds.value) {
+          void bffFetch(`/api/lessons/${lessonId}/used`, {
+            method: 'POST',
+            body: JSON.stringify({ success: true }),
+            silent: true,
+          }).catch(() => {/* best-effort */});
+        }
         state.value = 'done';
         break;
       }
@@ -280,5 +318,5 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     state.value = 'idle';
   }
 
-  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, charsPerSec, routedModel, routedTier, routedSavings, send, abort };
+  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, charsPerSec, routedModel, routedTier, routedSavings, injectedLessonIds, injectedLessons, send, abort };
 });
