@@ -118,6 +118,10 @@ jobs:
       - name: Build frontend dist
         run: pnpm --filter @hermes-panel/web build
 
+      - name: Bundle Node.js for Windows
+        if: matrix.platform == 'windows-amd64'
+        run: bash scripts/bundle-nodejs.sh
+
       - name: Build Tauri bundle
         continue-on-error: ${{ matrix.os == 'macos-14' }}
         env:
