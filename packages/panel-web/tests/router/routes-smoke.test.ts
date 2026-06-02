@@ -8,6 +8,7 @@ describe('router lazy views', () => {
       .filter((route) => route.path !== '/' && typeof route.components?.default === 'function');
 
     expect(routes.map((route) => route.path).sort()).toEqual([
+      '/audit',
       '/channels',
       '/chat',
       '/chat-room',
@@ -17,9 +18,11 @@ describe('router lazy views', () => {
       '/developer',
       '/files',
       '/goals',
+      '/intent',
       '/lessons',
       '/login',
       '/memory',
+      '/proactive',
       '/sandbox',
       '/sessions',
       '/settings',

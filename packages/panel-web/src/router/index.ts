@@ -32,6 +32,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/goals', name: 'goals', component: () => import('@/views/goals/index.vue'), meta: { premium: 'channels' } },
   { path: '/cost', name: 'cost', component: () => import('@/views/cost/index.vue') },
   { path: '/lessons', name: 'lessons', component: () => import('@/views/lessons/index.vue') },
+  { path: '/audit', name: 'audit', component: () => import('@/views/audit/index.vue') },
+  { path: '/proactive', name: 'proactive', component: () => import('@/views/proactive/index.vue') },
+  { path: '/intent', name: 'intent', component: () => import('@/views/intent/index.vue') },
 ];
 
 export const router = createRouter({

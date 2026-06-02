@@ -68,6 +68,13 @@ const icons = {
   developer: 'm8 18-6-6 6-6m8 0 6 6-6 6M14 4l-4 16',
   'chat-room': 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6 2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm3 6v2a4 4 0 0 1-4 4',
   settings: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.97 3.6 1.7 1.7 0 0 0 10 2.04V2a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 8c.18.6.66 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z',
+  cost: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+  goals: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z',
+  lessons: 'M12 3a3 3 0 0 0-3 3v12a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z',
+  sandbox: 'M4 4h16v16H4V4Zm4 5 3 3-3 3m5 0h4',
+  audit: 'M9 12l2 2 4-4M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+  proactive: 'M13 2 3 14h9l-1 8 10-12h-9l1-8Z',
+  intent: 'M4 4h16v16H4V4Zm4 4h8m-8 4h8m-8 4h5',
 } as const;
 
 const items = computed<MenuItem[]>(() => [
@@ -81,9 +88,16 @@ const items = computed<MenuItem[]>(() => [
   { key: 'memory', iconPath: icons.memory, label: t('nav.memory'), path: '/memory',
     disabled: !caps.has('memory'), disabledReason: t('nav.disabled.memory'), badge: caps.has('memory') ? undefined : t('nav.notAvailable') },
   { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools' },
+  { key: 'cost', iconPath: icons.cost, label: t('nav.cost'), path: '/cost' },
+  { key: 'goals', iconPath: icons.goals, label: t('nav.goals'), path: '/goals' },
   { key: 'channels', iconPath: icons.channels, label: t('nav.channels'), path: '/channels' },
   { key: 'chat-room', iconPath: icons['chat-room'], label: t('nav.chatRoom'), path: '/chat-room' },
   { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer' },
+  { key: 'lessons', iconPath: icons.lessons, label: t('nav.lessons'), path: '/lessons' },
+  { key: 'sandbox', iconPath: icons.sandbox, label: t('nav.sandbox'), path: '/sandbox' },
+  { key: 'audit', iconPath: icons.audit, label: t('nav.audit'), path: '/audit' },
+  { key: 'proactive', iconPath: icons.proactive, label: t('nav.proactive'), path: '/proactive' },
+  { key: 'intent', iconPath: icons.intent, label: t('nav.intent'), path: '/intent' },
   { key: 'settings', iconPath: icons.settings, label: t('nav.settings'), path: '/settings' },
 ]);
 
