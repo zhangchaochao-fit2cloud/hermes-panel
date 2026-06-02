@@ -6,6 +6,7 @@ import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
 import ExecutionModePicker from './ExecutionModePicker.vue';
 import { useExecutionMode } from '@/composables/useExecutionMode';
+import { useSmartSuggestion } from '@/composables/useSmartSuggestion';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
 import { useSessionStore } from '@/stores/session';
 import { useWorkspacesStore } from '@/stores/workspaces';
@@ -43,6 +44,8 @@ void emit;
 const text = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+
+const { suggestion, dismiss: dismissSuggestion } = useSmartSuggestion(text);
 
 type PermissionMode = 'default' | 'auto-review' | 'full-access';
 
@@ -483,6 +486,22 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
         <span class="text-xs font-medium">@{{ role.id }}</span>
         <span class="text-xs text-[var(--text-3)]">{{ role.name }}</span>
       </button>
+    </div>
+
+    <!-- Smart suggestion hint -->
+    <div
+      v-if="suggestion.show"
+      class="smart-suggestion-hint flex items-center gap-2 px-3 py-1.5 mb-2 rounded-md text-xs"
+      style="background: color-mix(in srgb, var(--brand-500) 8%, transparent); color: var(--brand-600);"
+    >
+      <span>💡</span>
+      <span class="flex-1">{{ suggestion.message }}</span>
+      <button
+        type="button"
+        class="opacity-60 hover:opacity-100 transition-opacity"
+        @click="dismissSuggestion"
+        aria-label="Dismiss"
+      >✕</button>
     </div>
 
     <!-- Textarea -->
