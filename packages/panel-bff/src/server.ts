@@ -42,6 +42,7 @@ import { goalsRouter } from './routes/goals.js';
 import { costRouter } from './routes/cost.js';
 import { authRouter } from './routes/auth.js';
 import { searchRouter } from './routes/search.js';
+import { modelRouterRouter } from './routes/model-router.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -93,6 +94,7 @@ export function createApp(): Koa {
   router.use(goalsRouter.routes(), goalsRouter.allowedMethods());
   router.use(costRouter.routes(), costRouter.allowedMethods());
   router.use(searchRouter.routes(), searchRouter.allowedMethods());
+  router.use(modelRouterRouter.routes(), modelRouterRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);

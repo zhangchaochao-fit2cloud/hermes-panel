@@ -40,10 +40,10 @@ const route = useRoute();
 const router = useRouter();
 
 const { messages } = storeToRefs(session);
-const { state, lastError, lastErrorCode, charsPerSec } = storeToRefs(stream);
+const { state, lastError, lastErrorCode, charsPerSec, routedModel, routedSavings } = storeToRefs(stream);
 
 const model = ref(localStorage.getItem('panel.chat.lastModel') || 'hermes-agent');
-const thinkingSpeed = ref<'fast' | 'extended' | 'auto'>((localStorage.getItem('panel.chat.lastThinkingSpeed') as 'fast' | 'extended' | 'auto') || 'auto');
+const thinkingSpeed = ref<'fast' | 'extended' | 'auto' | 'route'>((localStorage.getItem('panel.chat.lastThinkingSpeed') as 'fast' | 'extended' | 'auto' | 'route') || 'auto');
 const sending = ref(false);
 const lastSentText = ref('');
 const resumingSession = ref(false);
@@ -377,7 +377,7 @@ async function onSend(text: string): Promise<void> {
     finalText = `${mention.role.promptPrefix}\n\n${mention.rest}`;
   }
   const sentText = finalText;
-  await stream.send(sentText, model.value);
+  await stream.send(sentText, model.value, thinkingSpeed.value === 'route');
   composerRef.value?.setText('');
 }
 
@@ -727,6 +727,9 @@ async function onExportSelect(key: string | number): Promise<void> {
             @send="onSend"
             @stop="onStop"
           />
+          <div v-if="routedModel" class="routed-indicator text-xs text-[var(--text-3)] text-center mt-1">
+            🎯 {{ t('chat.routed', { model: routedModel, amount: routedSavings.toFixed(4) }) }}
+          </div>
         </div>
       </div>
     </main>

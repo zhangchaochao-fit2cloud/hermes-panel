@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { HermesSSEEvent } from '@hermes-panel/shared';
 import { startRun, consumeSSE, type SSEHandle } from '@/api/hermes';
+import { bffFetch } from '@/api/bff';
 import { useSessionStore } from './session';
 import { useUsageStore } from './usage';
 
@@ -65,6 +66,11 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
   // the usage entry to the right model without threading state through dispatch().
   const lastModel = ref<string>('');
 
+  // Auto-route state: populated when the router endpoint selects a model.
+  const routedModel = ref<string | null>(null);   // the model actually used after routing
+  const routedTier = ref<string | null>(null);    // 'simple' | 'medium' | 'complex'
+  const routedSavings = ref<number>(0);           // estimated savings in USD
+
   /**
    * Attempt to reconnect to the SSE stream with exponential backoff.
    * Only called for network-level failures (HERMES_API_UNREACHABLE).
@@ -107,8 +113,31 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     }, delay);
   }
 
-  async function send(input: string, model: string): Promise<void> {
+  async function send(input: string, model: string, autoRoute: boolean = false): Promise<void> {
     const session = useSessionStore();
+
+    // Auto-route: ask the BFF to pick the best model for this prompt.
+    if (autoRoute) {
+      try {
+        const decision = await bffFetch<{ tier: string; model: string; savedVsDefault?: number }>(
+          '/api/model-router/route',
+          { method: 'POST', body: JSON.stringify({ prompt: input }) },
+        );
+        model = decision.model;
+        routedModel.value = decision.model;
+        routedTier.value = decision.tier;
+        routedSavings.value = decision.savedVsDefault ?? 0;
+      } catch {
+        // Fallback: use the provided model as-is
+        routedModel.value = null;
+        routedTier.value = null;
+        routedSavings.value = 0;
+      }
+    } else {
+      routedModel.value = null;
+      routedTier.value = null;
+      routedSavings.value = 0;
+    }
 
     lastModel.value = model;
     session.appendUserMessage(input);
@@ -251,5 +280,5 @@ export const useChatStreamStore = defineStore('chat-stream', () => {
     state.value = 'idle';
   }
 
-  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, charsPerSec, send, abort };
+  return { state, lastError, lastErrorCode, currentRunId, reconnectAttempts, charsPerSec, routedModel, routedTier, routedSavings, send, abort };
 });
