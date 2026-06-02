@@ -20,3 +20,20 @@ src-tauri/gen/
 .tmp/
 **/icons.*.bak/
 **/icons.old.*/
+
+# Local AI tooling (keep on your machine only)
+.claude/
+.claude/
+.code-review-graph/
+.idea/
+AGENTS.md
+CLAUDE.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+SUPPORT.md
+CHANGELOG.md
+docs/README.md
+docs/release.md
+docs/superpowers/
+docs/
