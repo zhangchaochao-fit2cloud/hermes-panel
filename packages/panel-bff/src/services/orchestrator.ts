@@ -192,6 +192,41 @@ export function getReadyTasks(plan: Plan): SubTask[] {
   );
 }
 
+/** Group ready tasks into parallel sets (tasks with no inter-dependencies) */
+export function getParallelGroups(plan: Plan): SubTask[][] {
+  const ready = getReadyTasks(plan);
+  if (ready.length <= 1) return [ready];
+
+  // Simple parallel grouping: tasks without mutual dependencies run in parallel
+  const groups: SubTask[][] = [];
+  const remaining = [...ready];
+
+  while (remaining.length > 0) {
+    const group: SubTask[] = [];
+    const next: SubTask[] = [];
+    for (const t of remaining) {
+      // Check if this task can run in parallel with the current group
+      const groupIds = new Set(group.map(g => g.id));
+      const canParallel = t.dependsOn.every(d => doneIds(plan)?.has(d) || !groupIds.has(d));
+      if (canParallel && group.length < 3) {
+        group.push(t);
+      } else {
+        next.push(t);
+      }
+    }
+    if (group.length === 0) break; // Stuck
+    groups.push(group);
+    remaining.length = 0;
+    remaining.push(...next);
+  }
+
+  return groups;
+}
+
+function doneIds(plan: Plan): Set<string> {
+  return new Set(plan.subtasks.filter(t => t.status === 'done').map(t => t.id));
+}
+
 /** Mark a task as done */
 export function markTaskDone(plan: Plan, taskId: string, result: string): void {
   const task = plan.subtasks.find(t => t.id === taskId);
