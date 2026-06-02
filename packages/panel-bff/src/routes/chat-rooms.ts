@@ -8,6 +8,7 @@ import {
 import {
   generatePlan, getReadyTasks, markTaskDone, markTaskFailed, isPlanComplete, formatPlanSummary,
 } from '../services/orchestrator.js';
+import { decompose, execute, type OrchestrationPlan } from '../services/orchestrator-v2.js';
 import { createGoal, getContinuationPrompt, recordAudit } from '../services/goal-engine.js';
 import { getHermesHome } from '../services/hermes-home.js';
 import { readFileSync, existsSync } from 'node:fs';
@@ -153,6 +154,48 @@ chatRoomsRouter.post('/chat-rooms/:id/messages', async ctx => {
   }
 
   ctx.body = { userMessage: userMsg, agentReplies };
+});
+
+// Orchestrator V2: LLM-driven decomposition + SSE progress streaming
+chatRoomsRouter.post('/chat-rooms/:id/orchestrate-v2', async ctx => {
+  const body = ctx.request.body as {
+    request: string; roles: string[]; tokenBudgetK?: number; turnBudget?: number;
+    scopeBoundary?: string; doneWhen?: string[]; stopIf?: string[];
+  } | undefined;
+  if (!body?.request) { ctx.status = 400; return; }
+
+  const config = {
+    objective: body.request, availableRoles: body.roles ?? [],
+    tokenBudgetK: body.tokenBudgetK ?? 100, turnBudget: body.turnBudget ?? 10,
+    scopeBoundary: body.scopeBoundary, doneWhen: body.doneWhen, stopIf: body.stopIf,
+  };
+
+  // SSE stream for real-time progress
+  ctx.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  ctx.body = new PassThrough();
+  const stream = ctx.body as PassThrough;
+
+  const planMsg = addChatRoomMessage({ id: randomUUID(), room_id: ctx.params.id, role: 'agent', agent_name: 'orchestrator', agent_icon: '🎯', content: '🔍 正在分析需求并生成执行计划...' });
+
+  let plan: OrchestrationPlan;
+  try {
+    plan = await decompose(config, (p, m) => callHermesAgent(p, m).then(r => r.output));
+    // Update with actual plan
+    const { getPanelDb } = await import('../services/panel-db.js');
+    getPanelDb().prepare('UPDATE chat_room_messages SET content = ? WHERE id = ?').run(`📋 ${plan.reasoning}\n${plan.tasks.map((t, i) => `${i + 1}. ${t.role} ${t.description}`).join('\n')}`, planMsg.id);
+    stream.write(`data: ${JSON.stringify({ event: 'plan', data: plan })}\n\n`);
+  } catch (err) {
+    stream.write(`data: ${JSON.stringify({ event: 'error', error: (err as Error).message })}\n\n`);
+    stream.end(); return;
+  }
+
+  // Execute with progress
+  const result = await execute(plan, config, (p, m) => callHermesAgent(p, m).then(r => r.output), (p) => {
+    stream.write(`data: ${JSON.stringify({ event: 'progress', data: p })}\n\n`);
+  });
+
+  stream.write(`data: ${JSON.stringify({ event: 'done', data: result })}\n\n`);
+  stream.end();
 });
 
 // Orchestrator: generate a goal-limited plan and auto-dispatch
