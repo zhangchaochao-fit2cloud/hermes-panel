@@ -5,6 +5,7 @@ import { exportOne, exportFiltered } from '../services/hermes-export.js';
 import { listSessions, getSession, getMessages, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
 import { shouldCompress, compress, type CompressionResult } from '../services/context-compressor.js';
 import { logger } from '../lib/logger.js';
+import { emit } from '../services/sync-bus.js';
 
 export const sessionsRouter = new Router();
 
@@ -189,6 +190,7 @@ sessionsRouter.post('/sessions/:id/compress', ctx => {
 sessionsRouter.delete('/sessions/:id', async ctx => {
   try {
     const result = await runHermesCli(['sessions', 'delete', ctx.params.id, '--yes'], { timeoutMs: 5000 });
+    emit('session.deleted', { sessionId: ctx.params.id });
     ctx.body = { deleted: true, output: result.stdout.trim() };
   } catch (err) {
     if (err instanceof HermesCliError) {
@@ -212,6 +214,7 @@ sessionsRouter.patch('/sessions/:id', async ctx => {
       ['sessions', 'rename', ctx.params.id, body.title],
       { timeoutMs: 5000 }
     );
+    emit('session.updated', { sessionId: ctx.params.id, title: body.title });
     ctx.body = { ok: true, output: result.stdout.trim() };
   } catch (err) {
     if (err instanceof HermesCliError) {

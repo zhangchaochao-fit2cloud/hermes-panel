@@ -1544,4 +1544,10 @@ export default {
     run: 'Run',
     unavailableReason: 'Reason',
   },
+  sync: {
+    connected: '已连接',
+    disconnected: '未连接',
+    clients: '{n} 个设备在线',
+    syncing: '同步中...',
+  },
 } as const;

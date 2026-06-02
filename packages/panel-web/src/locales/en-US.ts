@@ -1559,4 +1559,10 @@ export default {
     run: 'Run',
     unavailableReason: 'Reason',
   },
+  sync: {
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    clients: '{n} devices online',
+    syncing: 'Syncing...',
+  },
 } as const;
