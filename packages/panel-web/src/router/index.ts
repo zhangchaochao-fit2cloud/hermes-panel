@@ -29,6 +29,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/channels', name: 'channels', component: () => import('@/views/channels/index.vue'), meta: { premium: 'channels' } },
   { path: '/chat-room', name: 'chat-room', component: () => import('@/views/chat-room/index.vue'), meta: { premium: 'channels' } },
   { path: '/goals', name: 'goals', component: () => import('@/views/goals/index.vue'), meta: { premium: 'channels' } },
+  { path: '/cost', name: 'cost', component: () => import('@/views/cost/index.vue') },
 ];
 
 export const router = createRouter({

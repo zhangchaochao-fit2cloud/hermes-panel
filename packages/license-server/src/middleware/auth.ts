@@ -22,6 +22,9 @@ export function requireUser(ctx: Router.RouterContext): boolean {
 }
 
 export function requireAdmin(ctx: Router.RouterContext): boolean {
+  // Support both session token (web) and API key (server-to-server)
+  const apiKey = (ctx.headers['x-license-api-key'] ?? '') as string;
+  if (apiKey && verifyApiKey(apiKey)) return true;
   if (!requireUser(ctx)) return false;
   if (ctx.state.user.role !== 'admin') {
     bad(ctx, 'FORBIDDEN', 'admin required', 403);
