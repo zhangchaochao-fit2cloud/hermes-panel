@@ -8,6 +8,7 @@ import { HEADERS, PORTS } from '@hermes-panel/shared';
 import { logger } from './lib/logger.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
+import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { getSessionToken } from './lib/token.js';
 import { systemRouter } from './routes/system.js';
 import { tokenRouter } from './routes/token.js';
@@ -106,6 +107,7 @@ export function createApp(): Koa {
     maxAge: 600,
   }));
   app.use(bodyParser());
+  app.use(rateLimitMiddleware());
   app.use(authMiddleware);
   app.use(router.routes());
   app.use(router.allowedMethods());
