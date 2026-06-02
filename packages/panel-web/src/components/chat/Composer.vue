@@ -18,7 +18,7 @@ const { isMobile } = useBreakpoint();
 
 const props = defineProps<{
   model: string;
-  thinkingSpeed: 'fast' | 'extended' | 'auto';
+  thinkingSpeed: 'fast' | 'extended' | 'auto' | 'route';
   sending: boolean;
   lastSentText?: string;
 }>();
@@ -27,7 +27,7 @@ const emit = defineEmits<{
   (e: 'send', text: string): void;
   (e: 'stop'): void;
   (e: 'update:model', v: string): void;
-  (e: 'update:thinkingSpeed', v: 'fast' | 'extended' | 'auto'): void;
+  (e: 'update:thinkingSpeed', v: 'fast' | 'extended' | 'auto' | 'route'): void;
   (e: 'restoreText', text: string): void;
 }>();
 
@@ -544,7 +544,7 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
         <ThinkingStrategyPicker
           :value="thinkingSpeed"
           :disabled="sending"
-          @update:value="(v: 'fast' | 'auto' | 'extended') => emit('update:thinkingSpeed', v)"
+          @update:value="(v: 'fast' | 'auto' | 'extended' | 'route') => emit('update:thinkingSpeed', v)"
         />
       </div>
 

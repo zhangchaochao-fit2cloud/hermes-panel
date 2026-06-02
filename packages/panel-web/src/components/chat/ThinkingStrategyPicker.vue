@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { NTooltip } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 
-type Strategy = 'fast' | 'auto' | 'extended';
+type Strategy = 'fast' | 'auto' | 'extended' | 'route';
 
 const props = defineProps<{
   value: Strategy;
@@ -27,6 +27,7 @@ const chips = computed<ChipDef[]>(() => [
   { id: 'fast', icon: '⚡', labelKey: 'chat.composer.speed.fast', hintKey: 'chat.composer.speed.fastHint' },
   { id: 'auto', icon: '🤖', labelKey: 'chat.composer.speed.auto', hintKey: 'chat.composer.speed.autoHint' },
   { id: 'extended', icon: '🧠', labelKey: 'chat.composer.speed.extended', hintKey: 'chat.composer.speed.extendedHint' },
+  { id: 'route', icon: '🎯', labelKey: 'chat.composer.speed.route', hintKey: 'chat.composer.speed.routeHint' },
 ]);
 
 function select(id: Strategy): void {

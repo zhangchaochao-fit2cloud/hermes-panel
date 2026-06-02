@@ -8,6 +8,7 @@ import { HEADERS, PORTS } from '@hermes-panel/shared';
 import { logger } from './lib/logger.js';
 import { errorMiddleware } from './middleware/error.js';
 import { authMiddleware } from './middleware/auth.js';
+import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { getSessionToken } from './lib/token.js';
 import { systemRouter } from './routes/system.js';
 import { tokenRouter } from './routes/token.js';
@@ -41,6 +42,7 @@ import { goalsRouter } from './routes/goals.js';
 import { costRouter } from './routes/cost.js';
 import { authRouter } from './routes/auth.js';
 import { searchRouter } from './routes/search.js';
+import { modelRouterRouter } from './routes/model-router.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -92,6 +94,7 @@ export function createApp(): Koa {
   router.use(goalsRouter.routes(), goalsRouter.allowedMethods());
   router.use(costRouter.routes(), costRouter.allowedMethods());
   router.use(searchRouter.routes(), searchRouter.allowedMethods());
+  router.use(modelRouterRouter.routes(), modelRouterRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
 
   app.use(errorMiddleware);
@@ -106,6 +109,7 @@ export function createApp(): Koa {
     maxAge: 600,
   }));
   app.use(bodyParser());
+  app.use(rateLimitMiddleware());
   app.use(authMiddleware);
   app.use(router.routes());
   app.use(router.allowedMethods());
