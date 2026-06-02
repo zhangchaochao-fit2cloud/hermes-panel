@@ -22,22 +22,6 @@ Hermes Panel 是 [Hermes Agent](https://github.com/NousResearch/hermes-agent) �
 
 ---
 
-## 为什么选择 Hermes Panel？
-
-| | Hermes Panel | 直接使用 Hermes CLI | 其他 Web 面板 |
-|------|:---:|:---:|:---:|
-| 流式聊天 + 工具可视化 | ✅ | ❌ (纯文本) | ✅ |
-| 用量仪表盘 + 成本追踪 | ✅ | ❌ | 🔸 |
-| 多 Agent Workspace 编排 | ✅ | ❌ | ❌ |
-| 桌面应用 (轻量原生) | ✅ Tauri | ❌ | 🔸 Electron |
-| 跨平台 (Win/Mac/Linux) | ✅ | ✅ | 🔸 |
-| VS Code 扩展 | ✅ | ❌ | ❌ |
-| PWA 移动端 | ✅ | ❌ | 🔸 |
-| 隐私保护 (本地执行) | ✅ | ✅ | ✅ |
-| 开源协议 | MIT | Apache 2.0 | MIT / GPL |
-
----
-
 ## 快速开始
 
 ### 方式一：npx（最快）
@@ -184,30 +168,6 @@ pnpm --filter @hermes-panel/desktop build
 - `#/channels` — 渠道配置
 - `#/developer` — 开发者工具
 - `#/settings` — 系统设置
-
----
-
-## 版本对比
-
-| 功能 | 社区版 | 专业版 |
-|------|:---:|:---:|
-| AI 聊天 + 工具可视化 | ✅ | ✅ |
-| 多渠道管理 | ✅ | ✅ |
-| Dashboard 用量追踪 | ✅ | ✅ |
-| Session 管理 | ✅ | ✅ |
-| 文件编辑器 (Monaco) | ✅ | ✅ |
-| Docker 沙箱 | ✅ | ✅ |
-| VS Code 扩展 | ✅ | ✅ |
-| 桌面应用 (Tauri) | ✅ | ✅ |
-| PWA 移动端 | ✅ | ✅ |
-| Workspace 多 Agent 编排 | ❌ | ✅ |
-| Kanban 任务板 | ❌ | ✅ |
-| 团队协作 (RBAC) | ❌ | ✅ |
-| 审批队列 | ❌ | ✅ |
-| Agent 质量评估 | ❌ | ✅ |
-| Token 压缩引擎 | ❌ | ✅ |
-| 高级诊断 | ❌ | ✅ |
-| **价格** | **免费** | 待定 |
 
 ---
 
