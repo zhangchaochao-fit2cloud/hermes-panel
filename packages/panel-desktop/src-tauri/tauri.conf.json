@@ -42,7 +42,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "resources/bff"
+      "resources/bff",
+      "resources/nodejs"
     ],
     "category": "Productivity",
     "shortDescription": "Beautiful Web UI for Hermes Agent",
