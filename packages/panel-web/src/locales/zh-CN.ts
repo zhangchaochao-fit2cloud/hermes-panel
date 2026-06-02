@@ -461,6 +461,10 @@ export default {
     initFailed: '初始化失败：{error}',
     hermesNotReady: 'Hermes 还未就绪，请稍等几秒…',
     retryRun: '重试本次',
+    compressSuccess: '已压缩 {count} 条消息，节省 {tokens} tokens',
+    compressFailed: '压缩失败',
+    compressing: '压缩中...',
+    compressHint: '压缩历史消息，节省 Token',
     errors: {
       unauthorized: '认证失败：API key 无效或缺失',
       serverError: 'Hermes 内部错误',

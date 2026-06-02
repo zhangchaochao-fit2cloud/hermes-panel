@@ -457,6 +457,10 @@ export default {
     },
     resumed: 'Resumed session {id}',
     retryRun: 'Retry',
+    compressSuccess: 'Compressed {count} messages, saved {tokens} tokens',
+    compressFailed: 'Compression failed',
+    compressing: 'Compressing...',
+    compressHint: 'Compress history to save tokens',
     find: {
       placeholder: 'Find in chat…',
       prev: 'Previous',

@@ -56,10 +56,10 @@ async function handleCompress(): Promise<void> {
   compressing.value = true;
   try {
     const result = await bffFetch<{ savedTokens: number; compressedCount: number }>(`/api/sessions/${sid}/compress`, { method: 'POST' });
-    message.success(`已压缩 ${result.compressedCount} 条消息，节省 ${result.savedTokens.toLocaleString()} tokens`, { duration: 3000 });
+    message.success(t('chat.compressSuccess', { count: result.compressedCount, tokens: result.savedTokens.toLocaleString() }), { duration: 3000 });
     // Reload session to get compressed messages
     await loadSession(sid);
-  } catch { message.warning('压缩失败'); }
+  } catch { message.warning(t('chat.compressFailed')); }
   finally { compressing.value = false; }
 }
 
@@ -517,7 +517,7 @@ async function onExportSelect(key: string | number): Promise<void> {
             v-if="messages.length > 20 && session.sessionId"
             type="button"
             class="chat-header-icon-button"
-            :title="compressing ? '压缩中...' : '压缩历史消息，节省 Token'"
+            :title="compressing ? t('chat.compressing') : t('chat.compressHint')"
             :disabled="compressing"
             @click="handleCompress"
           >🗜️</button>
@@ -650,7 +650,7 @@ async function onExportSelect(key: string | number): Promise<void> {
           type="button"
           class="scroll-bottom-btn"
           @click="scrollToBottom"
-          aria-label="滚动到底部"
+          :aria-label="t('chat.navigator.jumpBottom')"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
