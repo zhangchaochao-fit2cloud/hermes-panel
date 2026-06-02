@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/files', name: 'files', component: () => import('@/views/files/index.vue'), meta: { premium: 'files' } },
   { path: '/tools', name: 'tools', component: () => import('@/views/tools/index.vue'), meta: { premium: 'tools' } },
   { path: '/developer', name: 'developer', component: () => import('@/views/developer/index.vue'), meta: { premium: 'developer' } },
+  { path: '/sandbox', name: 'sandbox', component: () => import('@/views/sandbox/index.vue'), meta: { premium: 'sandbox' } },
   { path: '/channels', name: 'channels', component: () => import('@/views/channels/index.vue'), meta: { premium: 'channels' } },
   { path: '/chat-room', name: 'chat-room', component: () => import('@/views/chat-room/index.vue'), meta: { premium: 'channels' } },
   { path: '/goals', name: 'goals', component: () => import('@/views/goals/index.vue'), meta: { premium: 'channels' } },
