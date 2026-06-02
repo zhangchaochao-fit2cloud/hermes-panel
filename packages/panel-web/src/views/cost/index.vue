@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { NTag, NProgress, NSpin, useMessage } from 'naive-ui';
+import { NTag, NProgress, NSpin, NButton, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
 
 interface ProviderLimit {
@@ -18,11 +18,18 @@ interface CostOverview {
   dailyBudget: number; projectedOverage: number;
   alerts: Array<{ level: string; message: string; source: string; timestamp: number }>;
 }
+interface Optimization {
+  id: string; type: string; title: string; description: string;
+  estimatedSavingsUsd: number; estimatedSavingsPct: number;
+  currentModel: string; suggestedModel: string; affectedRuns: number; confidence: number;
+}
 
 const msg = useMessage();
 const { t } = useI18n();
 const data = ref<CostOverview | null>(null);
 const loading = ref(true);
+const syncing = ref(false);
+const optimizations = ref<Optimization[]>([]);
 
 onMounted(async () => {
   try { data.value = await bffFetch<CostOverview>('/api/cost/overview'); }
@@ -30,10 +37,33 @@ onMounted(async () => {
   finally { loading.value = false; }
 });
 
+async function syncBilling() {
+  syncing.value = true;
+  try {
+    const res = await bffFetch<{ synced: number }>('/api/cost/sync', { method: 'POST' });
+    msg.success(t('cost.syncSuccess', { count: res.synced }));
+    await loadOptimizations();
+  } catch { msg.error(t('cost.syncFailed')); }
+  finally { syncing.value = false; }
+}
+
+async function loadOptimizations() {
+  try {
+    const res = await bffFetch<{ optimizations: Optimization[] }>('/api/cost/optimizations');
+    optimizations.value = res.optimizations;
+  } catch { /* silent */ }
+}
+
 function statusType(s: string): 'success' | 'warning' | 'error' | 'default' {
   if (s === 'ok') return 'success';
   if (s === 'warning') return 'warning';
   if (s === 'exceeded') return 'error';
+  return 'default';
+}
+
+function confidenceType(pct: number): 'success' | 'warning' | 'default' {
+  if (pct >= 80) return 'success';
+  if (pct >= 50) return 'warning';
   return 'default';
 }
 </script>
@@ -96,7 +126,7 @@ function statusType(s: string): 'success' | 'warning' | 'error' | 'default' {
       </div>
 
       <!-- Workspaces -->
-      <div v-if="data.workspaces.length" class="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-5">
+      <div v-if="data.workspaces.length" class="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-5 mb-6">
         <h3 class="text-sm font-semibold text-[var(--text-1)] mb-4">{{ t('cost.workspaceBudget') }}</h3>
         <div class="space-y-4">
           <div v-for="w in data.workspaces" :key="w.workspaceId" class="flex items-center gap-4">
@@ -106,6 +136,39 @@ function statusType(s: string): 'success' | 'warning' | 'error' | 'default' {
             </div>
             <span class="text-xs text-[var(--text-3)] w-[120px] text-right">${{ w.currentUsage.toFixed(2) }} / ${{ w.monthlyBudget }}</span>
             <NTag size="tiny">{{ w.exceedStrategy === 'warn' ? t('cost.strategyWarn') : w.exceedStrategy === 'downgrade' ? t('cost.strategyDowngrade') : t('cost.strategyBlock') }}</NTag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync billing toolbar -->
+      <div class="flex items-center gap-3 mb-6">
+        <NButton :loading="syncing" :disabled="syncing" size="small" type="primary" @click="syncBilling">
+          {{ syncing ? t('cost.syncing') : t('cost.syncBtn') }}
+        </NButton>
+      </div>
+
+      <!-- Optimization suggestions -->
+      <div class="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-5">
+        <h3 class="text-sm font-semibold text-[var(--text-1)] mb-4">💡 {{ t('cost.optimizations') }}</h3>
+        <div v-if="!optimizations.length" class="text-sm text-[var(--text-3)]">{{ t('cost.noOptimizations') }}</div>
+        <div v-else class="space-y-4">
+          <div v-for="opt in optimizations" :key="opt.id" class="rounded-lg border border-[var(--border)] p-4">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <div class="text-sm font-semibold text-[var(--text-1)]">{{ opt.title }}</div>
+                <div class="text-xs text-[var(--text-3)] mt-0.5">{{ opt.description }}</div>
+              </div>
+              <NTag :type="confidenceType(opt.confidence)" size="tiny">{{ t('cost.confidence', { pct: opt.confidence }) }}</NTag>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-[var(--text-2)] mt-2">
+              <span class="px-1.5 py-0.5 rounded bg-[color-mix(in_srgb,var(--text-3)_10%,transparent)]">{{ t('cost.currentModel') }}: {{ opt.currentModel }}</span>
+              <span>→</span>
+              <span class="px-1.5 py-0.5 rounded bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)] text-[var(--color-success)]">{{ t('cost.suggestedModel') }}: {{ opt.suggestedModel }}</span>
+            </div>
+            <div class="flex items-center gap-4 mt-2 text-xs">
+              <span class="text-[var(--color-success)] font-medium">{{ t('cost.savings', { amount: opt.estimatedSavingsUsd.toFixed(2), pct: opt.estimatedSavingsPct }) }}</span>
+              <span class="text-[var(--text-3)]">{{ t('cost.affectedRuns', { count: opt.affectedRuns }) }}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ describe('router lazy views', () => {
       '/goals',
       '/login',
       '/memory',
+      '/sandbox',
       '/sessions',
       '/settings',
       '/tools',
