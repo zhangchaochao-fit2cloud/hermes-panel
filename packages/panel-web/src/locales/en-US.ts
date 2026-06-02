@@ -12,6 +12,7 @@ export default {
     memory: 'Memory',
     tools: 'Tools',
     developer: 'Developer',
+    chatRoom: 'Chat Room',
     channels: 'Channels',
     files: 'Files',
     settings: 'Settings',
