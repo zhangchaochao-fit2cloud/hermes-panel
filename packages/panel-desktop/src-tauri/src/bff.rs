@@ -91,7 +91,15 @@ fn start_bff<R: Runtime>(app: &AppHandle<R>) -> Result<(u16, String, Child), Str
         .map_err(|err| format!("open bff log: {err}"))?;
     let stderr = stdout.try_clone().map_err(|err| format!("clone bff log: {err}"))?;
 
-    let node = which::which("node").map_err(|_| "node command not found; install Node.js 20+".to_string())?;
+    // Prefer bundled Node.js (Windows: resources/nodejs/node.exe) over system Node.js
+    let bundled = resource_dir.join("nodejs").join("node.exe");
+    let node = if bundled.exists() {
+        bundled
+    } else {
+        which::which("node").map_err(|_| {
+            "Node.js not found. Please install Node.js 20+ from https://nodejs.org".to_string()
+        })?
+    };
     let server = runtime.join("dist/server.js");
     if !server.exists() {
         return Err(format!("BFF build output missing: {}", server.display()));
