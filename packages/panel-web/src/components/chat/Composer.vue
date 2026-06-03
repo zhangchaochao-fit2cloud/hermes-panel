@@ -493,14 +493,15 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
       v-if="suggestion.show"
       class="smart-suggestion-hint flex items-center gap-2 px-3 py-1.5 mb-2 rounded-md text-xs"
       style="background: color-mix(in srgb, var(--brand-500) 8%, transparent); color: var(--brand-600);"
+      role="status"
     >
-      <span>💡</span>
-      <span class="flex-1">{{ suggestion.message }}</span>
+      <span aria-hidden="true">💡</span>
+      <span class="flex-1">{{ t(suggestion.messageKey) }}</span>
       <button
         type="button"
         class="opacity-60 hover:opacity-100 transition-opacity"
         @click="dismissSuggestion"
-        aria-label="Dismiss"
+        :aria-label="t('common.dismiss')"
       >✕</button>
     </div>
 

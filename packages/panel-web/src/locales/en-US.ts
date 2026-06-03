@@ -482,6 +482,9 @@ export default {
     compressFailed: 'Compression failed',
     compressing: 'Compressing...',
     compressHint: 'Compress history to save tokens',
+    smartSuggestion: {
+      orchestrate: 'This task looks complex — orchestration mode may give better results',
+    },
     find: {
       placeholder: 'Find in chat…',
       prev: 'Previous',

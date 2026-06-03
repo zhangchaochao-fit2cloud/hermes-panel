@@ -9,7 +9,20 @@ export type CommandIconKey =
   | 'sun'
   | 'moon'
   | 'auto'
-  | 'language';
+  | 'language'
+  | 'workspaces'
+  | 'cron'
+  | 'memory'
+  | 'cost'
+  | 'goals'
+  | 'lessons'
+  | 'sandbox'
+  | 'audit'
+  | 'proactive'
+  | 'intent'
+  | 'channels'
+  | 'chatRoom'
+  | 'developer';
 
 export type CommandAction =
   | { type: 'route'; to: string }
@@ -74,6 +87,19 @@ export const PANEL_COMMANDS = [
     hint: '/tools',
     action: { type: 'route', to: '/tools' },
   },
+  { id: 'nav-workspaces', groupKey: 'controlCenter.group.nav', icon: 'workspaces', labelKey: 'nav.workspaces', hint: '/workspaces', action: { type: 'route', to: '/workspaces' } },
+  { id: 'nav-cron', groupKey: 'controlCenter.group.nav', icon: 'cron', labelKey: 'nav.cron', hint: '/cron', action: { type: 'route', to: '/cron' } },
+  { id: 'nav-memory', groupKey: 'controlCenter.group.nav', icon: 'memory', labelKey: 'nav.memory', hint: '/memory', action: { type: 'route', to: '/memory' } },
+  { id: 'nav-cost', groupKey: 'controlCenter.group.nav', icon: 'cost', labelKey: 'nav.cost', hint: '/cost', action: { type: 'route', to: '/cost' } },
+  { id: 'nav-goals', groupKey: 'controlCenter.group.nav', icon: 'goals', labelKey: 'nav.goals', hint: '/goals', action: { type: 'route', to: '/goals' } },
+  { id: 'nav-lessons', groupKey: 'controlCenter.group.nav', icon: 'lessons', labelKey: 'nav.lessons', hint: '/lessons', action: { type: 'route', to: '/lessons' } },
+  { id: 'nav-sandbox', groupKey: 'controlCenter.group.nav', icon: 'sandbox', labelKey: 'nav.sandbox', hint: '/sandbox', action: { type: 'route', to: '/sandbox' } },
+  { id: 'nav-audit', groupKey: 'controlCenter.group.nav', icon: 'audit', labelKey: 'nav.audit', hint: '/audit', action: { type: 'route', to: '/audit' } },
+  { id: 'nav-proactive', groupKey: 'controlCenter.group.nav', icon: 'proactive', labelKey: 'nav.proactive', hint: '/proactive', action: { type: 'route', to: '/proactive' } },
+  { id: 'nav-intent', groupKey: 'controlCenter.group.nav', icon: 'intent', labelKey: 'nav.intent', hint: '/intent', action: { type: 'route', to: '/intent' } },
+  { id: 'nav-channels', groupKey: 'controlCenter.group.nav', icon: 'channels', labelKey: 'nav.channels', hint: '/channels', action: { type: 'route', to: '/channels' } },
+  { id: 'nav-chat-room', groupKey: 'controlCenter.group.nav', icon: 'chatRoom', labelKey: 'nav.chatRoom', hint: '/chat-room', action: { type: 'route', to: '/chat-room' } },
+  { id: 'nav-developer', groupKey: 'controlCenter.group.nav', icon: 'developer', labelKey: 'nav.developer', hint: '/developer', action: { type: 'route', to: '/developer' } },
   {
     id: 'nav-settings',
     groupKey: 'controlCenter.group.nav',

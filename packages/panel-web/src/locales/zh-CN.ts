@@ -486,6 +486,9 @@ export default {
     compressFailed: '压缩失败',
     compressing: '压缩中...',
     compressHint: '压缩历史消息，节省 Token',
+    smartSuggestion: {
+      orchestrate: '这个任务看起来比较复杂 —— 用编排模式可能效果更好',
+    },
     errors: {
       unauthorized: '认证失败：API key 无效或缺失',
       serverError: 'Hermes 内部错误',

@@ -3,20 +3,23 @@ import { bffFetch } from '@/api/bff';
 
 export interface SmartSuggestion {
   show: boolean;
-  message: string;
+  messageKey: string;
   action: 'orchestrate' | 'route' | null;
 }
 
 /**
  * Watches the composer input and suggests mode upgrades for complex tasks.
  * Debounced — only fires after 1.5s of no typing and prompt > 150 chars.
+ *
+ * Returns a `messageKey` (i18n key) rather than a literal string so the
+ * render site can translate it with the active locale.
  */
 export function useSmartSuggestion(input: Ref<string>) {
-  const suggestion = ref<SmartSuggestion>({ show: false, message: '', action: null });
+  const suggestion = ref<SmartSuggestion>({ show: false, messageKey: '', action: null });
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   watch(input, (text) => {
-    suggestion.value = { show: false, message: '', action: null };
+    suggestion.value = { show: false, messageKey: '', action: null };
     if (timer) clearTimeout(timer);
     if (text.trim().length < 150) return;
 
@@ -29,7 +32,7 @@ export function useSmartSuggestion(input: Ref<string>) {
         if (result.tier === 'complex' && result.confidence >= 0.7) {
           suggestion.value = {
             show: true,
-            message: 'This task looks complex — orchestration mode may give better results',
+            messageKey: 'chat.smartSuggestion.orchestrate',
             action: 'orchestrate',
           };
         }
@@ -39,7 +42,7 @@ export function useSmartSuggestion(input: Ref<string>) {
 
   function dismiss(): void {
     if (timer) { clearTimeout(timer); timer = null; }
-    suggestion.value = { show: false, message: '', action: null };
+    suggestion.value = { show: false, messageKey: '', action: null };
   }
 
   onBeforeUnmount(() => { if (timer) clearTimeout(timer); });

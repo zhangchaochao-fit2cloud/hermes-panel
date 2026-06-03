@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { NButton, NSpin, NTag, useMessage } from 'naive-ui';
+import { NButton, NTag, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -67,7 +68,9 @@ function severityBorder(severity: string): string {
         </NButton>
       </div>
 
-      <NSpin v-if="scanning && suggestions.length === 0" size="small" class="flex justify-center py-20" />
+      <div v-if="scanning && suggestions.length === 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ThemedSkeleton v-for="i in 4" :key="i" height="120px" rounded="lg" />
+      </div>
       <div v-else-if="suggestions.length === 0" class="py-16">
         <EmptyState :title="t('proactive.empty')" icon="🔮" />
       </div>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { NButton, NTag, NPopconfirm, NSpin, NProgress, useMessage } from 'naive-ui';
+import { NButton, NTag, NPopconfirm, NProgress, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -46,10 +47,23 @@ async function handleDelete(id: string): Promise<void> {
         <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('lessons.title') }}</h2>
         <p class="text-sm text-[var(--text-3)]">{{ t('lessons.subtitle') }}</p>
       </div>
-      <NButton type="primary" tag="a" href="#/chat">{{ t('lessons.add') }}</NButton>
+      <div class="flex items-center gap-2">
+        <NButton
+          quaternary
+          :loading="loading"
+          :disabled="loading"
+          :aria-label="t('common.refresh')"
+          @click="fetchLessons"
+        >
+          {{ t('common.refresh') }}
+        </NButton>
+        <NButton type="primary" tag="a" href="#/chat">{{ t('lessons.add') }}</NButton>
+      </div>
     </div>
 
-    <NSpin v-if="loading" size="small" class="flex justify-center py-12" />
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <ThemedSkeleton v-for="i in 6" :key="i" height="160px" rounded="lg" />
+    </div>
     <div v-else-if="lessons.length === 0" class="py-16">
       <EmptyState :title="t('lessons.emptyTitle')" :description="t('lessons.emptyDescription')" icon="🧠" />
     </div>

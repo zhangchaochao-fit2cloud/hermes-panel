@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { NSpin, NTag, useMessage } from 'naive-ui';
+import { NButton, NTag, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -30,7 +31,10 @@ const entries = ref<AuditEntry[]>([]);
 const stats = ref<AuditStats | null>(null);
 const loading = ref(true);
 
-onMounted(async () => {
+onMounted(async () => { await load(); });
+
+async function load(): Promise<void> {
+  loading.value = true;
   try {
     const [list, s] = await Promise.all([
       bffFetch<AuditEntry[]>('/api/audit?limit=100'),
@@ -43,7 +47,7 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+}
 
 function outcomeType(outcome: string): 'success' | 'error' | 'warning' | 'default' {
   if (outcome === 'success') return 'success';
@@ -60,12 +64,32 @@ function formatTime(ts: number): string {
 <template>
   <ViewErrorBoundary name="audit">
     <div class="audit-page px-6 py-6 max-w-[1400px] mx-auto">
-      <div class="mb-6">
-        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('audit.title') }}</h2>
-        <p class="text-sm text-[var(--text-3)]">{{ t('audit.subtitle') }}</p>
+      <div class="flex items-start justify-between gap-3 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('audit.title') }}</h2>
+          <p class="text-sm text-[var(--text-3)]">{{ t('audit.subtitle') }}</p>
+        </div>
+        <NButton
+          size="small"
+          quaternary
+          :loading="loading"
+          :disabled="loading"
+          :aria-label="t('common.refresh')"
+          @click="load"
+        >
+          {{ t('common.refresh') }}
+        </NButton>
       </div>
 
-      <NSpin v-if="loading" size="small" class="flex justify-center py-20" />
+      <!-- Loading skeleton -->
+      <div v-if="loading">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <ThemedSkeleton v-for="i in 3" :key="`stat-${i}`" height="84px" rounded="lg" />
+        </div>
+        <div class="space-y-2">
+          <ThemedSkeleton v-for="i in 6" :key="`row-${i}`" height="44px" />
+        </div>
+      </div>
       <template v-else>
         <!-- Stat cards -->
         <div v-if="stats" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
