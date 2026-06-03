@@ -1506,6 +1506,13 @@ export default {
   },
   setupGuide: '📖 使用指引',
   autoBinding: '正在自动绑定...',
+  bindSteps: {
+    saving: '正在保存配置...',
+    restarting: '正在重启 Gateway...',
+    waiting: '等待 Gateway 就绪...',
+    gettingQr: '正在获取二维码...',
+    testing: '正在测试连接...',
+  },
   guide: {
     telegram: { 1: '在 Telegram 中搜索 @BotFather 并发送 /newbot', 2: '按提示设置机器人名称，获取 Bot Token', 3: '将 Token 粘贴到上方输入框', 4: '保存后自动重启 Gateway，在 Telegram 中 @你的机器人即可对话' },
     discord: { 1: '打开 Discord Developer Portal，创建 New Application', 2: '进入 Bot 页面，点击 Reset Token 获取 Token', 3: 'OAuth2 → URL Generator → 勾选 bot + Send Messages → 复制链接在浏览器打开添加机器人' },

@@ -61,14 +61,14 @@ async function bindWechat(): Promise<void> {
   finally { testing.value = false; }
 }
 
-async function waitForGateway(maxWaitMs = 15000): Promise<boolean> {
+async function waitForGateway(maxWaitMs = 5000): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     try {
       const gw = await bffFetch<{ running: boolean }>('/api/gateway/status');
       if (gw.running) return true;
     } catch { /* keep waiting */ }
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 800));
   }
   return false;
 }
@@ -137,25 +137,34 @@ function visibleKeys(): string[] { return Object.keys(config.value); }
 function arrStr(key: string): string { const v = config.value[key]; return Array.isArray(v) ? v.join(', ') : String(v ?? ''); }
 function setArr(key: string, val: string): void { config.value[key] = val.split(',').map(s => s.trim()).filter(Boolean); }
 
+const bindingStep = ref<string | null>(null); // current step text for progress display
+
 async function onEnableToggle(enabled: boolean): Promise<void> {
   config.value.enabled = enabled;
-  if (!enabled) return; // just disabling, no auto-flow needed
+  if (!enabled) { bindingStep.value = null; return; }
 
   // Auto-bind flow: save → restart gateway → test/bind
   errorMsg.value = null;
   testResult.value = null;
 
   try {
-    // Step 1: Auto-save the config
+    // Step 1: Save config
+    bindingStep.value = t('channels.bindSteps.saving');
     await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
 
     // Step 2: Restart gateway
-    await store.restartGateway();
+    bindingStep.value = t('channels.bindSteps.restarting');
+    await bffFetch('/api/gateway/start', { method: 'POST' });
 
-    // Wait for gateway to be ready
-    await waitForGateway();
+    // Step 3: Wait for gateway (quick poll, 5s max)
+    bindingStep.value = t('channels.bindSteps.waiting');
+    await waitForGateway(5000);
 
-    // Step 3: Channel-specific binding action
+    // Step 4: Channel-specific binding
+    bindingStep.value = props.name === 'wechat'
+      ? t('channels.bindSteps.gettingQr')
+      : t('channels.bindSteps.testing');
+
     if (props.name === 'wechat') {
       await bindWechat();
     } else {
@@ -163,6 +172,8 @@ async function onEnableToggle(enabled: boolean): Promise<void> {
     }
   } catch (err) {
     errorMsg.value = (err as Error).message;
+  } finally {
+    bindingStep.value = null;
   }
 }
 
@@ -190,8 +201,8 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
         <NForm label-placement="top">
           <NFormItem v-for="key in visibleKeys()" :key="key" :label="fieldLabel(key)">
             <template v-if="key === 'enabled'">
-              <NSwitch :value="!!config[key]" :disabled="isSaving || store.saving === 'gateway'" :loading="store.saving === 'gateway'" @update:value="onEnableToggle" />
-              <span v-if="store.saving === 'gateway'" class="ml-2 text-xs text-[var(--text-3)]">{{ t('channels.autoBinding') }}</span>
+              <NSwitch :value="!!config[key]" :disabled="isSaving || !!bindingStep" :loading="!!bindingStep" @update:value="onEnableToggle" />
+              <span v-if="bindingStep" class="ml-2 text-xs text-[var(--text-3)]">{{ bindingStep }}</span>
             </template>
             <NSwitch v-else-if="isBool(key)" :value="!!config[key]" :disabled="isSaving" @update:value="val => config[key] = val" />
             <NInput v-else-if="isToken(key)" type="password" show-password-on="click" :value="String(config[key] ?? '')" :disabled="isSaving" @update:value="val => config[key] = val" />
@@ -203,9 +214,9 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
         <p v-if="errorMsg" class="text-xs text-red-500 mt-3">{{ errorMsg }}</p>
 
         <!-- Auto-binding progress indicator -->
-        <div v-if="store.saving === 'gateway'" class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_6%,transparent)]">
+        <div v-if="bindingStep" class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_6%,transparent)]">
           <span class="animate-spin text-sm">⚙️</span>
-          <span class="text-xs text-[var(--brand-600)]">{{ t('channels.autoBinding') }}</span>
+          <span class="text-xs text-[var(--brand-600)]">{{ bindingStep }}</span>
         </div>
 
         <!-- Actions bar -->

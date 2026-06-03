@@ -1521,6 +1521,13 @@ export default {
     },
     setupGuide: '📖 Setup Guide',
     autoBinding: 'Auto-binding...',
+    bindSteps: {
+      saving: 'Saving configuration...',
+      restarting: 'Restarting Gateway...',
+      waiting: 'Waiting for Gateway...',
+      gettingQr: 'Getting QR code...',
+      testing: 'Testing connection...',
+    },
     guide: {
       telegram: { 1: 'Search @BotFather in Telegram and send /newbot', 2: 'Follow the prompts to name your bot and get the Token', 3: 'Paste the Token into the field above', 4: 'Save to auto-restart Gateway, then @yourbot in Telegram to chat' },
       discord: { 1: 'Open Discord Developer Portal, create a New Application', 2: 'Go to Bot page, click Reset Token to get the Token', 3: 'OAuth2 → URL Generator → check bot + Send Messages → copy link to add bot to server' },

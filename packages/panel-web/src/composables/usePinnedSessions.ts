@@ -15,7 +15,7 @@ interface PinnedSessionsResponse {
 }
 
 let syncStarted = false;
-let syncTimer: ReturnType<typeof window.setTimeout> | undefined;
+let syncTimer: ReturnType<typeof setTimeout> | undefined;
 
 function read(): string[] {
   try {
@@ -75,8 +75,8 @@ async function pullRemotePinned(): Promise<void> {
 }
 
 function pushRemotePinned(ids: string[]): void {
-  if (syncTimer !== undefined) window.clearTimeout(syncTimer);
-  syncTimer = window.setTimeout(() => {
+  if (syncTimer !== undefined) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
     void bffFetch<PinnedSessionsResponse>('/api/preferences/pinned-sessions', {
       method: 'PUT',
       body: JSON.stringify({ ids }),
