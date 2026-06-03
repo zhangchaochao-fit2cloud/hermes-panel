@@ -62,7 +62,7 @@ export const useChannelsStore = defineStore('channels', () => {
   async function restartGateway(): Promise<void> {
     saving.value = 'gateway';
     try {
-      await bffFetch('/api/channels/telegram/restart', { method: 'POST' });
+      await bffFetch('/api/gateway/start', { method: 'POST' });
       gatewayRunning.value = true;
     } catch (err) {
       error.value = (err as Error).message;

@@ -6,6 +6,7 @@ import type { ChannelName } from '@hermes-panel/shared';
 import { useChannelsStore } from '@/stores/channels';
 import ChannelCard from '@/components/channels/ChannelCard.vue';
 import ChannelConfigForm from '@/components/channels/ChannelConfigForm.vue';
+import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 
 const { t } = useI18n();
 const store = useChannelsStore();
@@ -34,6 +35,7 @@ async function handleRestart(): Promise<void> {
 </script>
 
 <template>
+  <ViewErrorBoundary name="channels">
   <div class="channels-page px-6 py-6 max-w-[1200px] mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
@@ -62,6 +64,14 @@ async function handleRestart(): Promise<void> {
     <div v-else-if="store.error" class="py-20 text-center">
       <p class="text-sm text-[var(--text-3)] mb-3">{{ store.error }}</p>
       <NButton size="small" @click="store.fetchAll()">{{ t('channels.retry') }}</NButton>
+    </div>
+
+    <!-- First-time setup hint -->
+    <div v-if="!store.loading && !store.error && store.channels.length > 0 && store.enabledCount === 0"
+      class="mb-6 p-4 rounded-xl border border-[color-mix(in_srgb,var(--brand-500)_20%,var(--border))] bg-[color-mix(in_srgb,var(--brand-500)_4%,var(--bg-card))]"
+    >
+      <p class="text-sm font-medium text-[var(--brand-600)] mb-1">{{ t('channels.setupHint.title') }}</p>
+      <p class="text-xs text-[var(--text-3)]">{{ t('channels.setupHint.desc') }}</p>
     </div>
 
     <!-- Channel Grid -->
@@ -103,6 +113,7 @@ async function handleRestart(): Promise<void> {
       </div>
     </NModal>
   </div>
+  </ViewErrorBoundary>
 </template>
 
 <style scoped>
