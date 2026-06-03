@@ -37,6 +37,7 @@ import { workspaceStatusRouter } from './routes/workspace-status.js';
 import { sandboxRouter } from './routes/sandbox.js';
 import { filesRouter } from './routes/files.js';
 import { channelsRouter } from './routes/channels.js';
+import { channelBindRouter } from './routes/channel-bind.js';
 import { chatRoomsRouter } from './routes/chat-rooms.js';
 import { goalsRouter } from './routes/goals.js';
 import { costRouter } from './routes/cost.js';
@@ -99,6 +100,7 @@ export function createApp(): Koa {
   router.use(sandboxRouter.routes(), sandboxRouter.allowedMethods());
   router.use(filesRouter.routes(), filesRouter.allowedMethods());
   router.use(channelsRouter.routes(), channelsRouter.allowedMethods());
+  router.use(channelBindRouter.routes(), channelBindRouter.allowedMethods());
   router.use(chatRoomsRouter.routes(), chatRoomsRouter.allowedMethods());
   router.use(goalsRouter.routes(), goalsRouter.allowedMethods());
   router.use(costRouter.routes(), costRouter.allowedMethods());

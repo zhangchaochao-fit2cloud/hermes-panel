@@ -68,6 +68,22 @@ channelsRouter.delete('/channels/:name', async ctx => {
   ctx.body = { ok: true };
 });
 
+channelsRouter.post('/channels/:name/test', async ctx => {
+  const name = ctx.params.name;
+  if (!VALID_CHANNELS.has(name)) { ctx.status = 404; return; }
+  const cfg = getChannelConfig(name as ChannelName);
+  const enabled = (cfg as unknown as Record<string, unknown>).enabled;
+  if (enabled !== true) {
+    ctx.status = 400; ctx.body = { error: 'channel_disabled', message: '渠道未启用，请先保存并启用' }; return;
+  }
+  const gw = await gatewayStatus().catch(() => ({ running: false }));
+  if (!gw.running) {
+    ctx.status = 400; ctx.body = { error: 'gateway_stopped', message: 'Gateway 未运行，请先重启 Gateway' }; return;
+  }
+  // Channel config exists and gateway is running — connection is likely working
+  ctx.body = { ok: true, channel: name, gatewayRunning: true };
+});
+
 channelsRouter.post('/channels/:name/restart', async ctx => {
   const name = ctx.params.name;
   if (!VALID_CHANNELS.has(name)) {

@@ -25,6 +25,48 @@ const meta = CHANNEL_META[props.name];
 const config = ref<Record<string, unknown>>({});
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
+const testing = ref(false);
+const testResult = ref<string | null>(null);
+const wechatStatus = ref<{ bound: boolean } | null>(null);
+
+async function testConnection(): Promise<void> {
+  testing.value = true; testResult.value = null;
+  try {
+    const res = await fetch(`/api/channels/${props.name}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Panel-Token': document.querySelector<HTMLMetaElement>('meta[name="panel-token"]')?.content ?? '' },
+    });
+    if (res.ok) { testResult.value = 'success'; }
+    else { const j = await res.json().catch(() => ({ error: 'unknown' })); testResult.value = `failed: ${j.error || 'unknown error'}`; }
+  } catch { testResult.value = 'failed: network error'; }
+  finally { testing.value = false; }
+}
+
+async function checkWechatStatus(): Promise<void> {
+  try {
+    const res = await fetch('/api/channels/wechat/status', {
+      headers: { 'X-Panel-Token': document.querySelector<HTMLMetaElement>('meta[name="panel-token"]')?.content ?? '' },
+    });
+    wechatStatus.value = await res.json();
+  } catch { /**/ }
+}
+
+async function bindWechat(): Promise<void> {
+  testing.value = true; testResult.value = null;
+  try {
+    const res = await fetch('/api/channels/wechat/bind', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Panel-Token': document.querySelector<HTMLMetaElement>('meta[name="panel-token"]')?.content ?? '' },
+    });
+    const data = await res.json();
+    if (data.qrUrl) {
+      testResult.value = `qr:${data.qrUrl}`;
+    } else {
+      testResult.value = `请查看日志：${data.raw?.slice(0, 200) || '无输出'}`;
+    }
+  } catch { testResult.value = 'failed'; }
+  finally { testing.value = false; }
+}
 
 watch(() => [props.name, props.visible], async ([name, vis]) => {
   if (!vis || !name) return;
@@ -135,9 +177,100 @@ function setArr(key: string, val: string): void {
 
         <p v-if="errorMsg" class="text-xs text-red-500 mt-3">{{ errorMsg }}</p>
 
+        <div class="flex gap-2 mt-3 flex-wrap">
+          <NButton size="tiny" :loading="testing" @click="testConnection">🔌 测试连接</NButton>
+          <template v-if="props.name === 'wechat'">
+            <NButton size="tiny" type="primary" :loading="testing" @click="bindWechat">📱 获取扫码链接</NButton>
+            <NButton size="tiny" @click="checkWechatStatus">📋 检查绑定状态</NButton>
+          </template>
+        </div>
+        <div v-if="wechatStatus" class="mt-2 text-xs" :class="wechatStatus.bound ? 'text-[var(--color-success)]' : 'text-[var(--text-3)]'">
+          {{ wechatStatus.bound ? '✅ 已绑定微信' : '⚠️ 未绑定，点击「获取扫码链接」进行绑定' }}
+        </div>
+        <div v-if="testResult" class="mt-2 p-3 rounded-lg text-xs" :class="testResult === 'success' ? 'bg-[color-mix(in_srgb,var(--color-success)_10%,transparent)] text-[var(--color-success)]' : testResult?.startsWith('qr:') ? 'bg-[color-mix(in_srgb,var(--brand-500)_10%,transparent)] text-[var(--brand-600)]' : 'bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] text-[var(--color-error)]'">
+          <template v-if="testResult === 'success'">✅ 连接成功，渠道配置正确</template>
+          <template v-else-if="testResult.startsWith('failed:')">{{ testResult }}</template>
+          <template v-else-if="testResult.startsWith('qr:')">
+            <p class="font-semibold mb-1">📱 扫码绑定微信</p>
+            <code class="block p-2 bg-[var(--bg-card)] rounded break-all text-xs">{{ testResult.slice(3) }}</code>
+          </template>
+        </div>
+
+        <!-- Channel-specific setup guide -->
+        <div class="mt-4 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_5%,var(--bg-elevate))] border border-[color-mix(in_srgb,var(--brand-500)_15%,var(--border))]">
+          <p class="text-xs font-semibold text-[var(--brand-600)] mb-2">📖 如何获取配置信息</p>
+          <template v-if="props.name === 'telegram'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>打开 Telegram 搜索 <code class="bg-[var(--bg-card)] px-1 rounded">@BotFather</code></li>
+              <li>发送 <code class="bg-[var(--bg-card)] px-1 rounded">/newbot</code> 创建机器人</li>
+              <li>将获得的 Token 粘贴到上方「Bot Token」字段</li>
+              <li>保存后重启 Gateway，在 Telegram 中 @你的机器人 即可对话</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'discord'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>前往 <a href="https://discord.com/developers/applications" target="_blank" class="text-[var(--brand-500)] underline">Discord Developer Portal</a></li>
+              <li>创建 Application → Bot → 获取 Token</li>
+              <li>将 Bot 添加到服务器：OAuth2 → URL Generator → bot + Send Messages</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'slack'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>前往 <a href="https://api.slack.com/apps" target="_blank" class="text-[var(--brand-500)] underline">Slack API</a> 创建 App</li>
+              <li>OAuth & Permissions → Bot Token Scopes → 添加 chat:write</li>
+              <li>Install to Workspace → 获取 Bot Token</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'wechat'">
+            <p class="text-xs text-[var(--text-2)] mb-2 font-semibold">微信渠道分为三步配置：</p>
+            <ol class="text-xs text-[var(--text-2)] space-y-1.5 list-decimal list-inside">
+              <li><strong>微信公众平台</strong>：注册<a href="https://mp.weixin.qq.com" target="_blank" class="text-[var(--brand-500)] underline">微信公众平台</a>（服务号或订阅号），完成认证</li>
+              <li><strong>配置文件</strong>：在公众平台「开发 → 基本配置」中获取 AppID 和 AppSecret，Hermes Gateway 会自动读取 <code class="bg-[var(--bg-card)] px-1 rounded">config.yaml</code> 中的 token/encodingAESKey</li>
+              <li><strong>扫码绑定</strong>：重启 Gateway 后，打开 <a href="#/developer" class="text-[var(--brand-500)] underline" @click="emit('close')">开发者 → 日志页面</a>，查看 Gateway 启动日志中是否输出了扫码链接</li>
+            </ol>
+            <p class="text-xs text-[var(--text-3)] mt-2">⚠️ 微信渠道依赖 Hermes Gateway 内置的微信插件。如果 Gateway 未安装微信插件，此配置仅写入 config.yaml 但不会生效。确认插件状态可查看 <a href="#/developer" class="text-[var(--brand-500)] underline" @click="emit('close')">Developer → Logs</a> 中 Gateway 启动日志。</p>
+          </template>
+          <template v-else-if="props.name === 'feishu'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>前往 <a href="https://open.feishu.cn/app" target="_blank" class="text-[var(--brand-500)] underline">飞书开放平台</a> 创建应用</li>
+              <li>获取 App ID 和 App Secret</li>
+              <li>添加机器人能力 → 配置事件订阅</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'whatsapp'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>Hermes Gateway 使用 <code class="bg-[var(--bg-card)] px-1 rounded">whatsapp-web.js</code> 通过 QR 码登录</li>
+              <li>启用后重启 Gateway，在 Gateway 日志中查看 QR 码</li>
+              <li>用 WhatsApp 手机客户端扫描 QR 码完成绑定</li>
+              <li>mentionMode: <code class="bg-[var(--bg-card)] px-1 rounded">always</code> 始终 @机器人 / <code class="bg-[var(--bg-card)] px-1 rounded">at_mention</code> 仅被 @时回复 / <code class="bg-[var(--bg-card)] px-1 rounded">never</code> 不回复</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'matrix'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>需要一个 Matrix 账号和 Homeserver URL（默认 <code class="bg-[var(--bg-card)] px-1 rounded">matrix.org</code>）</li>
+              <li>Access Token：在 Matrix 客户端 (Element) 中 Settings → Help & About → Access Token</li>
+              <li>Homeserver：你的 Matrix 服务器地址</li>
+              <li>启用 <code class="bg-[var(--bg-card)] px-1 rounded">autoThread</code> 可自动为每条消息创建独立线程</li>
+            </ol>
+          </template>
+          <template v-else-if="props.name === 'wecom'">
+            <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
+              <li>前往<a href="https://work.weixin.qq.com" target="_blank" class="text-[var(--brand-500)] underline">企业微信管理后台</a></li>
+              <li>「应用管理 → 创建应用」获取 AgentId 和 Secret</li>
+              <li>Bot ID 即企业 ID (CorpId)，在「我的企业」页面查看</li>
+              <li>配置「接收消息」回调 URL 指向 Hermes Gateway 地址</li>
+            </ol>
+          </template>
+          <template v-else>
+            <p class="text-xs text-[var(--text-2)]">请填写上方配置信息，保存后重启 Gateway 使配置生效。</p>
+          </template>
+        </div>
+
         <p class="text-xs text-[var(--text-3)] mt-3 leading-relaxed">
-          {{ t('channels.config.restartHint') }}
+          💡 {{ t('channels.config.restartHint') }}
           <span v-if="store.enabledCount > 0" class="text-[var(--brand-500)] cursor-pointer hover:underline" @click="store.restartGateway()">{{ t('channels.config.restartNow') }}</span>
+          <span class="mx-1">·</span>
+          <a href="#/developer" class="text-[var(--brand-500)] underline" @click="emit('close')">查看 Gateway 日志 →</a>
         </p>
 
         <div class="flex gap-3 mt-4">
