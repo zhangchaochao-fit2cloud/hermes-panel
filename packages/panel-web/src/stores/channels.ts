@@ -63,9 +63,18 @@ export const useChannelsStore = defineStore('channels', () => {
     saving.value = 'gateway';
     try {
       await bffFetch('/api/gateway/start', { method: 'POST' });
-      gatewayRunning.value = true;
+      // Wait for gateway to be ready (poll health check)
+      for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        try {
+          const health = await bffFetch<{ hermes: { running: boolean } }>('/api/system/health');
+          if (health.hermes.running) { gatewayRunning.value = true; return; }
+        } catch { /* keep polling */ }
+      }
+      gatewayRunning.value = true; // assume started after 10s
     } catch (err) {
       error.value = (err as Error).message;
+      throw err;
     } finally {
       saving.value = null;
     }

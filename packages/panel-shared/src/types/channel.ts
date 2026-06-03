@@ -44,10 +44,6 @@ export interface FeishuConfig {
 
 export interface WeChatConfig {
   enabled: boolean;
-  appId: string;
-  appSecret: string;
-  token: string;
-  encodingAESKey: string;
 }
 
 export interface WeComConfig {

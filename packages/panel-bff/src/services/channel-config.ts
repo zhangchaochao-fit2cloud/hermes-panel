@@ -3,7 +3,7 @@ import { join, dirname } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { getHermesHome } from './hermes-home.js';
 import { logger } from '../lib/logger.js';
-import type { ChannelName, ChannelConfig, ChannelStatus } from '@hermes-panel/shared';
+import type { ChannelName, ChannelConfig, ChannelStatus, WeChatConfig } from '@hermes-panel/shared';
 import { CHANNEL_META } from '@hermes-panel/shared';
 
 interface HermesConfig {
@@ -47,16 +47,7 @@ const DEFAULT_CONFIGS: Record<ChannelName, () => ChannelConfig> = {
   whatsapp: () => ({ enabled: false, mentionMode: 'at_mention' }),
   matrix: () => ({ enabled: false, accessToken: '', homeserver: 'https://matrix.org', autoThread: true }),
   feishu: () => ({ enabled: false, appId: '', appSecret: '', mentionControl: true }),
-  wechat: () => {
-    const crypto = require('node:crypto') as typeof import('node:crypto');
-    return {
-      enabled: false,
-      appId: '',
-      appSecret: '',
-      token: crypto.randomBytes(16).toString('hex'),
-      encodingAESKey: crypto.randomBytes(43).toString('base64').slice(0, 43),
-    };
-  },
+  wechat: () => ({ enabled: false } as WeChatConfig),
   wecom: () => ({ enabled: false, botId: '', botSecret: '' }),
 };
 

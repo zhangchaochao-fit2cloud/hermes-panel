@@ -5,6 +5,7 @@ import {
   NInput, NButton, NSpin,
 } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import { toDataURL } from 'qrcode';
 import type { ChannelName, ChannelConfig } from '@hermes-panel/shared';
 import { CHANNEL_META } from '@hermes-panel/shared';
 import { useChannelsStore } from '@/stores/channels';
@@ -38,32 +39,38 @@ async function testConnection(): Promise<void> {
 }
 
 async function checkWechatStatus(): Promise<void> {
-  try {
-    wechatStatus.value = await bffFetch<{ bound: boolean }>('/api/channels/wechat/status');
-  } catch { wechatStatus.value = { bound: false }; }
+  try { wechatStatus.value = await bffFetch<{ bound: boolean }>('/api/channels/wechat/status'); }
+  catch { wechatStatus.value = { bound: false }; }
 }
 
 async function bindWechat(): Promise<void> {
   testing.value = true; testResult.value = null;
   try {
-    const data = await bffFetch<{ qrUrl?: string; raw?: string }>('/api/channels/wechat/bind', { method: 'POST' });
-    if (data.qrUrl) {
-      testResult.value = { type: 'qr', message: data.qrUrl };
+    const data = await bffFetch<{ qrUrl?: string; instruction?: string; error?: string; message?: string }>('/api/channels/wechat/bind', { method: 'POST' });
+    if (data.error) { testResult.value = { type: 'error', message: data.message || data.error }; }
+    else if (data.qrUrl) {
+      const qrDataUrl = await toDataURL(data.qrUrl, { width: 256, margin: 1 });
+      testResult.value = { type: 'qr', message: qrDataUrl };
       if (statusPollTimer) clearInterval(statusPollTimer);
       statusPollTimer = setInterval(async () => {
         await checkWechatStatus();
-        if (wechatStatus.value?.bound) {
-          if (statusPollTimer) clearInterval(statusPollTimer);
-          testResult.value = { type: 'success', message: t('channels.wechat.bindSuccess') };
-        }
+        if (wechatStatus.value?.bound) { if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; } testResult.value = { type: 'success', message: t('channels.wechat.bindSuccess') }; }
       }, 3000);
-    } else {
-      testResult.value = { type: 'info', message: data.raw?.slice(0, 300) || t('channels.wechat.noQrOutput') };
-    }
-  } catch (err: unknown) {
-    const msg = (err instanceof Error) ? err.message : String(err);
-    testResult.value = { type: 'error', message: msg || t('channels.wechat.bindFailed') };
-  } finally { testing.value = false; }
+    } else { testResult.value = { type: 'info', message: data.instruction || t('channels.wechat.checkGatewayLogs') }; }
+  } catch (err: unknown) { testResult.value = { type: 'error', message: (err instanceof Error ? err.message : String(err)) || t('channels.wechat.bindFailed') }; }
+  finally { testing.value = false; }
+}
+
+async function waitForGateway(maxWaitMs = 15000): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const gw = await bffFetch<{ running: boolean }>('/api/gateway/status');
+      if (gw.running) return true;
+    } catch { /* keep waiting */ }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  return false;
 }
 
 watch(() => [props.name, props.visible], async ([name, vis]) => {
@@ -83,6 +90,16 @@ async function save(): Promise<void> {
   errorMsg.value = null;
   try {
     await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
+    const shouldRestart = config.value.enabled && store.enabledCount > 0;
+    if (shouldRestart) {
+      try { await store.restartGateway(); } catch { /* non-critical */ }
+    }
+    if (props.name === 'wechat' && config.value.enabled) {
+      // Wait for gateway to be ready, then auto-bind
+      if (shouldRestart) await waitForGateway();
+      await bindWechat();
+      return; // keep drawer open to show QR code
+    }
     emit('close');
   } catch { errorMsg.value = t('channels.config.saveFailed'); }
 }
@@ -120,44 +137,37 @@ function visibleKeys(): string[] { return Object.keys(config.value); }
 function arrStr(key: string): string { const v = config.value[key]; return Array.isArray(v) ? v.join(', ') : String(v ?? ''); }
 function setArr(key: string, val: string): void { config.value[key] = val.split(',').map(s => s.trim()).filter(Boolean); }
 
-const SETUP_GUIDE: Partial<Record<ChannelName, Array<{ text: string }>>> = {
-  telegram: [
-    { text: '打开 Telegram 搜索 @BotFather' },
-    { text: '发送 /newbot 创建机器人' },
-    { text: '将获得的 Token 粘贴到上方「Bot Token」字段' },
-    { text: '保存后重启 Gateway，在 Telegram 中 @你的机器人 即可对话' },
-  ],
-  discord: [
-    { text: '前往 Discord Developer Portal 创建 Application' },
-    { text: 'Bot 页面获取 Token' },
-    { text: 'OAuth2 → URL Generator → bot + Send Messages → 添加到服务器' },
-  ],
-  slack: [
-    { text: '前往 Slack API 创建 App' },
-    { text: 'OAuth & Permissions → Bot Token Scopes → 添加 chat:write' },
-    { text: 'Install to Workspace → 获取 Bot Token' },
-  ],
-  feishu: [
-    { text: '前往飞书开放平台创建应用' },
-    { text: '获取 App ID 和 App Secret' },
-    { text: '添加机器人能力 → 配置事件订阅' },
-  ],
-  whatsapp: [
-    { text: '启用后重启 Gateway，查看日志中的 QR 码' },
-    { text: '用 WhatsApp 扫描 QR 码完成绑定' },
-    { text: 'mentionMode: always (始终回复) / at_mention (仅被@时回复) / never (不回复)' },
-  ],
-  matrix: [
-    { text: '需要一个 Matrix 账号和 Homeserver URL（默认 matrix.org）' },
-    { text: 'Access Token：在 Element 客户端 Settings → Help & About 获取' },
-    { text: '启用 autoThread 可自动为每条消息创建独立线程' },
-  ],
-  wecom: [
-    { text: '前往企业微信管理后台' },
-    { text: '「应用管理 → 创建应用」获取 AgentId 和 Secret' },
-    { text: 'Bot ID 即企业 ID (CorpId)，在「我的企业」页面查看' },
-    { text: '配置「接收消息」回调 URL 指向 Hermes Gateway 地址' },
-  ],
+async function onEnableToggle(enabled: boolean): Promise<void> {
+  config.value.enabled = enabled;
+  if (!enabled) return; // just disabling, no auto-flow needed
+
+  // Auto-bind flow: save → restart gateway → test/bind
+  errorMsg.value = null;
+  testResult.value = null;
+
+  try {
+    // Step 1: Auto-save the config
+    await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
+
+    // Step 2: Restart gateway
+    await store.restartGateway();
+
+    // Wait for gateway to be ready
+    await waitForGateway();
+
+    // Step 3: Channel-specific binding action
+    if (props.name === 'wechat') {
+      await bindWechat();
+    } else {
+      await testConnection();
+    }
+  } catch (err) {
+    errorMsg.value = (err as Error).message;
+  }
+}
+
+const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
+  telegram: 4, discord: 3, slack: 3, feishu: 3, wechat: 3, whatsapp: 3, matrix: 3, wecom: 4,
 };
 </script>
 
@@ -167,10 +177,10 @@ const SETUP_GUIDE: Partial<Record<ChannelName, Array<{ text: string }>>> = {
       <NSpin v-if="loading" />
       <template v-else>
         <!-- Setup guide (shown first for unconfigured channels) -->
-        <div v-if="SETUP_GUIDE[props.name]" class="mb-4 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_4%,var(--bg-elevate))] border border-[color-mix(in_srgb,var(--brand-500)_12%,var(--border))]">
+        <div v-if="SETUP_GUIDE_STEPS[props.name]" class="mb-4 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_4%,var(--bg-elevate))] border border-[color-mix(in_srgb,var(--brand-500)_12%,var(--border))]">
           <p class="text-xs font-semibold text-[var(--brand-600)] mb-2">{{ t('channels.setupGuide') }}</p>
           <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
-            <li v-for="(s, i) in SETUP_GUIDE[props.name]" :key="i">{{ s.text }}</li>
+            <li v-for="i in SETUP_GUIDE_STEPS[props.name]" :key="i">{{ t('channels.guide.' + props.name + '.' + i) }}</li>
           </ol>
           <template v-if="props.name === 'wechat'">
             <p class="text-xs text-[var(--text-3)] mt-2">{{ t('channels.wechat.autoNote') }}</p>
@@ -179,7 +189,11 @@ const SETUP_GUIDE: Partial<Record<ChannelName, Array<{ text: string }>>> = {
 
         <NForm label-placement="top">
           <NFormItem v-for="key in visibleKeys()" :key="key" :label="fieldLabel(key)">
-            <NSwitch v-if="isBool(key)" :value="!!config[key]" :disabled="isSaving" @update:value="val => config[key] = val" />
+            <template v-if="key === 'enabled'">
+              <NSwitch :value="!!config[key]" :disabled="isSaving || store.saving === 'gateway'" :loading="store.saving === 'gateway'" @update:value="onEnableToggle" />
+              <span v-if="store.saving === 'gateway'" class="ml-2 text-xs text-[var(--text-3)]">{{ t('channels.autoBinding') }}</span>
+            </template>
+            <NSwitch v-else-if="isBool(key)" :value="!!config[key]" :disabled="isSaving" @update:value="val => config[key] = val" />
             <NInput v-else-if="isToken(key)" type="password" show-password-on="click" :value="String(config[key] ?? '')" :disabled="isSaving" @update:value="val => config[key] = val" />
             <NInput v-else-if="isArr(key)" type="textarea" :value="arrStr(key)" :disabled="isSaving" :autosize="{ minRows: 2, maxRows: 4 }" @update:value="val => setArr(key, val)" />
             <NInput v-else :value="String(config[key] ?? '')" :disabled="isSaving" @update:value="val => config[key] = val" />
@@ -187,6 +201,12 @@ const SETUP_GUIDE: Partial<Record<ChannelName, Array<{ text: string }>>> = {
         </NForm>
 
         <p v-if="errorMsg" class="text-xs text-red-500 mt-3">{{ errorMsg }}</p>
+
+        <!-- Auto-binding progress indicator -->
+        <div v-if="store.saving === 'gateway'" class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_6%,transparent)]">
+          <span class="animate-spin text-sm">⚙️</span>
+          <span class="text-xs text-[var(--brand-600)]">{{ t('channels.autoBinding') }}</span>
+        </div>
 
         <!-- Actions bar -->
         <div class="flex gap-2 mt-3 flex-wrap">
@@ -212,14 +232,9 @@ const SETUP_GUIDE: Partial<Record<ChannelName, Array<{ text: string }>>> = {
             'bg-[color-mix(in_srgb,var(--bg-elevate)_80%,transparent)] text-[var(--text-2)]': testResult.type === 'info',
           }">
           <template v-if="testResult.type === 'qr'">
-            <p class="font-semibold mb-2">{{ t('channels.wechat.scanTitle') }}</p>
-            <p class="mb-2">{{ t('channels.wechat.scanHint') }}</p>
-            <a :href="testResult.message" target="_blank" rel="noopener"
-              class="inline-block px-3 py-2 rounded-lg bg-[var(--brand-500)] text-white text-xs font-medium hover:bg-[var(--brand-600)] transition-colors mb-2">
-              🔗 {{ t('channels.wechat.openLink') }}
-            </a>
-            <div class="bg-[var(--bg-card)] rounded p-2 mt-2 break-all font-mono text-[11px] text-[var(--text-2)] max-h-[80px] overflow-y-auto">
-              {{ testResult.message }}
+            <p class="font-semibold mb-3 text-center">{{ t('channels.wechat.scanTitle') }}</p>
+            <div class="flex justify-center mb-3">
+              <img :src="testResult.message" alt="WeChat QR" class="rounded-xl border border-[var(--border)] bg-white p-2" width="256" height="256" />
             </div>
           </template>
           <template v-else>{{ testResult.message }}</template>
