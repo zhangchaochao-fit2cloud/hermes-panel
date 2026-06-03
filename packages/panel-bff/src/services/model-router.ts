@@ -177,14 +177,15 @@ export function getConfig(): RoutingConfig {
   if (!existsSync(p)) { _configCache = DEFAULT_CONFIG; _configCacheAt = Date.now(); return DEFAULT_CONFIG; }
   try {
     const raw = JSON.parse(readFileSync(p, 'utf8'));
-    _configCache = {
+    const merged: RoutingConfig = {
       ...DEFAULT_CONFIG, ...raw,
       models: { ...DEFAULT_CONFIG.models, ...raw.models },
       localModels: { ...DEFAULT_CONFIG.localModels, ...raw.localModels },
       thresholds: { ...DEFAULT_CONFIG.thresholds, ...raw.thresholds },
     };
+    _configCache = merged;
     _configCacheAt = Date.now();
-    return _configCache;
+    return merged;
   } catch { _configCache = DEFAULT_CONFIG; _configCacheAt = Date.now(); return DEFAULT_CONFIG; }
 }
 
