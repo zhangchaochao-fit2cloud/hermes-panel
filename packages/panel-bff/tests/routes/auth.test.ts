@@ -83,7 +83,8 @@ describe('login / me / logout', () => {
     expect(me.status).toBe(200);
     expect(me.body.user.role).toBe('admin');
     expect(me.body.license).toBeNull();
-    expect(me.body.features).toEqual([]);
+    // When no licenses exist in the system, all features are enabled (personal mode)
+    expect(me.body.features.length).toBeGreaterThan(0);
 
     const logout = await request.post('/api/auth/logout').set('X-Panel-Token', token);
     expect(logout.status).toBe(204);

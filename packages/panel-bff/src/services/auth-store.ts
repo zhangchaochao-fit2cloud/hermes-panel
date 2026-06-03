@@ -338,8 +338,19 @@ export function revokeLicense(key: string): void {
   db.prepare('UPDATE licenses SET revoked = 1 WHERE key = ?').run(key);
 }
 
-/** Get features for a user from their active license. Returns empty array for unlicensed users. */
+/** Get features for a user from their active license.
+ * When no license system is in use (no licenses created at all),
+ * all features are enabled by default — this is a local-first personal tool.
+ * Only when licenses exist but the user doesn't have one are features restricted.
+ */
 export function getFeaturesForUser(userId: string): string[] {
   const lic = getLicenseForUser(userId);
-  return lic?.features ?? [];
+  if (lic) return lic.features ?? [];
+  // No active license for this user — check if ANY licenses exist in the system.
+  // If none exist, licensing is not in use → grant all features (personal mode).
+  const db = getPanelDb();
+  const count = db.prepare('SELECT COUNT(*) as n FROM licenses').get() as { n: number };
+  if (count.n === 0) return [...PREMIUM_FEATURES];
+  // Licenses exist but user doesn't have one → restricted.
+  return [];
 }
