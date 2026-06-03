@@ -75,7 +75,7 @@ async function handleRestart(): Promise<void> {
     </div>
 
     <!-- Channel Grid -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div v-if="!store.loading && !store.error" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <ChannelCard
         v-for="ch in store.channels"
         :key="ch.name"
