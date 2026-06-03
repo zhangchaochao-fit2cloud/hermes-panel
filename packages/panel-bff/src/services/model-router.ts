@@ -167,16 +167,31 @@ function configPath(): string {
   return join(dir, 'model-router.json');
 }
 
+let _configCache: RoutingConfig | null = null;
+let _configCacheAt = 0;
+const CONFIG_CACHE_TTL = 30000;
+
 export function getConfig(): RoutingConfig {
+  if (_configCache && Date.now() - _configCacheAt < CONFIG_CACHE_TTL) return _configCache;
   const p = configPath();
-  if (!existsSync(p)) return DEFAULT_CONFIG;
+  if (!existsSync(p)) { _configCache = DEFAULT_CONFIG; _configCacheAt = Date.now(); return DEFAULT_CONFIG; }
   try {
     const raw = JSON.parse(readFileSync(p, 'utf8'));
-    return { ...DEFAULT_CONFIG, ...raw, models: { ...DEFAULT_CONFIG.models, ...raw.models }, localModels: { ...DEFAULT_CONFIG.localModels, ...raw.localModels }, thresholds: { ...DEFAULT_CONFIG.thresholds, ...raw.thresholds } };
-  } catch { return DEFAULT_CONFIG; }
+    _configCache = {
+      ...DEFAULT_CONFIG, ...raw,
+      models: { ...DEFAULT_CONFIG.models, ...raw.models },
+      localModels: { ...DEFAULT_CONFIG.localModels, ...raw.localModels },
+      thresholds: { ...DEFAULT_CONFIG.thresholds, ...raw.thresholds },
+    };
+    _configCacheAt = Date.now();
+    return _configCache;
+  } catch { _configCache = DEFAULT_CONFIG; _configCacheAt = Date.now(); return DEFAULT_CONFIG; }
 }
 
+export function invalidateConfigCache(): void { _configCache = null; }
+
 export function updateConfig(patch: Partial<RoutingConfig>): RoutingConfig {
+  invalidateConfigCache();
   const current = getConfig();
   const next = {
     ...current,

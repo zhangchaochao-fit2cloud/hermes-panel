@@ -10,6 +10,9 @@ export const useSyncStore = defineStore('sync', () => {
 
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   let abortController: AbortController | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryCount = 0;
+  const MAX_RETRIES = 10;
 
   async function connect(): Promise<void> {
     if (connected.value) return;
@@ -43,16 +46,18 @@ export const useSyncStore = defineStore('sync', () => {
           if (!dataLine) continue;
           try {
             const event = JSON.parse(dataLine.slice(5).trim());
+            retryCount = 0; // Reset on successful data
             lastEvent.value = { type: event.type, timestamp: event.timestamp };
             if (event.type === 'connected') clientCount.value = event.payload.clientCount;
-            // Other event types can be handled by consumers watching lastEvent
           } catch { /* skip */ }
         }
       }
     } catch (err) {
-      if ((err as DOMException)?.name !== 'AbortError') {
-        console.warn('[sync] connection lost, will retry in 5s');
-        setTimeout(() => void connect(), 5000);
+      if ((err as DOMException)?.name !== 'AbortError' && retryCount < MAX_RETRIES) {
+        retryCount++;
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+        console.warn(`[sync] connection lost, retry ${retryCount}/${MAX_RETRIES} in ${delay / 1000}s`);
+        reconnectTimer = setTimeout(() => void connect(), delay);
       }
     } finally {
       connected.value = false;
@@ -60,8 +65,10 @@ export const useSyncStore = defineStore('sync', () => {
   }
 
   function disconnect(): void {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     abortController?.abort();
     abortController = null;
+    retryCount = 0;
     reader = null;
     connected.value = false;
   }

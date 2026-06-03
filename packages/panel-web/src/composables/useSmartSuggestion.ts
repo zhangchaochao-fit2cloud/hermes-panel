@@ -1,4 +1,4 @@
-import { ref, watch, type Ref } from 'vue';
+import { ref, watch, onBeforeUnmount, type Ref } from 'vue';
 import { bffFetch } from '@/api/bff';
 
 export interface SmartSuggestion {
@@ -38,8 +38,11 @@ export function useSmartSuggestion(input: Ref<string>) {
   });
 
   function dismiss(): void {
+    if (timer) { clearTimeout(timer); timer = null; }
     suggestion.value = { show: false, message: '', action: null };
   }
+
+  onBeforeUnmount(() => { if (timer) clearTimeout(timer); });
 
   return { suggestion, dismiss };
 }

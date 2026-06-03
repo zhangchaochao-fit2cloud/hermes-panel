@@ -61,8 +61,8 @@ export function pollNewSessions(): NotificationEvent[] {
     return {
       id: `sess-${r.id}`,
       type: 'session.new' as const,
-      title: trimmed && trimmed.length > 0 ? trimmed : `新会话 ${r.id.slice(0, 10)}…`,
-      body: `来源 ${r.source} · 模型 ${r.model ?? 'unknown'}`,
+      title: trimmed && trimmed.length > 0 ? trimmed : `[session] ${r.id.slice(0, 10)}`,
+      body: `source=${r.source} model=${r.model ?? 'unknown'}`,
       ts: Math.floor(r.started_at * 1000),
       read: false,
       context: { sessionId: r.id, source: r.source },
