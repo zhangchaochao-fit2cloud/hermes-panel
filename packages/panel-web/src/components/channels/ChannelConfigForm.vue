@@ -60,8 +60,9 @@ async function bindWechat(): Promise<void> {
     } else {
       testResult.value = { type: 'info', message: data.raw?.slice(0, 300) || t('channels.wechat.noQrOutput') };
     }
-  } catch {
-    testResult.value = { type: 'error', message: t('channels.wechat.bindFailed') };
+  } catch (err: unknown) {
+    const msg = (err instanceof Error) ? err.message : String(err);
+    testResult.value = { type: 'error', message: msg || t('channels.wechat.bindFailed') };
   } finally { testing.value = false; }
 }
 

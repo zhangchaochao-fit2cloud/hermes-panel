@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useCapabilitiesStore } from '@/stores/capabilities';
+import { useAuthStore } from '@/stores/auth';
+import type { PremiumFeature } from '@hermes-panel/shared';
 
 // AppSidebar is always rendered as a fixed left rail. The drawer-open prop
 // is still accepted from DefaultLayout for backwards compatibility but
@@ -24,6 +26,7 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const caps = useCapabilitiesStore();
+const auth = useAuthStore();
 const isCollapsed = computed({
   get: () => props.collapsed,
   set: (value: boolean) => emit('update:collapsed', value),
@@ -36,6 +39,7 @@ interface MenuItem {
   iconPath: string;
   label: string;
   path: string;
+  premium?: PremiumFeature;
   disabled?: boolean;
   disabledReason?: string;
   badge?: string;
@@ -81,25 +85,34 @@ const items = computed<MenuItem[]>(() => [
   { key: 'dashboard', iconPath: icons.dashboard, label: t('nav.dashboard'), path: '/dashboard' },
   { key: 'chat', iconPath: icons.chat, label: t('nav.chat'), path: '/chat' },
   { key: 'sessions', iconPath: icons.sessions, label: t('nav.sessions'), path: '/sessions' },
-  { key: 'workspaces', iconPath: icons.workspaces, label: t('nav.workspaces'), path: '/workspaces',
+  { key: 'workspaces', iconPath: icons.workspaces, label: t('nav.workspaces'), path: '/workspaces', premium: 'workspaces',
     disabled: !caps.has('profile'), disabledReason: t('nav.disabled.profile'), dot: caps.has('profile') ? 'success' : 'warning' },
-  { key: 'cron', iconPath: icons.cron, label: t('nav.cron'), path: '/cron',
+  { key: 'cron', iconPath: icons.cron, label: t('nav.cron'), path: '/cron', premium: 'cron',
     disabled: !caps.has('cron'), disabledReason: t('nav.disabled.cron'), badge: caps.has('cron') ? undefined : t('nav.notAvailable') },
-  { key: 'memory', iconPath: icons.memory, label: t('nav.memory'), path: '/memory',
+  { key: 'memory', iconPath: icons.memory, label: t('nav.memory'), path: '/memory', premium: 'memory',
     disabled: !caps.has('memory'), disabledReason: t('nav.disabled.memory'), badge: caps.has('memory') ? undefined : t('nav.notAvailable') },
-  { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools' },
+  { key: 'tools', iconPath: icons.tools, label: t('nav.tools'), path: '/tools', premium: 'tools' },
   { key: 'cost', iconPath: icons.cost, label: t('nav.cost'), path: '/cost' },
-  { key: 'goals', iconPath: icons.goals, label: t('nav.goals'), path: '/goals' },
-  { key: 'channels', iconPath: icons.channels, label: t('nav.channels'), path: '/channels' },
-  { key: 'chat-room', iconPath: icons['chat-room'], label: t('nav.chatRoom'), path: '/chat-room' },
-  { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer' },
+  { key: 'goals', iconPath: icons.goals, label: t('nav.goals'), path: '/goals', premium: 'channels' },
+  { key: 'channels', iconPath: icons.channels, label: t('nav.channels'), path: '/channels', premium: 'channels' },
+  { key: 'chat-room', iconPath: icons['chat-room'], label: t('nav.chatRoom'), path: '/chat-room', premium: 'channels' },
+  { key: 'developer', iconPath: icons.developer, label: t('nav.developer'), path: '/developer', premium: 'developer' },
   { key: 'lessons', iconPath: icons.lessons, label: t('nav.lessons'), path: '/lessons' },
-  { key: 'sandbox', iconPath: icons.sandbox, label: t('nav.sandbox'), path: '/sandbox' },
+  { key: 'sandbox', iconPath: icons.sandbox, label: t('nav.sandbox'), path: '/sandbox', premium: 'sandbox' },
   { key: 'audit', iconPath: icons.audit, label: t('nav.audit'), path: '/audit' },
   { key: 'proactive', iconPath: icons.proactive, label: t('nav.proactive'), path: '/proactive' },
   { key: 'intent', iconPath: icons.intent, label: t('nav.intent'), path: '/intent' },
   { key: 'settings', iconPath: icons.settings, label: t('nav.settings'), path: '/settings' },
 ]);
+
+/**
+ * In dev mode: show all items (no premium gating).
+ * In production: hide items whose premium feature is not enabled.
+ */
+const visibleItems = computed<MenuItem[]>(() => {
+  if (import.meta.env.DEV) return items.value;
+  return items.value.filter(item => !item.premium || auth.isFeatureEnabled(item.premium));
+});
 
 // Flat menu: user prefers a single level over the previous work/system grouping.
 // We keep the MenuGroup shape so the rendering loop stays unchanged; each item
@@ -107,7 +120,7 @@ const items = computed<MenuItem[]>(() => [
 const expanded = ref<Record<string, boolean>>({});
 
 const menuTree = computed<MenuGroup[]>(() =>
-  items.value.map(i => ({
+  visibleItems.value.map(i => ({
     key: i.key,
     iconPath: i.iconPath,
     label: i.label,

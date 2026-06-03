@@ -16,9 +16,10 @@ channelBindRouter.get('/channels/wechat/status', async ctx => {
 
 // Trigger WeChat QR code login
 channelBindRouter.post('/channels/wechat/bind', async ctx => {
+  const hermesBin = process.env.HERMES_BIN ?? 'hermes';
   try {
     const result = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-      execFile('hermes', ['gateway', 'setup', 'weixin'], {
+      execFile(hermesBin, ['gateway', 'setup', 'weixin'], {
         timeout: 30000,
         maxBuffer: 1024 * 1024,
         env: { ...process.env, HERMES_QRCODE_RENDERER: 'ascii' },
@@ -32,11 +33,22 @@ channelBindRouter.post('/channels/wechat/bind', async ctx => {
     const qrUrl = extractQrUrl(result.stdout + result.stderr);
     ctx.body = { qrUrl, raw: result.stdout.slice(-500) };
   } catch (err) {
-    logger.warn({ err }, 'wechat bind failed');
+    const e = err as NodeJS.ErrnoException & { stderr?: string };
+    logger.warn({ err, stderr: e.stderr }, 'wechat bind failed');
+
+    let hint = '运行 hermes gateway setup weixin 查看详情。';
+    if (e.code === 'ENOENT') {
+      hint = `hermes 二进制未找到 (${hermesBin})，请检查 HERMES_BIN 环境变量或 PATH。`;
+    } else if (e.message?.includes('unknown command') || e.stderr?.includes('unknown command')) {
+      hint = 'hermes CLI 不支持 gateway setup weixin 子命令。请升级 hermes 到 v0.9+ 或手动在终端运行绑定。';
+    }
+
     ctx.status = 502;
     ctx.body = {
-      error: (err as Error).message,
-      hint: '运行 hermes gateway setup weixin 查看详情。确保已安装 qrcode: pip install qrcode[pil]',
+      error: {
+        code: 'WECHAT_BIND_FAILED',
+        message: hint,
+      },
     };
   }
 });

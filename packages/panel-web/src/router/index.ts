@@ -65,7 +65,8 @@ router.beforeEach(async (to) => {
   }
 
   // Premium feature gating: redirect to settings if feature not unlocked.
-  if (to.meta.premium && !auth.isFeatureEnabled(to.meta.premium as PremiumFeature)) {
+  // In dev mode, all premium features are accessible without a license.
+  if (!import.meta.env.DEV && to.meta.premium && !auth.isFeatureEnabled(to.meta.premium as PremiumFeature)) {
     resetRouteLoading();
     return { name: 'settings', hash: '#license' };
   }

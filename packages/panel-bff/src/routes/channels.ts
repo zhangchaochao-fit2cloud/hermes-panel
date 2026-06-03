@@ -106,33 +106,5 @@ channelsRouter.post('/channels/:name/restart', async ctx => {
   }
 });
 
-// WeChat-specific: get bind status
-channelsRouter.get('/channels/wechat/status', async ctx => {
-  // Check if wechat is configured and enabled
-  const cfg = getChannelConfig('wechat');
-  const enabled = (cfg as unknown as Record<string, unknown>).enabled === true;
-  const appId = (cfg as unknown as Record<string, unknown>).appId;
-  ctx.body = { bound: enabled && !!appId };
-});
-
-// WeChat-specific: trigger bind (generate QR)
-channelsRouter.post('/channels/wechat/bind', async ctx => {
-  // In reality this would call hermes CLI to start the wechat bind process.
-  // For now, return a helpful message explaining what the user needs to do.
-  const cfg = getChannelConfig('wechat');
-  const appId = (cfg as unknown as Record<string, unknown>).appId;
-  if (!appId) {
-    ctx.status = 400;
-    ctx.body = { error: 'wechat_not_configured', message: '请先填写 AppID 和 AppSecret 并保存' };
-    return;
-  }
-  // Try to trigger hermes gateway wechat bind
-  try {
-    const { runHermesCli } = await import('../services/hermes-cli.js');
-    const result = await runHermesCli(['gateway', 'wechat-qr'], { timeoutMs: 10000 });
-    const qrMatch = result.stdout.match(/https?:\/\/[^\s]+/);
-    ctx.body = { qrUrl: qrMatch?.[0] ?? null, raw: result.stdout.slice(0, 500) };
-  } catch {
-    ctx.body = { qrUrl: null, raw: '微信绑定需要 Hermes Gateway 支持 wechat-qr 子命令。请确认 hermes CLI 版本支持此功能，或手动在终端运行 hermes gateway wechat-qr' };
-  }
-});
+// WeChat-specific routes moved to channel-bind.ts to avoid duplication.
+// channelBindRouter handles GET /channels/wechat/status and POST /channels/wechat/bind.
