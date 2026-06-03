@@ -44,6 +44,10 @@ export interface FeishuConfig {
 
 export interface WeChatConfig {
   enabled: boolean;
+  appId: string;
+  appSecret: string;
+  token: string;
+  encodingAESKey: string;
 }
 
 export interface WeComConfig {
@@ -78,7 +82,7 @@ export const CHANNEL_META: Record<ChannelName, { label: string; labelEn: string;
   whatsapp:    { label: 'WhatsApp',  labelEn: 'WhatsApp',  icon: '📱', description: '提及模式控制 (always/never/at_mention)' },
   matrix:      { label: 'Matrix',    labelEn: 'Matrix',    icon: '🔗', description: 'Access Token + Homeserver，支持自动线程' },
   feishu:      { label: '飞书',      labelEn: 'Feishu',    icon: '🐦', description: 'App ID/Secret 接入，支持提及控制' },
-  wechat:      { label: '微信',      labelEn: 'WeChat',    icon: '💚', description: '扫码登录接入，凭证自动保存' },
+  wechat:      { label: '微信',      labelEn: 'WeChat',    icon: '💚', description: 'AppID+AppSecret 配置，Token/Key 自动生成，扫码绑定' },
   wecom:       { label: '企业微信',   labelEn: 'WeCom',     icon: '🏢', description: 'Bot ID/Secret 接入' },
 };
 

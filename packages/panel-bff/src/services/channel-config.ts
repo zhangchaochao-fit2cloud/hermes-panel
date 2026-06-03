@@ -47,7 +47,16 @@ const DEFAULT_CONFIGS: Record<ChannelName, () => ChannelConfig> = {
   whatsapp: () => ({ enabled: false, mentionMode: 'at_mention' }),
   matrix: () => ({ enabled: false, accessToken: '', homeserver: 'https://matrix.org', autoThread: true }),
   feishu: () => ({ enabled: false, appId: '', appSecret: '', mentionControl: true }),
-  wechat: () => ({ enabled: false }),
+  wechat: () => {
+    const crypto = require('node:crypto') as typeof import('node:crypto');
+    return {
+      enabled: false,
+      appId: '',
+      appSecret: '',
+      token: crypto.randomBytes(16).toString('hex'),
+      encodingAESKey: crypto.randomBytes(43).toString('base64').slice(0, 43),
+    };
+  },
   wecom: () => ({ enabled: false, botId: '', botSecret: '' }),
 };
 

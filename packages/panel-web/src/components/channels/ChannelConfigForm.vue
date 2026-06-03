@@ -222,13 +222,15 @@ function setArr(key: string, val: string): void {
             </ol>
           </template>
           <template v-else-if="props.name === 'wechat'">
-            <p class="text-xs text-[var(--text-2)] mb-2 font-semibold">微信渠道分为三步配置：</p>
+            <p class="text-xs text-[var(--text-2)] mb-2 font-semibold">所需操作：仅需填写 AppID 和 AppSecret 即可</p>
             <ol class="text-xs text-[var(--text-2)] space-y-1.5 list-decimal list-inside">
-              <li><strong>微信公众平台</strong>：注册<a href="https://mp.weixin.qq.com" target="_blank" class="text-[var(--brand-500)] underline">微信公众平台</a>（服务号或订阅号），完成认证</li>
-              <li><strong>配置文件</strong>：在公众平台「开发 → 基本配置」中获取 AppID 和 AppSecret，Hermes Gateway 会自动读取 <code class="bg-[var(--bg-card)] px-1 rounded">config.yaml</code> 中的 token/encodingAESKey</li>
-              <li><strong>扫码绑定</strong>：重启 Gateway 后，打开 <a href="#/developer" class="text-[var(--brand-500)] underline" @click="emit('close')">开发者 → 日志页面</a>，查看 Gateway 启动日志中是否输出了扫码链接</li>
+              <li>注册<a href="https://mp.weixin.qq.com" target="_blank" class="text-[var(--brand-500)] underline">微信公众平台</a>（服务号或订阅号），完成认证</li>
+              <li>在公众平台「开发 → 基本配置」中获取 <strong>AppID</strong> 和 <strong>AppSecret</strong></li>
+              <li>将获取的 AppID 和 AppSecret 填入上方表单</li>
+              <li><strong>Token 和 EncodingAESKey 已自动生成</strong>，无需手动填写</li>
+              <li>保存后重启 Gateway → 点击「📱 获取扫码链接」→ 用微信扫描完成绑定</li>
             </ol>
-            <p class="text-xs text-[var(--text-3)] mt-2">⚠️ 微信渠道依赖 Hermes Gateway 内置的微信插件。如果 Gateway 未安装微信插件，此配置仅写入 config.yaml 但不会生效。确认插件状态可查看 <a href="#/developer" class="text-[var(--brand-500)] underline" @click="emit('close')">Developer → Logs</a> 中 Gateway 启动日志。</p>
+            <p class="text-xs text-[var(--text-3)] mt-2">⚠️ 微信渠道需要 Hermes Gateway 安装微信插件（pip install qrcode[pil] 并配置 iLink Bot API）。Gateway 启动后会自动读取 config.yaml 中的配置，无需手动编辑。</p>
           </template>
           <template v-else-if="props.name === 'feishu'">
             <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
