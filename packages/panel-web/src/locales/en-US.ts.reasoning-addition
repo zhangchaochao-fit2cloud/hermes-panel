@@ -1,0 +1,24 @@
+export default {
+  chat: {
+    // ... existing translations ...
+    toolCall: {
+      status: {
+        pending: 'Pending',
+        running: 'Running',
+        done: 'Done',
+        error: 'Error',
+      },
+      arguments: 'Arguments',
+      result: 'Result',
+      noResult: 'No result',
+      error: 'Error message',
+    },
+    reasoning: {
+      details: 'Reasoning details',
+      thinking: 'Thinking',
+      processingDetails: 'Analyzing',
+      showMore: 'View full reasoning',
+      showLess: 'Collapse reasoning',
+    },
+  },
+};

@@ -5,6 +5,7 @@ export interface ChatMessage {
   role: Role;
   content: string;
   reasoning?: string;
+  reasoningDetails?: string; // 新增：推理详情（思考过程的详细信息）
   toolCalls?: ToolCall[];
   createdAt: number;
   completed: boolean;
@@ -49,8 +50,9 @@ export interface TokenUsage {
 export type HermesSSEEvent =
   | { event: 'message.delta'; run_id: string; timestamp: number; delta: string }
   | { event: 'reasoning.available'; run_id: string; timestamp: number; text: string }
+  | { event: 'reasoning.details'; run_id: string; timestamp: number; text: string } // 新增：推理详情事件
   | { event: 'tool.started'; run_id: string; timestamp: number; tool: string; preview?: string; input?: unknown; args?: unknown; arguments?: unknown }
-  | { event: 'tool.completed'; run_id: string; timestamp: number; tool: string; duration?: number; error?: boolean; output?: unknown; result?: unknown; message?: string; errorMessage?: string; input?: unknown; args?: unknown; arguments?: unknown }
+  | { event: 'tool.completed'; run_id: string; timestamp: number; tool: string; duration?: number; error?: boolean; output?: unknown; result?: unknown; message?: string; errorMessage?: string; inp?: unknown; arguments?: unknown }
   | { event: 'run.completed'; run_id: string; timestamp: number; output?: string; usage?: HermesUsage }
   | { event: 'run.error'; run_id: string; timestamp: number; error: string }
   // Allow forward-compat: unknown events are skipped silently

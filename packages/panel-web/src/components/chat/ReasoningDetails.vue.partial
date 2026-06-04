@@ -1,0 +1,44 @@
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { ChatMessage } from '@hermes-panel/shared';
+
+const props = defineProps<{
+  message: ChatMessage;
+  isStreaming?: boolean;
+}>();
+
+const { t } = useI18n();
+
+// 展开推理详情的状态
+const showReasoningDetails = ref(false);
+
+// 推理内容：优先使用 reasoningDetails（详情），其次使用 reasoning（摘要）
+const reasoningContent = computed(() => props.message.reasoningDetails || props.message.reasoning);
+
+// 是否有推理详情
+const hasReasoningDetails = computed(() => !!props.message.reasoningDetails);
+
+// 推理摘要标签
+const reasoningSummaryLabel = computed(() => {
+  if (!props.message.completed) return t('chat.activity.processing');
+  
+  // 如果有详情，显示详情提示
+  if (props.message.reasoningDetails) {
+    const ms = processingDurationMs.value;
+    if (ms > 0) return t('chat.reasoning.details') + ` (${fmtDuration(ms)})`;
+    return t('chat.reasoning.details');
+  }
+  
+  // 否则显示摘要
+  const ms = processingDurationMs.value;
+  if (ms > 0) return t('chat.reasoningWithTime', { time: fmtDuration(ms) });
+  return t('chat.reasoningDone');
+});
+
+function fmtDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
+}
