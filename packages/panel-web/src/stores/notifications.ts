@@ -29,12 +29,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
     if (!opts.silent) loading.value = true;
     try {
       const r = await bffFetch<FetchResponse>('/api/notifications?limit=50', { silent: opts.silent });
-      // Detect new events relative to local cache (used by topbar to show toast)
       const known = new Set(events.value.map(e => e.id));
       const fresh = r.events.filter(e => !known.has(e.id));
       events.value = r.events;
       unreadCount.value = r.unreadCount;
       return fresh;
+    } catch {
+      events.value = [];
+      unreadCount.value = 0;
+      return [];
     } finally {
       if (!opts.silent) loading.value = false;
     }

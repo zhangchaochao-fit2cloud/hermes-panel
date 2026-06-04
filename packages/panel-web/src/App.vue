@@ -82,18 +82,18 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleNavShortcut)
           <DefaultLayout v-if="isChrome">
             <AppErrorBoundary>
               <RouterView v-slot="{ Component }">
-                <Transition name="route-fade" mode="out-in">
+                
                   <component :is="Component" />
-                </Transition>
+                
               </RouterView>
             </AppErrorBoundary>
           </DefaultLayout>
           <template v-else>
             <AppErrorBoundary>
               <RouterView v-slot="{ Component }">
-                <Transition name="route-fade" mode="out-in">
+                
                   <component :is="Component" />
-                </Transition>
+                
               </RouterView>
             </AppErrorBoundary>
           </template>

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { getHermesHome } from './hermes-home.js';
@@ -10,6 +10,9 @@ interface HermesConfig {
   platforms?: Record<string, unknown>;
   [k: string]: unknown;
 }
+
+/** Channels that have a distinct bind/auth directory on disk */
+const BINDABLE_CHANNELS: ChannelName[] = ['wechat', 'whatsapp'];
 
 function configPath(): string {
   return join(getHermesHome(), 'config.yaml');
@@ -80,6 +83,43 @@ export function removeChannelConfig(name: ChannelName): void {
   writeConfig(doc);
 }
 
+function getBindDir(name: ChannelName): string | null {
+  switch (name) {
+    case 'wechat':
+      return join(getHermesHome(), 'weixin', 'accounts');
+    case 'whatsapp':
+      return join(getHermesHome(), 'whatsapp');
+    default:
+      return null;
+  }
+}
+
+/**
+ * Check whether a bindable channel has completed its account binding.
+ * For wechat: checks if weixin/accounts/ has any files.
+ * For whatsapp: checks if whatsapp/ has any files.
+ */
+function isChannelBound(name: ChannelName): boolean {
+  const dir = getBindDir(name);
+  if (!dir) return false;
+
+  // First check bind directory
+  if (existsSync(dir) && readdirSync(dir).length > 0) return true;
+
+  // For wechat, also check .env for WEIXIN_ACCOUNT_ID + WEIXIN_TOKEN
+  if (name === 'wechat') {
+    const envPath = join(getHermesHome(), '.env');
+    if (existsSync(envPath)) {
+      const envContent = readFileSync(envPath, 'utf-8');
+      if (/^WEIXIN_ACCOUNT_ID=/m.test(envContent) && /^WEIXIN_TOKEN=/m.test(envContent)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 export function listChannels(): ChannelStatus[] {
   const doc = readConfig();
   const platforms = (doc.platforms ?? {}) as Record<string, unknown>;
@@ -92,6 +132,7 @@ export function listChannels(): ChannelStatus[] {
       enabled,
       configured: cfg !== undefined && typeof cfg === 'object' && Object.keys(cfg).length > 1,
       connected: enabled, // best-effort: enabled implies connected
+      bound: BINDABLE_CHANNELS.includes(name) ? isChannelBound(name) : undefined,
     };
   });
 }

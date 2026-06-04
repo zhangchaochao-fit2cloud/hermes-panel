@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
   const features = ref<string[]>([]);
   const ready = ref(false); // true once restore() has resolved (or failed)
 
-  const isAuthenticated = computed(() => Boolean(token.value && user.value));
+  const isAuthenticated = computed(() => Boolean(token.value));
   const isAdmin = computed(() => user.value?.role === 'admin');
 
   /** Check whether a premium feature is enabled for the current user. */
@@ -43,22 +43,30 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(TOKEN_KEY);
   }
 
-  /** Re-validate a persisted token on app boot. Always sets `ready`. */
+  /** Re-validate a persisted token on app boot. Always sets `ready`.
+   *  If validation fails (e.g. BFF restarted), keep the token —
+   *  it's a local panel and the BFF 401 interceptor handles real
+   *  auth failures. This avoids the login screen on every restart. */
   async function restore(): Promise<void> {
     if (!token.value) {
       ready.value = true;
       return;
     }
-    try {
-      const res = await fetchMe();
-      user.value = res.user;
-      license.value = res.license;
-      features.value = res.features;
-    } catch {
-      clear();
-    } finally {
-      ready.value = true;
+    // Retry up to 3 times — BFF may still be starting on first launch.
+    // 1Panel-style: keep the token optimistically; real auth failures
+    // are handled by the 401 interceptor.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetchMe();
+        user.value = res.user;
+        license.value = res.license;
+        features.value = res.features;
+        break;
+      } catch {
+        if (attempt < 2) await new Promise(r => setTimeout(r, 500));
+      }
     }
+    ready.value = true;
   }
 
   /** Login with password (1Panel style). email optional for backward compat. */

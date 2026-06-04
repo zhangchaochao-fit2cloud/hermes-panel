@@ -24,6 +24,10 @@ const errorMsg = ref<string | null>(null);
 const testing = ref(false);
 const testResult = ref<{ type: 'success' | 'error' | 'qr' | 'info'; message: string } | null>(null);
 const wechatStatus = ref<{ bound: boolean } | null>(null);
+const bindSuccess = ref(false); // persistent success state
+const bindingStep = ref<string | null>(null); // current step text for progress display
+const qrFetching = ref(false); // loading state while fetching QR from iLink
+
 let statusPollTimer: ReturnType<typeof setInterval> | null = null;
 
 onUnmounted(() => { if (statusPollTimer) clearInterval(statusPollTimer); });
@@ -39,49 +43,106 @@ async function testConnection(): Promise<void> {
 }
 
 async function checkWechatStatus(): Promise<void> {
-  try { wechatStatus.value = await bffFetch<{ bound: boolean }>('/api/channels/wechat/status'); }
+  // Uses the generic /api/channels/:name/status endpoint
+  const name = props.name;
+  if (name !== 'wechat' && name !== 'whatsapp') { wechatStatus.value = { bound: false }; return; }
+  try { wechatStatus.value = await bffFetch<{ bound: boolean }>(`/api/channels/${name}/status`); }
   catch { wechatStatus.value = { bound: false }; }
 }
 
-async function bindWechat(): Promise<void> {
+/** Generic QR binding for bindable channels (wechat, whatsapp).
+ * Uses the same iLink API pattern, with channel-specific BFF routes. */
+async function bindQrChannel(channelName: string): Promise<void> {
+  qrFetching.value = true;
   testing.value = true; testResult.value = null;
   try {
-    const data = await bffFetch<{ qrUrl?: string; instruction?: string; error?: string; message?: string }>('/api/channels/wechat/bind', { method: 'POST' });
-    if (data.error) { testResult.value = { type: 'error', message: data.message || data.error }; }
-    else if (data.qrUrl) {
-      const qrDataUrl = await toDataURL(data.qrUrl, { width: 256, margin: 1 });
-      testResult.value = { type: 'qr', message: qrDataUrl };
+    // Step 1: Get QR code from iLink API
+    const qrData = await bffFetch<{ qrcode?: string; qrcode_url?: string; bound?: boolean; error?: string; message?: string }>(`/api/channels/${channelName}/qrcode`);
+    qrFetching.value = false;
+
+    if (qrData.bound) {
+      bindSuccess.value = true;
+      testResult.value = { type: 'success', message: t(`channels.${channelName}.bindSuccess`) };
+      store.fetchAll();
+    } else if (qrData.error) {
+      testResult.value = { type: 'error', message: qrData.message || qrData.error };
+    } else if (qrData.qrcode) {
+      // iLink returns: qrcode (hex poll token) + scan_url (liteapp URL)
+      // Generate QR code from the scan_url so WeChat can trigger the binding flow
+      const qrToken = qrData.qrcode;
+      const scanUrl = (qrData as any).scan_url || qrData.qrcode_url || '';
+      const qrDisplaySrc = scanUrl
+        ? await toDataURL(scanUrl, { width: 256, margin: 1 })
+        : await toDataURL(qrToken, { width: 256, margin: 1 });
+      testResult.value = { type: 'qr', message: qrDisplaySrc };
+
+      // Step 2: Poll bind status
+      const currentQrcode = qrData.qrcode;
       if (statusPollTimer) clearInterval(statusPollTimer);
       statusPollTimer = setInterval(async () => {
-        await checkWechatStatus();
-        if (wechatStatus.value?.bound) { if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; } testResult.value = { type: 'success', message: t('channels.wechat.bindSuccess') }; }
+        try {
+          const statusData = await bffFetch<{ status?: string; bound?: boolean; needsGatewayRestart?: boolean; message?: string }>(
+            `/api/channels/${channelName}/bind`,
+            { method: 'POST', body: JSON.stringify({ qrcode: currentQrcode }) }
+          );
+
+          if (statusData.status === 'confirmed' || statusData.bound) {
+            if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; }
+            bindSuccess.value = true;
+            testResult.value = { type: 'success', message: t(`channels.${channelName}.bindSuccess`) };
+
+            // Step 3: Restart gateway to pick up new credentials
+            bindingStep.value = t('channels.bindSteps.restarting');
+            await store.restartGateway().finally(() => { bindingStep.value = null; });
+
+            // Step 4: Auto-pair the bot — poll for pairing codes and auto-approve
+            bindingStep.value = t('channels.bindSteps.pairing');
+            try {
+              const pairRes = await bffFetch<{ autoPaired?: boolean }>(`/api/channels/${channelName}/auto-pair`, { method: 'POST' });
+              if (pairRes.autoPaired) {
+                bindingStep.value = null;
+              }
+            } catch { /* auto-pair is best-effort */ }
+            finally { bindingStep.value = null; }
+
+            store.fetchAll();
+          } else if (statusData.status === 'expired' || statusData.status === 'cancelled') {
+            if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; }
+            testResult.value = { type: 'error', message: t(`channels.${channelName}.qrExpired`) };
+          }
+        } catch {
+          // keep polling on transient errors
+        }
       }, 3000);
-    } else { testResult.value = { type: 'info', message: data.instruction || t('channels.wechat.checkGatewayLogs') }; }
-  } catch (err: unknown) { testResult.value = { type: 'error', message: (err instanceof Error ? err.message : String(err)) || t('channels.wechat.bindFailed') }; }
-  finally { testing.value = false; }
+    } else {
+      testResult.value = { type: 'error', message: t(`channels.${channelName}.bindFailed`) };
+    }
+  } catch (err: unknown) {
+    qrFetching.value = false;
+    testResult.value = { type: 'error', message: (err instanceof Error ? err.message : String(err)) || t(`channels.${channelName}.bindFailed`) };
+  } finally { testing.value = false; }
 }
 
-async function waitForGateway(maxWaitMs = 5000): Promise<boolean> {
-  const start = Date.now();
-  while (Date.now() - start < maxWaitMs) {
-    try {
-      const gw = await bffFetch<{ running: boolean }>('/api/gateway/status');
-      if (gw.running) return true;
-    } catch { /* keep waiting */ }
-    await new Promise(r => setTimeout(r, 800));
-  }
-  return false;
-}
+
+
 
 watch(() => [props.name, props.visible], async ([name, vis]) => {
   if (!vis || !name) return;
-  loading.value = true; errorMsg.value = null; testResult.value = null;
+  loading.value = true; errorMsg.value = null; testResult.value = null; bindSuccess.value = false;
   try {
     const cfg = await store.fetchConfig(name as ChannelName);
     config.value = { ...cfg as unknown as Record<string, unknown> };
   } catch { errorMsg.value = t('channels.config.loadFailed'); }
   finally { loading.value = false; }
-  if (name === 'wechat') checkWechatStatus();
+  // If already bound, show the success state on re-entry
+  const bindableChannels = ['wechat', 'whatsapp'];
+  if (bindableChannels.includes(name as string) || name === 'wechat') {
+    await checkWechatStatus();
+    if (wechatStatus.value?.bound) {
+      bindSuccess.value = true;
+      testResult.value = { type: 'success', message: t('channels.wechat.bindSuccess') };
+    }
+  }
 }, { immediate: true });
 
 const isSaving = computed(() => store.saving === props.name);
@@ -90,18 +151,8 @@ async function save(): Promise<void> {
   errorMsg.value = null;
   try {
     await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
-    const shouldRestart = config.value.enabled && store.enabledCount > 0;
-    if (shouldRestart) {
-      try { await store.restartGateway(); } catch { /* non-critical */ }
-    }
-    if (props.name === 'wechat' && config.value.enabled) {
-      // Wait for gateway to be ready, then auto-bind
-      if (shouldRestart) await waitForGateway();
-      await bindWechat();
-      return; // keep drawer open to show QR code
-    }
     emit('close');
-  } catch { errorMsg.value = t('channels.config.saveFailed'); }
+  } catch { /* save error handled by store */ }
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -137,45 +188,35 @@ function visibleKeys(): string[] { return Object.keys(config.value); }
 function arrStr(key: string): string { const v = config.value[key]; return Array.isArray(v) ? v.join(', ') : String(v ?? ''); }
 function setArr(key: string, val: string): void { config.value[key] = val.split(',').map(s => s.trim()).filter(Boolean); }
 
-const bindingStep = ref<string | null>(null); // current step text for progress display
-
 async function onEnableToggle(enabled: boolean): Promise<void> {
   config.value.enabled = enabled;
   if (!enabled) { bindingStep.value = null; return; }
 
-  // Auto-bind flow: save → restart gateway → test/bind
+  // Save config, then BFF handles gateway start + QR in one call.
   errorMsg.value = null;
   testResult.value = null;
 
   try {
-    // Step 1: Save config
     bindingStep.value = t('channels.bindSteps.saving');
     await store.saveConfig(props.name, config.value as unknown as ChannelConfig);
 
-    // Step 2: Restart gateway
-    bindingStep.value = t('channels.bindSteps.restarting');
-    await bffFetch('/api/gateway/start', { method: 'POST' });
-
-    // Step 3: Wait for gateway (quick poll, 5s max)
-    bindingStep.value = t('channels.bindSteps.waiting');
-    await waitForGateway(5000);
-
-    // Step 4: Channel-specific binding
-    bindingStep.value = props.name === 'wechat'
-      ? t('channels.bindSteps.gettingQr')
-      : t('channels.bindSteps.testing');
-
-    if (props.name === 'wechat') {
-      await bindWechat();
+    if (props.name === 'wechat' || props.name === 'whatsapp') {
+      bindingStep.value = t('channels.bindSteps.gettingQr');
+      await bindQrChannel(props.name);
     } else {
+      // Token-based channels: save → restart gateway → test connection
+      bindingStep.value = t('channels.bindSteps.restarting');
+      await store.restartGateway().finally(() => { bindingStep.value = null; });
+      bindingStep.value = t('channels.bindSteps.testing');
       await testConnection();
     }
   } catch (err) {
     errorMsg.value = (err as Error).message;
   } finally {
-    bindingStep.value = null;
   }
 }
+
+
 
 const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
   telegram: 4, discord: 3, slack: 3, feishu: 3, wechat: 3, whatsapp: 3, matrix: 3, wecom: 4,
@@ -193,9 +234,6 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
           <ol class="text-xs text-[var(--text-2)] space-y-1 list-decimal list-inside">
             <li v-for="i in SETUP_GUIDE_STEPS[props.name]" :key="i">{{ t('channels.guide.' + props.name + '.' + i) }}</li>
           </ol>
-          <template v-if="props.name === 'wechat'">
-            <p class="text-xs text-[var(--text-3)] mt-2">{{ t('channels.wechat.autoNote') }}</p>
-          </template>
         </div>
 
         <NForm label-placement="top">
@@ -214,16 +252,17 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
         <p v-if="errorMsg" class="text-xs text-red-500 mt-3">{{ errorMsg }}</p>
 
         <!-- Auto-binding progress indicator -->
-        <div v-if="bindingStep" class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_6%,transparent)]">
+        <div v-if="bindingStep || qrFetching" class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_6%,transparent)]">
           <span class="animate-spin text-sm">⚙️</span>
-          <span class="text-xs text-[var(--brand-600)]">{{ bindingStep }}</span>
+          <span class="text-xs text-[var(--brand-600)]">{{ qrFetching ? t('channels.wechat.gettingQr') : bindingStep }}</span>
         </div>
 
         <!-- Actions bar -->
         <div class="flex gap-2 mt-3 flex-wrap">
-          <NButton size="tiny" :loading="testing" @click="testConnection">{{ t('channels.test.trigger') }}</NButton>
-          <template v-if="props.name === 'wechat'">
-            <NButton size="tiny" type="primary" :loading="testing" @click="bindWechat">{{ t('channels.wechat.getQr') }}</NButton>
+          <!-- Hide test button for QR-bindable channels — they use QR flow instead -->
+          <NButton v-if="props.name !== 'wechat' && props.name !== 'whatsapp'" size="tiny" :loading="testing" @click="testConnection">{{ t('channels.test.trigger') }}</NButton>
+          <template v-if="(props.name === 'wechat' || props.name === 'whatsapp') && !bindSuccess">
+            <NButton size="tiny" type="primary" :loading="testing" @click="bindQrChannel(props.name)">{{ t('channels.wechat.getQr') }}</NButton>
             <NButton size="tiny" @click="checkWechatStatus">{{ t('channels.wechat.checkStatus') }}</NButton>
           </template>
         </div>
@@ -242,22 +281,24 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
             'bg-[color-mix(in_srgb,var(--brand-500)_8%,transparent)] text-[var(--brand-600)]': testResult.type === 'qr',
             'bg-[color-mix(in_srgb,var(--bg-elevate)_80%,transparent)] text-[var(--text-2)]': testResult.type === 'info',
           }">
+          <!-- QR code display -->
           <template v-if="testResult.type === 'qr'">
-            <p class="font-semibold mb-3 text-center">{{ t('channels.wechat.scanTitle') }}</p>
+            <p class="font-semibold mb-3 text-center">{{ t('channels.' + props.name + '.scanTitle') }}</p>
             <div class="flex justify-center mb-3">
-              <img :src="testResult.message" alt="WeChat QR" class="rounded-xl border border-[var(--border)] bg-white p-2" width="256" height="256" />
+              <img :src="testResult.message" :alt="props.name + ' QR'" class="rounded-xl border border-[var(--border)] bg-white p-2" width="256" height="256" />
             </div>
+            <p class="text-xs text-center text-[var(--text-3)] animate-pulse">{{ t('channels.scanWaiting') }}</p>
           </template>
+          <!-- Text result for non-QR types -->
           <template v-else>{{ testResult.message }}</template>
         </div>
+
 
         <!-- Actions footer -->
         <div class="mt-4 flex items-center gap-2 flex-wrap">
           <NButton type="primary" size="small" :loading="isSaving" :disabled="isSaving" @click="save">{{ t('common.save') }}</NButton>
           <NButton size="small" @click="emit('close')">{{ t('common.cancel') }}</NButton>
-          <span v-if="store.enabledCount > 0" class="text-xs text-[var(--brand-500)] cursor-pointer hover:underline" @click="store.restartGateway()">{{ t('channels.config.restartNow') }}</span>
         </div>
-        <p class="text-xs text-[var(--text-3)] mt-2">{{ t('channels.config.restartHint') }}</p>
       </template>
     </NDrawerContent>
   </NDrawer>

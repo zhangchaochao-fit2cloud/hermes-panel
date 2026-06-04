@@ -54,8 +54,6 @@ const server = createServer(async (req, res) => {
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
-    // Hermes API format: `data: {"event": "...", "run_id": "...", ...}\n\n`
-    // No SSE event header; event type lives inside the JSON payload.
     for (const event of sseReplay) {
       const { delayMs, ...payload } = event;
       await new Promise(r => setTimeout(r, delayMs ?? 100));
@@ -63,6 +61,17 @@ const server = createServer(async (req, res) => {
       res.write(`data: ${JSON.stringify(enriched)}\n\n`);
     }
     res.end();
+    return;
+  }
+
+  // WeChat bind — mock that returns a fake QR URL
+  if (url.pathname === '/api/channels/wechat/bind' && req.method === 'POST') {
+    res.setHeader('Content-Type', 'application/json');
+    // Real hermes returns a wx login URL; fake-hermes returns a placeholder
+    res.end(JSON.stringify({
+      qrUrl: 'https://login.weixin.qq.com/l/fake-qr-code-placeholder',
+      bound: false,
+    }));
     return;
   }
 

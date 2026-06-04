@@ -134,6 +134,37 @@ authRouter.get('/auth/me', async (ctx) => {
   ctx.body = body;
 });
 
+
+// ---------------------------------------------------------------------------
+// Pairing: one-click approve from Panel (runs hermes pairing approve <code>)
+// ---------------------------------------------------------------------------
+
+authRouter.post('/auth/pairing/approve', async (ctx) => {
+  const token = sessionTokenFromHeader(ctx);
+  const user = resolveSession(token);
+  if (!user) return bad(ctx, 'UNAUTHORIZED', 'not authenticated', 401);
+
+  const b = (ctx.request.body ?? {}) as { code?: unknown };
+  const code = typeof b.code === 'string' ? b.code.trim() : '';
+  if (!code) return bad(ctx, 'INVALID_BODY', 'pairing code is required');
+
+  const { execSync } = await import('node:child_process');
+  try {
+    const output = execSync(`hermes pairing approve ${code}`, {
+      encoding: 'utf-8',
+      timeout: 10_000,
+      env: { ...process.env, HOME: process.env.HOME },
+    });
+    logger.info({ code }, 'pairing approved');
+    ctx.body = { ok: true, output: output.trim() };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn({ code, err: msg }, 'pairing approve failed');
+    ctx.status = 500;
+    ctx.body = { error: { code: 'PAIRING_FAILED', message: msg } };
+  }
+});
+
 // ---------------------------------------------------------------------------
 // License activation (for current user, requires auth)
 // ---------------------------------------------------------------------------

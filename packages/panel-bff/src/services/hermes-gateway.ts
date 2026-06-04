@@ -246,3 +246,20 @@ export async function gatewayStatus(): Promise<GatewayStatusResult> {
     throw err;
   }
 }
+
+/**
+ * Poll the hermes API health endpoint until the gateway responds, or timeout.
+ * Returns true when ready, false on timeout.
+ */
+export async function waitForGatewayReady(maxWaitMs = 15_000): Promise<boolean> {
+  const hermesBase = process.env.HERMES_API_BASE ?? 'http://127.0.0.1:8642';
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${hermesBase}/api/system/health`, { signal: AbortSignal.timeout(2_000) });
+      if (res.ok) return true;
+    } catch { /* not ready yet */ }
+    await new Promise(r => setTimeout(r, 800));
+  }
+  return false;
+}

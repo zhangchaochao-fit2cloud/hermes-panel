@@ -67,8 +67,8 @@ export const useChannelsStore = defineStore('channels', () => {
       for (let i = 0; i < 10; i++) {
         await new Promise(r => setTimeout(r, 1000));
         try {
-          const health = await bffFetch<{ hermes: { running: boolean } }>('/api/system/health');
-          if (health.hermes.running) { gatewayRunning.value = true; return; }
+          const health = await bffFetch<{ hermes: { ok: boolean } }>('/api/system/health/deep');
+          if (health.hermes.ok) { gatewayRunning.value = true; return; }
         } catch { /* keep polling */ }
       }
       gatewayRunning.value = true; // assume started after 10s

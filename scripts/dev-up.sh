@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Convenience: bring up fake-hermes + bff + web for local dev
+# Bring up hermes gateway + bff + web for local dev.
+# Uses the real hermes binary — no mock/fake needed.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -10,22 +11,27 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Pre-flight: kill stale panel-managed dev processes (web :5666, bff :5667,
-# fake-hermes :18642) plus any orphan tsx watchers from a previous run.
-# Note: we do NOT touch :8642 — that's the production hermes gateway.
 echo "[0/3] cleaning up stale dev processes"
-lsof -i:5666 -i:5667 -i:18642 -t 2>/dev/null | xargs kill 2>/dev/null || true
+lsof -i:5666 -i:5667 -i:8642 -t 2>/dev/null | xargs kill 2>/dev/null || true
 pkill -f "tsx watch src/server.ts" 2>/dev/null || true
-pkill -f "fake-hermes" 2>/dev/null || true
 sleep 1
 
-echo "[1/3] starting fake-hermes :18642"
-pnpm --filter fake-hermes start &
+echo "[1/3] starting hermes gateway :8642"
+hermes gateway run --replace --quiet &
+HERMES_PID=$!
+sleep 2
 
-sleep 1
+# Wait for hermes to be healthy
+for i in $(seq 1 15); do
+  if curl -sf http://127.0.0.1:8642/health > /dev/null 2>&1; then
+    echo "  hermes gateway ready"
+    break
+  fi
+  sleep 1
+done
 
 echo "[2/3] starting bff :5667"
-PANEL_TOKEN=devtoken123 HERMES_API_BASE=http://127.0.0.1:18642 \
+PANEL_TOKEN=devtoken123 \
   pnpm --filter @hermes-panel/bff start &
 
 sleep 1

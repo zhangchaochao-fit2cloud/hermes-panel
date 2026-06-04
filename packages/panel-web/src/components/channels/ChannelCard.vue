@@ -15,6 +15,21 @@ const emit = defineEmits<{
 }>();
 
 const meta = CHANNEL_META[props.channel.name];
+
+/** Whether this channel supports binding (backend reports bound status) */
+const supportsBinding = props.channel.bound !== undefined;
+
+function bindLabel(): string {
+  if (!supportsBinding) return '';
+  return props.channel.bound ? t('channels.card.bound') : t('channels.card.notBound');
+}
+
+function bindClass(): string {
+  if (!supportsBinding || !props.channel.enabled) return '';
+  return props.channel.bound
+    ? 'bg-[color-mix(in_srgb,var(--color-success)_8%,transparent)] text-[var(--color-success)]'
+    : 'bg-[color-mix(in_srgb,var(--color-warning)_8%,transparent)] text-[var(--color-warning)]';
+}
 </script>
 
 <template>
@@ -49,5 +64,12 @@ const meta = CHANNEL_META[props.channel.name];
       </div>
     </div>
     <p class="text-xs text-[var(--text-3)] leading-relaxed line-clamp-2">{{ meta.description }}</p>
+
+    <!-- Bind status badge -->
+    <div v-if="supportsBinding && channel.enabled" class="mt-2.5">
+      <span class="inline-block text-xs px-2 py-0.5 rounded-full font-medium" :class="bindClass()">
+        {{ bindLabel() }}
+      </span>
+    </div>
   </div>
 </template>

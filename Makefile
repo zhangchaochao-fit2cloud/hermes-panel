@@ -62,8 +62,26 @@ dev: ## pnpm dev — 所有包并行启动
 # 推荐的"纯前端开发"启动方式：
 #   fake-hermes (:18642) + BFF (:5667) + Vite (:5666)，共用 PANEL_TOKEN=devtoken123。
 # 不启 Tauri，所以速度快、热重载稳。浏览器直接打开 http://localhost:5666。
-dev-up: ## fake-hermes + bff + web (token=devtoken123)
+dev-up: ## hermes gateway + bff + web (token=devtoken123)
 	./scripts/dev-up.sh
+
+# 后台启动所有服务（不阻塞终端），适合 make 直接调用。
+# 等效于 dev-up.sh 但进程存活不受 shell 退出影响。
+dev-start: ## 后台启动 hermes gateway + bff + web
+	@echo "[1/3] starting hermes gateway :8642"
+	@osascript -e 'tell application "Terminal" to do script "/tmp/start-hermes.sh"' > /dev/null 2>&1
+	@sleep 2
+	@echo "[2/3] starting bff :5667"
+	@osascript -e 'tell application "Terminal" to do script "/tmp/start-bff.sh"' > /dev/null 2>&1
+	@sleep 2
+	@echo "[3/3] starting web :5666"
+	@osascript -e 'tell application "Terminal" to do script "/tmp/start-web.sh"' > /dev/null 2>&1
+	@sleep 6
+	@echo "---"
+	@lsof -i:8642 -i:5667 -i:5666 2>/dev/null | grep LISTEN || echo "waiting for ports..."
+	@sleep 3
+	@lsof -i:8642 -i:5667 -i:5666 2>/dev/null | grep LISTEN || echo "⚠️  some services may still be starting"
+	@echo "ready. open http://127.0.0.1:5666"
 
 # 无人值守 smoke test：起服务 → 打 5 个 endpoint → 全 200 才退 0。
 # CI 用，也可本地确认重构没破基本路由。
@@ -225,10 +243,7 @@ start: open ## `make open` 的 alias
 # 不停 :8642 上的 hermes gateway — 那是用户的 AI agent 服务，独立生命周期。
 stop: ## 停 vite/bff/fake/桌面 (不动 :8642 hermes gateway)
 	@echo "→ stopping vite / bff / fake-hermes / tauri desktop"
-	@-lsof -ti tcp:5666 tcp:5667 tcp:18642 2>/dev/null | xargs kill 2>/dev/null || true
-	@-pkill -f "tsx watch src/server.ts" 2>/dev/null || true
-	@-pkill -f "fake-hermes" 2>/dev/null || true
-	@-pkill -f "target/debug/hermes-panel-desktop" 2>/dev/null || true
+	@./scripts/stop-dev.sh
 	@sleep 1
 	@$(MAKE) status
 
@@ -254,11 +269,7 @@ logs: ## tail BFF 日志 + hermes agent 日志
 # 不会动 :8642 hermes gateway。
 kill-zombies: ## SIGKILL 所有孤儿 dev 进程
 	@echo "→ scrubbing zombies"
-	@-lsof -ti tcp:5666 tcp:5667 tcp:18642 2>/dev/null | xargs kill -9 2>/dev/null || true
-	@-pkill -9 -f "tsx watch src/server.ts" 2>/dev/null || true
-	@-pkill -9 -f "tsx src/server.ts" 2>/dev/null || true
-	@-pkill -9 -f "target/debug/hermes-panel-desktop" 2>/dev/null || true
-	@-pkill -9 -f "fake-hermes" 2>/dev/null || true
+	@./scripts/stop-dev.sh --force
 	@sleep 1
 	@$(MAKE) status
 

@@ -63,6 +63,7 @@ export type ChannelConfig =
   | WeComConfig;
 
 export interface ChannelStatus {
+  bound?: boolean;
   name: ChannelName;
   label: string;
   enabled: boolean;
