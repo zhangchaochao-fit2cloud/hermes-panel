@@ -1,0 +1,14 @@
+// Add the following translation items to the chat object:
+
+toolCall: {
+  status: {
+    pending: 'Pending',
+    running: 'Running',
+    done: 'Done',
+    error: 'Error',
+  },
+  arguments: 'Arguments',
+  result: 'Result',
+  noResult: 'No result',
+  error: 'Error message',
+},
