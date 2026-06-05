@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { PublicUser, LicenseInfo, PremiumFeature } from '@hermes-panel/shared';
+import type { PublicUser } from '@hermes-panel/shared';
 import {
   fetchMe,
   loginAccount,
   setupAccount,
   logoutAccount,
 } from '@/api/auth';
+import { getPanelTokenAsync } from '@/api/token';
 
 const TOKEN_KEY = 'hermes-panel.session';
 
@@ -18,17 +19,11 @@ const TOKEN_KEY = 'hermes-panel.session';
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
   const user = ref<PublicUser | null>(null);
-  const license = ref<LicenseInfo | null>(null);
-  const features = ref<string[]>([]);
+
   const ready = ref(false); // true once restore() has resolved (or failed)
 
   const isAuthenticated = computed(() => Boolean(token.value));
   const isAdmin = computed(() => user.value?.role === 'admin');
-
-  /** Check whether a premium feature is enabled for the current user. */
-  function isFeatureEnabled(f: PremiumFeature): boolean {
-    return features.value.includes(f);
-  }
 
   function setToken(t: string): void {
     token.value = t;
@@ -38,8 +33,6 @@ export const useAuthStore = defineStore('auth', () => {
   function clear(): void {
     token.value = null;
     user.value = null;
-    license.value = null;
-    features.value = [];
     localStorage.removeItem(TOKEN_KEY);
   }
 
@@ -49,6 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
    *  auth failures. This avoids the login screen on every restart. */
   async function restore(): Promise<void> {
     if (!token.value) {
+      const boot = await getPanelTokenAsync();
+      if (boot) {
+        token.value = boot; // in-memory, skip localStorage — session token not yet created
+      }
       ready.value = true;
       return;
     }
@@ -59,8 +56,6 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         const res = await fetchMe();
         user.value = res.user;
-        license.value = res.license;
-        features.value = res.features;
         break;
       } catch {
         if (attempt < 2) await new Promise(r => setTimeout(r, 500));
@@ -96,12 +91,9 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     token,
     user,
-    license,
-    features,
     ready,
     isAuthenticated,
     isAdmin,
-    isFeatureEnabled,
     setToken,
     restore,
     login,

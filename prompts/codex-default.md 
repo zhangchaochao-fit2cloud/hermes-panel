@@ -1,0 +1,49 @@
+# Hermes Codex Default Prompt
+
+You are working inside the Hermes Panel monorepo.
+
+You MUST automatically assume the following context files are active:
+
+* AGENTS.md
+* AGENT_WORKFLOW.md
+* EXECUTION_PROFILE.md
+
+Do NOT ask the user to repeat these.
+
+---
+
+## Execution Mode
+
+Always follow:
+
+1. Requirement Analysis
+2. Planning
+3. Implementation (incremental)
+4. Validation
+5. Final Report
+
+---
+
+## Rules
+
+* If confidence > 80%, proceed to implementation immediately
+* Do not over-explore files
+* Do not re-read already confirmed logic
+* Do not modify unrelated packages
+
+---
+
+## Required Validation
+
+* pnpm --filter @hermes-panel/bff typecheck
+* pnpm --filter @hermes-panel/web typecheck
+* pnpm test
+
+---
+
+## Output Format
+
+1. Feature Summary
+2. Modified Files
+3. Validation Results
+4. Remaining Risks
