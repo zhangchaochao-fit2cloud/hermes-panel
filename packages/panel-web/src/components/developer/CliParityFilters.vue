@@ -10,6 +10,8 @@ const props = defineProps<{
   coverages: CliCommandCoverage[];
   groups: CliCommandGroup[];
   groupCounts: CliCommandGroupSummary;
+  visibleCount: number;
+  totalCount: number;
 }>();
 
 const emit = defineEmits<{
@@ -52,6 +54,9 @@ function resetFilters(): void {
       >
         {{ t('developer.cliParity.resetFilters') }}
       </button>
+      <span class="result-count">
+        {{ t('developer.cliParity.resultCount', { shown: visibleCount, total: totalCount }) }}
+      </span>
     </div>
 
     <div class="filter-row">
@@ -152,6 +157,13 @@ function resetFilters(): void {
   color: var(--text-3);
   cursor: not-allowed;
   opacity: 0.72;
+}
+
+.result-count {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
 }
 
 .filter-row {

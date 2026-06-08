@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const filtersPath = join(process.cwd(), 'src/components/developer/CliParityFilters.vue');
+const panelPath = join(process.cwd(), 'src/components/developer/CliParityPanel.vue');
 
 describe('CLI parity filters experience', () => {
   it('resets search, coverage, and group filters in one action', () => {
@@ -24,5 +25,17 @@ describe('CLI parity filters experience', () => {
     expect(source).toContain("props.coverageFilter !== 'all'");
     expect(source).toContain("props.groupFilter !== 'all'");
     expect(source).toContain(':disabled="!hasActiveFilters"');
+  });
+
+  it('shows how many CLI commands match the current filters', () => {
+    const filters = readFileSync(filtersPath, 'utf8');
+    const panel = readFileSync(panelPath, 'utf8');
+
+    expect(filters).toContain('visibleCount: number');
+    expect(filters).toContain('totalCount: number');
+    expect(filters).toContain("t('developer.cliParity.resultCount', { shown: visibleCount, total: totalCount })");
+    expect(filters).toContain('class="result-count"');
+    expect(panel).toContain(':visible-count="filtered.length"');
+    expect(panel).toContain(':total-count="commands.length"');
   });
 });

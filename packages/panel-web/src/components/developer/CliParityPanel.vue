@@ -284,6 +284,8 @@ onMounted(() => {
       :coverages="coverages"
       :groups="groups"
       :group-counts="groupCounts"
+      :visible-count="filtered.length"
+      :total-count="commands.length"
     />
 
     <section
