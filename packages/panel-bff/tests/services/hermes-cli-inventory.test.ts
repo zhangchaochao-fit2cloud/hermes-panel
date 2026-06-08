@@ -97,6 +97,17 @@ Global Flags:
                   config file path
 `;
 
+const HELP_TOPICS_HELP = `Hermes Agent
+
+Commands:
+  config      View and edit configuration
+  mcp         Manage MCP servers
+
+Additional Help Topics:
+  hermes environment  Environment variables
+                      used by Hermes
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -157,6 +168,13 @@ describe('parseHermesHelpCommands', () => {
     expect(parseHermesHelpCommands(GLOBAL_FLAGS_HELP)).toEqual([
       { command: 'status', description: 'Show component status' },
       { command: 'logs', description: 'View and filter logs' },
+    ]);
+  });
+
+  it('stops before additional help topics', () => {
+    expect(parseHermesHelpCommands(HELP_TOPICS_HELP)).toEqual([
+      { command: 'config', description: 'View and edit configuration' },
+      { command: 'mcp', description: 'Manage MCP servers' },
     ]);
   });
 });
