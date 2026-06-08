@@ -48,6 +48,10 @@ function go(route?: string): void {
   void router.push(route);
 }
 
+function closeCommandHelp(): void {
+  commandHelpOpen.value = false;
+}
+
 async function copyExample(): Promise<void> {
   try {
     await navigator.clipboard.writeText(props.cmd.example);
@@ -139,6 +143,13 @@ async function loadCommandHelp(): Promise<void> {
             </span>
           </p>
         </div>
+        <button
+          type="button"
+          class="command-help-close"
+          @click="closeCommandHelp"
+        >
+          {{ t('developer.cliParity.closeHelp') }}
+        </button>
       </div>
       <div
         v-if="commandHelpError"
@@ -199,6 +210,22 @@ async function loadCommandHelp(): Promise<void> {
   min-width: 0;
   border-top: 1px solid var(--border);
   padding-top: 12px;
+}
+
+.command-help-close {
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 5px 8px;
+}
+
+.command-help-close:hover {
+  border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
+  color: var(--brand-600);
 }
 
 .command-name {

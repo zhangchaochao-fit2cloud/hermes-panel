@@ -977,6 +977,7 @@ export default {
       copiedExample: 'Command copied',
       help: 'Help',
       helpTitle: 'Raw help for hermes {command}',
+      closeHelp: 'Close help',
       helpLoading: 'Reading command help...',
       helpEmpty: 'This command returned no help output',
       helpError: 'Command help failed: {error}',

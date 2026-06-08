@@ -977,6 +977,7 @@ export default {
       copiedExample: '命令已复制',
       help: '查看 Help',
       helpTitle: 'hermes {command} 原始 Help',
+      closeHelp: '收起 Help',
       helpLoading: '正在读取命令 Help...',
       helpEmpty: '该命令没有返回 Help 输出',
       helpError: '命令 Help 读取失败：{error}',

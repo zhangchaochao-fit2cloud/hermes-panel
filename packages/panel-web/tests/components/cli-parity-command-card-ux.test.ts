@@ -22,4 +22,14 @@ describe('CLI parity command card experience', () => {
     expect(source).toContain('v-else-if="commandHelpOutput"');
     expect(source).toContain("t('developer.cliParity.helpEmpty')");
   });
+
+  it('lets users close raw CLI help after opening it', () => {
+    const source = readFileSync(cardPath, 'utf8');
+
+    expect(source).toContain('function closeCommandHelp(): void');
+    expect(source).toContain('commandHelpOpen.value = false');
+    expect(source).toContain('@click="closeCommandHelp"');
+    expect(source).toContain("t('developer.cliParity.closeHelp')");
+    expect(source).toContain('class="command-help-close"');
+  });
 });
