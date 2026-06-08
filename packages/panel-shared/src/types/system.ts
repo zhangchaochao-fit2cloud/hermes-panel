@@ -27,10 +27,18 @@ export interface CliCommandInventoryItem {
   example: string;
 }
 
+export interface CliCommandInventorySummary {
+  all: number;
+  ready: number;
+  partial: number;
+  missing: number;
+}
+
 export interface CliCommandInventoryResponse {
   source: 'hermes --help';
   generatedAt: number;
   commands: CliCommandInventoryItem[];
+  summary?: CliCommandInventorySummary;
   error?: string;
 }
 

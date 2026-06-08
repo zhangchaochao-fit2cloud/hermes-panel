@@ -32,6 +32,7 @@ describe('CLI routes', () => {
     expect(res.body).toMatchObject({
       source: 'hermes --help',
       commands: [],
+      summary: { all: 0, ready: 0, partial: 0, missing: 0 },
       error: 'HERMES_CLI_NOT_FOUND',
     });
     expect(typeof res.body.generatedAt).toBe('number');

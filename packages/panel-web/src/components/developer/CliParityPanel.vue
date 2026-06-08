@@ -7,6 +7,7 @@ import type {
   CliCommandGroup,
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
+  CliCommandInventorySummary,
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
 import { formatCliParityReport } from '@/utils/cli-parity';
@@ -23,6 +24,7 @@ const source = ref('hermes --help');
 const generatedAt = ref<number | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const summary = ref<CliCommandInventorySummary | null>(null);
 
 const groups: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
 const coverages: CliCommandCoverage[] = ['ready', 'partial', 'missing'];
@@ -52,6 +54,8 @@ const totals = computed(() => ({
   partial: commands.value.filter(cmd => cmd.coverage === 'partial').length,
   missing: commands.value.filter(cmd => cmd.coverage === 'missing').length,
 }));
+
+const inventoryTotals = computed(() => summary.value ?? totals.value);
 
 const generatedAtLabel = computed(() => {
   if (generatedAt.value === null) return '';
@@ -96,9 +100,11 @@ async function loadInventory(): Promise<void> {
     commands.value = data.commands;
     source.value = data.source;
     generatedAt.value = data.generatedAt;
+    summary.value = data.summary ?? null;
     error.value = data.error ?? null;
   } catch (err) {
     commands.value = [];
+    summary.value = null;
     generatedAt.value = Date.now();
     error.value = (err as Error).message ?? String(err);
   } finally {
@@ -151,19 +157,19 @@ onMounted(() => {
 
         <div class="grid grid-cols-4 gap-2 text-center">
           <button class="cli-count" type="button" @click="coverageFilter = 'all'">
-            <strong>{{ totals.all }}</strong>
+            <strong>{{ inventoryTotals.all }}</strong>
             <span>{{ t('developer.cliParity.coverage.all') }}</span>
           </button>
           <button class="cli-count" type="button" @click="coverageFilter = 'ready'">
-            <strong>{{ totals.ready }}</strong>
+            <strong>{{ inventoryTotals.ready }}</strong>
             <span>{{ t('developer.cliParity.coverage.ready') }}</span>
           </button>
           <button class="cli-count" type="button" @click="coverageFilter = 'partial'">
-            <strong>{{ totals.partial }}</strong>
+            <strong>{{ inventoryTotals.partial }}</strong>
             <span>{{ t('developer.cliParity.coverage.partial') }}</span>
           </button>
           <button class="cli-count" type="button" @click="coverageFilter = 'missing'">
-            <strong>{{ totals.missing }}</strong>
+            <strong>{{ inventoryTotals.missing }}</strong>
             <span>{{ t('developer.cliParity.coverage.missing') }}</span>
           </button>
         </div>

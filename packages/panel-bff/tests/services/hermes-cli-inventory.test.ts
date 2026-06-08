@@ -4,6 +4,7 @@ import {
   getCliCommandInventory,
   isSafeCliCommand,
   parseHermesHelpCommands,
+  summarizeCliCommandInventory,
 } from '../../src/services/hermes-cli-inventory.js';
 
 const HELP = `usage: hermes [-h] {chat,model,gateway,doctor,logs} ...
@@ -63,7 +64,38 @@ describe('getCliCommandInventory', () => {
     const inventory = await getCliCommandInventory();
     expect(inventory.source).toBe('hermes --help');
     expect(inventory.commands).toEqual([]);
+    expect(inventory.summary).toEqual({ all: 0, ready: 0, partial: 0, missing: 0 });
     expect(inventory.error).toBe('HERMES_CLI_NOT_FOUND');
+  });
+});
+
+describe('summarizeCliCommandInventory', () => {
+  it('counts commands by coverage', () => {
+    expect(summarizeCliCommandInventory([
+      {
+        command: 'chat',
+        description: 'Chat',
+        group: 'core',
+        coverage: 'ready',
+        route: '/chat',
+        example: 'hermes chat',
+      },
+      {
+        command: 'config',
+        description: 'Config',
+        group: 'config',
+        coverage: 'partial',
+        route: '/settings',
+        example: 'hermes config',
+      },
+      {
+        command: 'update',
+        description: 'Update',
+        group: 'ops',
+        coverage: 'missing',
+        example: 'hermes update',
+      },
+    ])).toEqual({ all: 3, ready: 1, partial: 1, missing: 1 });
   });
 });
 

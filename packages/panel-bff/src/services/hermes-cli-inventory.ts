@@ -4,6 +4,7 @@ import type {
   CliCommandGroup,
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
+  CliCommandInventorySummary,
 } from '@hermes-panel/shared';
 import { logger } from '../lib/logger.js';
 import { HermesCliError, runHermesCli } from './hermes-cli.js';
@@ -87,6 +88,15 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
   return commands;
 }
 
+export function summarizeCliCommandInventory(commands: CliCommandInventoryItem[]): CliCommandInventorySummary {
+  return {
+    all: commands.length,
+    ready: commands.filter(cmd => cmd.coverage === 'ready').length,
+    partial: commands.filter(cmd => cmd.coverage === 'partial').length,
+    missing: commands.filter(cmd => cmd.coverage === 'missing').length,
+  };
+}
+
 export async function getCliCommandInventory(): Promise<CliCommandInventoryResponse> {
   try {
     const { stdout } = await runHermesCli(['--help'], { timeoutMs: 8_000 });
@@ -105,6 +115,7 @@ export async function getCliCommandInventory(): Promise<CliCommandInventoryRespo
       source: 'hermes --help',
       generatedAt: Date.now(),
       commands,
+      summary: summarizeCliCommandInventory(commands),
     };
   } catch (err) {
     const code = err instanceof HermesCliError ? err.code : 'UNKNOWN';
@@ -113,6 +124,7 @@ export async function getCliCommandInventory(): Promise<CliCommandInventoryRespo
       source: 'hermes --help',
       generatedAt: Date.now(),
       commands: [],
+      summary: summarizeCliCommandInventory([]),
       error: code,
     };
   }
