@@ -628,6 +628,20 @@ export default {
     systemHealth: {
       title: 'System Health',
       unknown: 'Status unknown',
+      setup: {
+        eyebrow: 'Official CLI command',
+        title: 'Hermes setup',
+        desc: 'Use `hermes setup` as the CLI authority, or follow the same setup checkpoints here without leaving the panel.',
+        copy: 'Copy command',
+        copied: 'Setup command copied',
+        commandHint: 'Run this in a terminal for the interactive wizard; the cards below open the matching panel setup areas.',
+        errorPrefix: 'Setup status warning:',
+        steps: {
+          doctor: { title: 'Run diagnostics', desc: 'Open Developer Diagnostics for `hermes doctor` checks and support dump.' },
+          providers: { title: 'Configure model', desc: 'Set model.default and provider credentials through the same CLI-backed path.' },
+          gateway: { title: 'Start gateway', desc: 'Confirm Hermes Gateway, BFF, and API key readiness.' },
+        },
+      },
       hermes: {
         label: 'Hermes Gateway',
         runningAt: 'Running · v{version} · {base}',
@@ -1032,7 +1046,7 @@ export default {
         chat: 'Interactive or single-query chat. The UI covers this through Chat and live SSE activity.',
         model: 'Select the default model and provider. The UI entry is Models & Providers.',
         gateway: 'Run and manage the messaging gateway. The UI exposes status plus start/stop controls.',
-        setup: 'Interactive setup wizard. The UI currently covers health checks and selected configuration entry points.',
+        setup: 'Interactive setup wizard. Covered by System Health setup checkpoints and CLI command handoff.',
         whatsapp: 'WhatsApp integration setup. Channels partially covers channel configuration.',
         login: 'Provider login. The UI currently focuses on API key and credential management.',
         logout: 'Clear provider authentication. The UI only covers part of credential management.',

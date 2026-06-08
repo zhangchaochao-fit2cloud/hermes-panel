@@ -32,7 +32,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   chat: { group: 'core', coverage: 'ready', route: '/chat', example: 'hermes chat -q "Summarize this repo"' },
   model: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes model' },
   gateway: { group: 'ops', coverage: 'ready', route: '/settings#system-health', example: 'hermes gateway run' },
-  setup: { group: 'config', coverage: 'partial', route: '/settings#system-health', example: 'hermes setup' },
+  setup: { group: 'config', coverage: 'ready', route: '/settings#system-health', example: 'hermes setup' },
   whatsapp: { group: 'ops', coverage: 'partial', route: '/channels', example: 'hermes whatsapp' },
   login: { group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes login openai' },
   logout: { group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes logout openai' },

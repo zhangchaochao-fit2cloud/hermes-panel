@@ -628,6 +628,20 @@ export default {
     systemHealth: {
       title: '系统状态',
       unknown: '状态未知',
+      setup: {
+        eyebrow: '官方 CLI 命令',
+        title: 'Hermes 初始化',
+        desc: '`hermes setup` 仍是 CLI 权威入口；也可以在这里按同一组初始化检查点完成配置。',
+        copy: '复制命令',
+        copied: '初始化命令已复制',
+        commandHint: '在终端运行可进入交互式向导；下方卡片会打开面板里的对应配置区域。',
+        errorPrefix: '初始化状态警告：',
+        steps: {
+          doctor: { title: '运行诊断', desc: '打开 Developer 诊断，执行 `hermes doctor` 检查和支持 Dump。' },
+          providers: { title: '配置模型', desc: '通过同一条 CLI-backed 路径设置 model.default 和供应商凭据。' },
+          gateway: { title: '启动网关', desc: '确认 Hermes Gateway、BFF 和 API Key 就绪。' },
+        },
+      },
       hermes: {
         label: 'Hermes 网关',
         runningAt: '已运行 · v{version} · {base}',
@@ -1032,7 +1046,7 @@ export default {
         chat: '交互式或单次对话；UI 已通过 Chat 页和 SSE 活动面板承接。',
         model: '选择默认模型和供应商；UI 入口在模型与供应商设置。',
         gateway: '启动和管理消息网关；UI 已提供状态和启动/停止控制。',
-        setup: '交互式初始化向导；UI 目前只覆盖健康检查和部分配置入口。',
+        setup: '交互式初始化向导；System Health 初始化检查点和 CLI 命令交接已覆盖。',
         whatsapp: 'WhatsApp 集成设置；UI 通过 Channels 做部分渠道配置。',
         login: '供应商登录；UI 当前更偏向 API key/凭据管理。',
         logout: '清除供应商认证；UI 只覆盖凭据管理的一部分。',

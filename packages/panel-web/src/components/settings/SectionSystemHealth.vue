@@ -11,15 +11,18 @@
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { NButton } from 'naive-ui';
+import { NButton, useMessage } from 'naive-ui';
 import { useSystemStore } from '@/stores/system';
 import { bffFetch } from '@/api/bff';
 import { ref } from 'vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 
 const { t } = useI18n();
 const system = useSystemStore();
+const message = useMessage();
 const { health, hermesApiBase } = storeToRefs(system);
 const apiKeyExists = ref<boolean | null>(null);
+const setupCommand = 'hermes setup';
 
 async function refreshKeyState(): Promise<void> {
   try {
@@ -127,8 +130,38 @@ const overall = computed<Severity>(() => {
   return 'ok';
 });
 
+const setupSteps = computed(() => [
+  {
+    key: 'doctor',
+    title: t('settings.systemHealth.setup.steps.doctor.title'),
+    desc: t('settings.systemHealth.setup.steps.doctor.desc'),
+    href: '#/developer#doctor',
+  },
+  {
+    key: 'providers',
+    title: t('settings.systemHealth.setup.steps.providers.title'),
+    desc: t('settings.systemHealth.setup.steps.providers.desc'),
+    href: '#/settings#providers',
+  },
+  {
+    key: 'gateway',
+    title: t('settings.systemHealth.setup.steps.gateway.title'),
+    desc: t('settings.systemHealth.setup.steps.gateway.desc'),
+    href: '#/settings#system-health',
+  },
+]);
+
 async function onRefresh(): Promise<void> {
   await Promise.all([system.refresh(), refreshKeyState()]);
+}
+
+async function copySetupCommand(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(setupCommand);
+    message.success(t('settings.systemHealth.setup.copied'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
 }
 </script>
 
@@ -150,6 +183,53 @@ async function onRefresh(): Promise<void> {
         {{ t('common.refresh') }}
       </NButton>
     </div>
+
+    <section class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+            {{ t('settings.systemHealth.setup.eyebrow') }}
+          </p>
+          <h4 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
+            {{ t('settings.systemHealth.setup.title') }}
+          </h4>
+          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
+            {{ t('settings.systemHealth.setup.desc') }}
+          </p>
+        </div>
+        <NButton size="small" quaternary @click="copySetupCommand">
+          {{ t('settings.systemHealth.setup.copy') }}
+        </NButton>
+      </div>
+
+      <div class="mt-3 flex min-w-0 flex-col gap-2 rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-3 py-2">
+        <code class="truncate text-xs text-[var(--text-1)]">{{ setupCommand }}</code>
+        <p class="text-xs text-[var(--text-3)]">
+          {{ t('settings.systemHealth.setup.commandHint') }}
+        </p>
+      </div>
+
+      <ErrorBanner
+        v-if="system.error"
+        class="mt-3"
+        :message="`${t('settings.systemHealth.setup.errorPrefix')} ${system.error}`"
+        :retry-label="t('common.retry')"
+        surface="inline"
+        @retry="onRefresh"
+      />
+
+      <div class="mt-3 grid gap-2 md:grid-cols-3">
+        <a
+          v-for="step in setupSteps"
+          :key="step.key"
+          class="rounded border border-[var(--border)] bg-[var(--bg-page)] px-3 py-2 transition-colors hover:bg-[var(--bg-elevate)]"
+          :href="step.href"
+        >
+          <div class="text-xs font-semibold text-[var(--text-1)]">{{ step.title }}</div>
+          <div class="mt-1 text-xs leading-5 text-[var(--text-3)]">{{ step.desc }}</div>
+        </a>
+      </div>
+    </section>
 
     <ul class="space-y-2">
       <li
