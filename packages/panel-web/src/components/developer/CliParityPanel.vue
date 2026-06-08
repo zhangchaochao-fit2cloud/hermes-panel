@@ -97,6 +97,15 @@ function focusCommand(cmd: CliCommandInventoryItem): void {
   groupFilter.value = cmd.group;
 }
 
+async function copyBacklogExample(cmd: CliCommandInventoryItem): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(cmd.example);
+    message.success(t('developer.cliParity.copiedExample'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
+}
+
 async function copyReport(): Promise<void> {
   if (reportCommands.value.length === 0) {
     message.warning(t('developer.cliParity.reportEmpty'));
@@ -248,13 +257,22 @@ onMounted(() => {
             {{ descriptionFor(cmd) }}
           </p>
           <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
-          <button
-            type="button"
-            class="backlog-focus"
-            @click="focusCommand(cmd)"
-          >
-            {{ t('developer.cliParity.focusCommand') }}
-          </button>
+          <div class="backlog-card-actions">
+            <button
+              type="button"
+              class="backlog-action"
+              @click="copyBacklogExample(cmd)"
+            >
+              {{ t('developer.cliParity.copyExample') }}
+            </button>
+            <button
+              type="button"
+              class="backlog-action"
+              @click="focusCommand(cmd)"
+            >
+              {{ t('developer.cliParity.focusCommand') }}
+            </button>
+          </div>
         </article>
       </div>
     </section>
@@ -389,8 +407,14 @@ onMounted(() => {
   padding: 2px 7px;
 }
 
-.backlog-focus {
+.backlog-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 10px;
+}
+
+.backlog-action {
   width: 100%;
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--brand-500) 34%, var(--border));
@@ -401,7 +425,7 @@ onMounted(() => {
   padding: 5px 8px;
 }
 
-.backlog-focus:hover {
+.backlog-action:hover {
   background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-card));
 }
 

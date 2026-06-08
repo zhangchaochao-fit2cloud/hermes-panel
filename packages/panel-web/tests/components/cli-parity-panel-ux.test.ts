@@ -15,4 +15,14 @@ describe('CLI parity panel experience', () => {
     expect(source).toContain("@click=\"focusCommand(cmd)\"");
     expect(source).toContain("t('developer.cliParity.focusCommand')");
   });
+
+  it('lets users copy backlog examples without opening the full command card', () => {
+    const source = readFileSync(panelPath, 'utf8');
+
+    expect(source).toContain('async function copyBacklogExample(cmd: CliCommandInventoryItem): Promise<void>');
+    expect(source).toContain('navigator.clipboard.writeText(cmd.example)');
+    expect(source).toContain("message.success(t('developer.cliParity.copiedExample'))");
+    expect(source).toContain("@click=\"copyBacklogExample(cmd)\"");
+    expect(source).toContain("t('developer.cliParity.copyExample')");
+  });
 });
