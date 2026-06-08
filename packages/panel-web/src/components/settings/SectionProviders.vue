@@ -8,6 +8,7 @@ import {
 } from 'naive-ui';
 import { useProvidersStore, type ProviderInfo } from '@/stores/providers';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 
 const { t } = useI18n();
 const store = useProvidersStore();
@@ -35,6 +36,15 @@ const apiKeyInput = ref('');
 const labelInput = ref('');
 
 const providerOptions = computed(() => knownProviders.map(p => ({ label: p, value: p })));
+const configExamples = computed(() => {
+  const current = model.value;
+  if (!current) return ['hermes config set model.default gpt-4'];
+
+  const examples = [`hermes config set model.default ${current.default || 'gpt-4'}`];
+  if (current.provider) examples.push(`hermes config set model.provider ${current.provider}`);
+  if (current.baseUrl) examples.push(`hermes config set model.base_url ${current.baseUrl}`);
+  return examples;
+});
 
 const selectedProvider = computed({
   get: () => addingFor.value,
@@ -86,6 +96,15 @@ async function submitAdd(): Promise<void> {
   }
 }
 
+async function copyConfigExample(command: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(command);
+    message.success(t('settings.providers.configCopied'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
+}
+
 function credentialSourceTitle(p: ProviderInfo): string {
   const src = p.credentials.find(c => c.active)?.source ?? p.credentials[0]?.source;
   return src ?? '—';
@@ -112,40 +131,90 @@ function isCurrentProvider(p: ProviderInfo): boolean {
       <ThemedSkeleton :repeat="2" height="64px" />
     </div>
 
-    <div v-else-if="providers.length === 0" class="mt-4 text-sm text-[var(--text-3)]">
-      {{ t('settings.providers.empty') }}
-    </div>
-
-    <div v-else class="mt-4 space-y-2">
-      <div
-        v-for="p in providers"
-        :key="p.id"
-        class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 flex items-center gap-3"
-      >
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-semibold text-sm font-mono">{{ p.id }}</span>
-            <NTag
-              v-if="isCurrentProvider(p)"
-              size="tiny"
-              type="success"
-              :bordered="false"
-            >
-              ✓ {{ t('settings.providers.currentlyActive') }}
-            </NTag>
-            <NTag size="tiny" :bordered="false">
-              {{ t('settings.providers.credCount', { n: p.credentials.length }) }}
-            </NTag>
+    <template v-else>
+      <section class="mt-4 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+              {{ t('settings.providers.configEyebrow') }}
+            </p>
+            <h4 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
+              {{ t('settings.providers.configTitle') }}
+            </h4>
+            <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
+              {{ t('settings.providers.configDesc') }}
+            </p>
           </div>
-          <div class="mt-1 text-xs text-[var(--text-3)] font-mono truncate">
-            {{ credentialSourceTitle(p) }}
+          <NButton size="small" quaternary :loading="loading" @click="store.load()">
+            {{ t('common.retry') }}
+          </NButton>
+        </div>
+
+        <ErrorBanner
+          v-if="store.error"
+          class="mt-3"
+          :message="`${t('settings.providers.configErrorPrefix')} ${store.error}`"
+          :retry-label="t('common.retry')"
+          surface="inline"
+          @retry="store.load()"
+        />
+
+        <div
+          v-if="!model"
+          class="mt-3 rounded border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)]"
+        >
+          {{ t('settings.providers.configEmpty') }}
+        </div>
+
+        <div class="mt-3 flex flex-col gap-2">
+          <div
+            v-for="command in configExamples"
+            :key="command"
+            class="flex min-w-0 flex-col gap-2 rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <code class="truncate text-xs text-[var(--text-1)]">{{ command }}</code>
+            <NButton size="tiny" quaternary @click="copyConfigExample(command)">
+              {{ t('settings.providers.copyConfigCommand') }}
+            </NButton>
           </div>
         </div>
-        <NButton size="small" quaternary @click="startAddFor(p.id)">
-          + {{ t('settings.providers.addCredential') }}
-        </NButton>
+      </section>
+
+      <div v-if="providers.length === 0" class="mt-4 text-sm text-[var(--text-3)]">
+        {{ t('settings.providers.empty') }}
       </div>
-    </div>
+
+      <div v-else class="mt-4 space-y-2">
+        <div
+          v-for="p in providers"
+          :key="p.id"
+          class="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 flex items-center gap-3"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-sm font-mono">{{ p.id }}</span>
+              <NTag
+                v-if="isCurrentProvider(p)"
+                size="tiny"
+                type="success"
+                :bordered="false"
+              >
+                ✓ {{ t('settings.providers.currentlyActive') }}
+              </NTag>
+              <NTag size="tiny" :bordered="false">
+                {{ t('settings.providers.credCount', { n: p.credentials.length }) }}
+              </NTag>
+            </div>
+            <div class="mt-1 text-xs text-[var(--text-3)] font-mono truncate">
+              {{ credentialSourceTitle(p) }}
+            </div>
+          </div>
+          <NButton size="small" quaternary @click="startAddFor(p.id)">
+            + {{ t('settings.providers.addCredential') }}
+          </NButton>
+        </div>
+      </div>
+    </template>
 
     <!-- Add credential modal -->
     <NModal

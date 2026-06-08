@@ -237,7 +237,7 @@ describe('summarizeCliCommandInventory', () => {
         command: 'config',
         description: 'Config',
         group: 'config',
-        coverage: 'partial',
+        coverage: 'ready',
         route: '/settings',
         example: 'hermes config',
       },
@@ -250,8 +250,8 @@ describe('summarizeCliCommandInventory', () => {
       },
     ])).toEqual({
       all: 3,
-      ready: 1,
-      partial: 1,
+      ready: 2,
+      partial: 0,
       missing: 1,
       groups: {
         core: 1,

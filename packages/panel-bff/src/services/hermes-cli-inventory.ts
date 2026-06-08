@@ -45,7 +45,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   debug: { group: 'ops', coverage: 'partial', route: '/developer#logs', example: 'hermes debug share' },
   backup: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes backup' },
   import: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes import backup.zip' },
-  config: { group: 'config', coverage: 'partial', route: '/settings', example: 'hermes config set model gpt-4' },
+  config: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes config set model.default gpt-4' },
   pairing: { group: 'ops', coverage: 'partial', route: '/channels', example: 'hermes pairing list' },
   skills: { group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes skills list' },
   plugins: { group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes plugins list' },
