@@ -58,6 +58,13 @@ const totals = computed(() => ({
 
 const inventoryTotals = computed(() => summary.value ?? totals.value);
 
+const coverageCounts = computed<Record<CliCommandCoverage | 'all', number>>(() => ({
+  all: inventoryTotals.value.all,
+  ready: inventoryTotals.value.ready,
+  partial: inventoryTotals.value.partial,
+  missing: inventoryTotals.value.missing,
+}));
+
 const groupCounts = computed<CliCommandGroupSummary>(() => {
   if (summary.value?.groups) return summary.value.groups;
   return groups.reduce<CliCommandGroupSummary>((acc, group) => {
@@ -283,6 +290,7 @@ onMounted(() => {
       v-model:group-filter="groupFilter"
       :coverages="coverages"
       :groups="groups"
+      :coverage-counts="coverageCounts"
       :group-counts="groupCounts"
       :visible-count="filtered.length"
       :total-count="commands.length"

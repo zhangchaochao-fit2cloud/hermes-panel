@@ -38,4 +38,15 @@ describe('CLI parity filters experience', () => {
     expect(panel).toContain(':visible-count="filtered.length"');
     expect(panel).toContain(':total-count="commands.length"');
   });
+
+  it('shows coverage counts on coverage filter chips', () => {
+    const filters = readFileSync(filtersPath, 'utf8');
+    const panel = readFileSync(panelPath, 'utf8');
+
+    expect(filters).toContain("coverageCounts: Record<CliCommandCoverage | 'all', number>");
+    expect(filters).toContain('{{ coverageCounts.all }}');
+    expect(filters).toContain('{{ coverageCounts[coverage] }}');
+    expect(panel).toContain("const coverageCounts = computed<Record<CliCommandCoverage | 'all', number>>");
+    expect(panel).toContain(':coverage-counts="coverageCounts"');
+  });
 });

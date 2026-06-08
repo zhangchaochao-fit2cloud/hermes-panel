@@ -9,6 +9,7 @@ const props = defineProps<{
   groupFilter: CliCommandGroup | 'all';
   coverages: CliCommandCoverage[];
   groups: CliCommandGroup[];
+  coverageCounts: Record<CliCommandCoverage | 'all', number>;
   groupCounts: CliCommandGroupSummary;
   visibleCount: number;
   totalCount: number;
@@ -67,7 +68,8 @@ function resetFilters(): void {
         :class="coverageFilter === 'all' ? 'is-active' : ''"
         @click="emit('update:coverageFilter', 'all')"
       >
-        {{ t('developer.cliParity.coverage.all') }}
+        <span>{{ t('developer.cliParity.coverage.all') }}</span>
+        <span class="filter-count">{{ coverageCounts.all }}</span>
       </button>
       <button
         v-for="coverage in coverages"
@@ -77,7 +79,8 @@ function resetFilters(): void {
         :class="coverageFilter === coverage ? 'is-active' : ''"
         @click="emit('update:coverageFilter', coverage)"
       >
-        {{ t(`developer.cliParity.coverage.${coverage}`) }}
+        <span>{{ t(`developer.cliParity.coverage.${coverage}`) }}</span>
+        <span class="filter-count">{{ coverageCounts[coverage] }}</span>
       </button>
     </div>
 
