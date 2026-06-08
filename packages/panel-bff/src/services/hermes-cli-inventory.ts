@@ -62,6 +62,19 @@ const DEFAULT_META: CoverageMeta = {
 const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
 const COMMAND_SECTION_HEADER = /^\s*(commands|available commands|subcommands):\s*$/i;
 const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|examples|arguments):/i;
+const COMMAND_LINE_PATTERNS = [
+  /^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/,
+  /^\s{2,}([a-z][\w-]*)\s+-\s+(.+)$/,
+  /^\s{2,}([a-z][\w-]*):\s+(.+)$/,
+];
+
+function parseCommandHelpLine(line: string): Pick<CliCommandInventoryItem, 'command' | 'description'> | null {
+  for (const pattern of COMMAND_LINE_PATTERNS) {
+    const match = line.match(pattern);
+    if (match) return { command: match[1], description: match[2].trim() };
+  }
+  return null;
+}
 
 export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventoryItem, 'command' | 'description'>[] {
   const commands: Pick<CliCommandInventoryItem, 'command' | 'description'>[] = [];
@@ -82,12 +95,12 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
     if (!inCommandSection) continue;
     if (HELP_SECTION_BOUNDARY.test(trimmed)) break;
 
-    const match = trimmed.match(/^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/);
-    if (!match) continue;
-    const command = match[1];
+    const parsed = parseCommandHelpLine(trimmed);
+    if (!parsed) continue;
+    const command = parsed.command;
     if (seen.has(command)) continue;
     seen.add(command);
-    commands.push({ command, description: match[2].trim() });
+    commands.push(parsed);
   }
 
   return commands;

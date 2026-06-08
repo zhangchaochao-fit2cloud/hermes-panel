@@ -54,6 +54,17 @@ Arguments:
   command     Command to run
 `;
 
+const MIXED_SEPARATOR_HELP = `Hermes Agent
+
+Commands:
+  update - Update Hermes Agent
+  completion: Print shell completion scripts
+  logs        View and filter Hermes log files
+
+Options:
+  -h, --help  Show help
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -85,6 +96,14 @@ describe('parseHermesHelpCommands', () => {
     expect(parseHermesHelpCommands(SUBCOMMANDS_HELP)).toEqual([
       { command: 'skills', description: 'Manage skills' },
       { command: 'plugins', description: 'Manage plugins' },
+    ]);
+  });
+
+  it('extracts command descriptions separated by dash or colon', () => {
+    expect(parseHermesHelpCommands(MIXED_SEPARATOR_HELP)).toEqual([
+      { command: 'update', description: 'Update Hermes Agent' },
+      { command: 'completion', description: 'Print shell completion scripts' },
+      { command: 'logs', description: 'View and filter Hermes log files' },
     ]);
   });
 });
