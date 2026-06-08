@@ -1,4 +1,5 @@
 import type {
+  CliCommandHelpResponse,
   CliCommandCoverage,
   CliCommandGroup,
   CliCommandInventoryItem,
@@ -108,6 +109,44 @@ export async function getCliCommandInventory(): Promise<CliCommandInventoryRespo
       source: 'hermes --help',
       generatedAt: Date.now(),
       commands: [],
+      error: code,
+    };
+  }
+}
+
+export function isSafeCliCommand(command: string): boolean {
+  return /^[a-z][\w-]{0,63}$/.test(command);
+}
+
+export async function getCliCommandHelp(command: string): Promise<CliCommandHelpResponse> {
+  const generatedAt = Date.now();
+  if (!isSafeCliCommand(command)) {
+    return {
+      command,
+      source: `hermes ${command} --help`,
+      generatedAt,
+      stdout: '',
+      error: 'BAD_COMMAND',
+    };
+  }
+
+  try {
+    const { stdout, stderr } = await runHermesCli([command, '--help'], { timeoutMs: 8_000 });
+    return {
+      command,
+      source: `hermes ${command} --help`,
+      generatedAt,
+      stdout,
+      ...(stderr ? { stderr } : {}),
+    };
+  } catch (err) {
+    const code = err instanceof HermesCliError ? err.code : 'UNKNOWN';
+    logger.warn({ err, code, command }, 'hermes cli command help failed');
+    return {
+      command,
+      source: `hermes ${command} --help`,
+      generatedAt,
+      stdout: '',
       error: code,
     };
   }

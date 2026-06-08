@@ -1,8 +1,12 @@
 import Router from '@koa/router';
-import { getCliCommandInventory } from '../services/hermes-cli-inventory.js';
+import { getCliCommandHelp, getCliCommandInventory } from '../services/hermes-cli-inventory.js';
 
 export const cliRouter = new Router();
 
 cliRouter.get('/cli/commands', async ctx => {
   ctx.body = await getCliCommandInventory();
+});
+
+cliRouter.get('/cli/commands/:command/help', async ctx => {
+  ctx.body = await getCliCommandHelp(ctx.params.command);
 });

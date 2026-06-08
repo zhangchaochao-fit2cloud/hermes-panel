@@ -5,10 +5,12 @@ import { useRouter } from 'vue-router';
 import type {
   CliCommandCoverage,
   CliCommandGroup,
+  CliCommandHelpResponse,
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
 
 const { t, te, locale } = useI18n();
 const router = useRouter();
@@ -19,6 +21,10 @@ const source = ref('hermes --help');
 const generatedAt = ref<number | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const selectedHelpCommand = ref<string | null>(null);
+const commandHelp = ref<CliCommandHelpResponse | null>(null);
+const commandHelpLoading = ref(false);
+const commandHelpError = ref<string | null>(null);
 
 const groups: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
 const coverages: CliCommandCoverage[] = ['ready', 'partial', 'missing'];
@@ -58,6 +64,18 @@ const generatedAtLabel = computed(() => {
   });
 });
 
+const commandHelpGeneratedAtLabel = computed(() => {
+  if (!commandHelp.value) return '';
+  return new Date(commandHelp.value.generatedAt).toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+});
+
+const commandHelpOutput = computed(() => commandHelp.value?.stdout.trimEnd() ?? '');
+
 function coverageClass(coverage: CliCommandCoverage): string {
   if (coverage === 'ready') return 'is-ready';
   if (coverage === 'partial') return 'is-partial';
@@ -72,6 +90,22 @@ function descriptionFor(cmd: CliCommandInventoryItem): string {
 function go(route?: string): void {
   if (!route) return;
   void router.push(route);
+}
+
+async function loadCommandHelp(command: string): Promise<void> {
+  selectedHelpCommand.value = command;
+  commandHelp.value = null;
+  commandHelpError.value = null;
+  commandHelpLoading.value = true;
+  try {
+    const data = await bffFetch<CliCommandHelpResponse>(`/api/cli/commands/${encodeURIComponent(command)}/help`);
+    commandHelp.value = data;
+    commandHelpError.value = data.error ?? null;
+  } catch (err) {
+    commandHelpError.value = (err as Error).message ?? String(err);
+  } finally {
+    commandHelpLoading.value = false;
+  }
 }
 
 async function loadInventory(): Promise<void> {
@@ -229,14 +263,79 @@ onMounted(() => {
             </p>
             <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
           </div>
-          <button
-            type="button"
-            class="open-button"
-            :disabled="!cmd.route"
-            @click="go(cmd.route)"
+          <div class="command-actions">
+            <button
+              type="button"
+              class="open-button"
+              :disabled="commandHelpLoading && selectedHelpCommand === cmd.command"
+              @click="loadCommandHelp(cmd.command)"
+            >
+              {{
+                commandHelpLoading && selectedHelpCommand === cmd.command
+                  ? t('developer.cliParity.helpLoading')
+                  : t('developer.cliParity.help')
+              }}
+            </button>
+            <button
+              type="button"
+              class="open-button"
+              :disabled="!cmd.route"
+              @click="go(cmd.route)"
+            >
+              {{ cmd.route ? t('developer.cliParity.open') : t('developer.cliParity.noUi') }}
+            </button>
+          </div>
+
+          <div
+            v-if="selectedHelpCommand === cmd.command"
+            class="command-help"
           >
-            {{ cmd.route ? t('developer.cliParity.open') : t('developer.cliParity.noUi') }}
-          </button>
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div class="min-w-0">
+                <h4 class="text-xs font-semibold text-[var(--text-1)]">
+                  {{ t('developer.cliParity.helpTitle', { command: cmd.command }) }}
+                </h4>
+                <p v-if="commandHelp" class="mt-1 text-xs text-[var(--text-3)]">
+                  {{ commandHelp.source }}
+                  <span v-if="commandHelpGeneratedAtLabel">
+                    - {{ t('developer.cliParity.lastUpdated', { time: commandHelpGeneratedAtLabel }) }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div
+              v-if="commandHelpError"
+              class="mb-2 rounded border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2 text-xs text-[var(--color-warning)]"
+            >
+              {{ t('developer.cliParity.helpError', { error: commandHelpError }) }}
+            </div>
+            <div
+              v-if="commandHelpLoading"
+              class="rounded border border-[var(--border)] bg-[var(--bg-card)] px-3 py-4 text-center text-xs text-[var(--text-3)]"
+            >
+              {{ t('developer.cliParity.helpLoading') }}
+            </div>
+            <CodeBlock
+              v-else-if="commandHelpOutput"
+              :code="commandHelpOutput"
+              :lang="`hermes ${cmd.command} --help`"
+              max-height="360px"
+            />
+            <div
+              v-else
+              class="rounded border border-[var(--border)] bg-[var(--bg-card)] px-3 py-4 text-center text-xs text-[var(--text-3)]"
+            >
+              {{ t('developer.cliParity.helpEmpty') }}
+            </div>
+            <CodeBlock
+              v-if="commandHelp?.stderr"
+              class="mt-2"
+              :code="commandHelp.stderr.trimEnd()"
+              :lang="t('developer.cliParity.stderr')"
+              max-height="160px"
+              tone="warning"
+            />
+          </div>
         </article>
       </div>
     </section>
@@ -333,6 +432,19 @@ onMounted(() => {
   border: 1px solid var(--border);
   background: var(--bg-elevate);
   padding: 12px;
+}
+
+.command-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.command-help {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 
 .command-name {

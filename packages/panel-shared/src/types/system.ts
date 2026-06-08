@@ -33,3 +33,12 @@ export interface CliCommandInventoryResponse {
   commands: CliCommandInventoryItem[];
   error?: string;
 }
+
+export interface CliCommandHelpResponse {
+  command: string;
+  source: string;
+  generatedAt: number;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
