@@ -25,4 +25,15 @@ describe('CLI parity panel experience', () => {
     expect(source).toContain("@click=\"copyBacklogExample(cmd)\"");
     expect(source).toContain("t('developer.cliParity.copyExample')");
   });
+
+  it('shows recovery steps when CLI inventory fails', () => {
+    const source = readFileSync(panelPath, 'utf8');
+
+    expect(source).toContain("t('developer.cliParity.error', { error })");
+    expect(source).toContain("t('developer.cliParity.errorHintTitle')");
+    expect(source).toContain('hermes --help');
+    expect(source).toContain("t('developer.cliParity.errorHintShell')");
+    expect(source).toContain("t('developer.cliParity.errorHintBin')");
+    expect(source).toContain('class="error-command"');
+  });
 });

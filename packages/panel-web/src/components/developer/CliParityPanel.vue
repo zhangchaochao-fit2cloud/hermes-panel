@@ -300,7 +300,15 @@ onMounted(() => {
       v-if="error"
       class="rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3 text-sm text-[var(--color-warning)]"
     >
-      {{ t('developer.cliParity.error', { error }) }}
+      <p class="font-medium">
+        {{ t('developer.cliParity.error', { error }) }}
+      </p>
+      <div class="mt-2 grid gap-1 text-xs leading-5">
+        <p>{{ t('developer.cliParity.errorHintTitle') }}</p>
+        <code class="error-command">hermes --help</code>
+        <p>{{ t('developer.cliParity.errorHintShell') }}</p>
+        <p>{{ t('developer.cliParity.errorHintBin') }}</p>
+      </div>
     </section>
 
     <section
@@ -437,6 +445,15 @@ onMounted(() => {
 
 .backlog-action:hover {
   background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-card));
+}
+
+.error-command {
+  width: fit-content;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 36%, var(--border));
+  background: var(--bg-card);
+  color: var(--text-1);
+  padding: 2px 7px;
 }
 
 </style>
