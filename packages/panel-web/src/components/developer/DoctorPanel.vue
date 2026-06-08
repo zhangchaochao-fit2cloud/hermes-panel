@@ -17,7 +17,7 @@ import { absoluteTime } from '@/utils/relative-time';
 
 const { t } = useI18n();
 const store = useDoctorStore();
-const { lastRun, raw, loading, error, counts, grouped } = storeToRefs(store);
+const { lastRun, raw, loading, error, counts, grouped, dump, dumpLoading, dumpError } = storeToRefs(store);
 
 const hasRun = computed(() => lastRun.value !== null);
 
@@ -50,6 +50,10 @@ function statusGlyph(status: DoctorStatus): string {
 
 async function onRun(): Promise<void> {
   await store.run();
+}
+
+async function onRunDump(): Promise<void> {
+  await store.runDump();
 }
 </script>
 
@@ -85,6 +89,51 @@ async function onRun(): Promise<void> {
           {{ t('developer.doctor.counts.info', { n: counts.info }) }}
         </NTag>
       </div>
+    </div>
+
+    <div
+      class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3"
+    >
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+            {{ t('developer.doctor.dumpEyebrow') }}
+          </p>
+          <h3 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
+            {{ t('developer.doctor.dumpTitle') }}
+          </h3>
+          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
+            {{ t('developer.doctor.dumpDesc') }}
+          </p>
+        </div>
+        <NButton size="small" :loading="dumpLoading" @click="onRunDump">
+          {{ t('developer.doctor.dumpRun') }}
+        </NButton>
+      </div>
+
+      <ErrorBanner
+        v-if="dumpError"
+        class="mt-3"
+        :message="`${t('developer.doctor.dumpErrorPrefix')} ${dumpError}`"
+        :retry-label="t('developer.doctor.dumpRun')"
+        surface="inline"
+        @retry="onRunDump"
+      />
+      <CodeBlock
+        v-if="dump?.stdout"
+        class="mt-3"
+        :code="dump.stdout.trimEnd()"
+        :lang="dump.source"
+        max-height="360px"
+      />
+      <CodeBlock
+        v-if="dump?.stderr"
+        class="mt-3"
+        :code="dump.stderr.trimEnd()"
+        lang="stderr"
+        max-height="160px"
+        tone="warning"
+      />
     </div>
 
     <!-- Error banner (e.g. HERMES_CLI_NOT_FOUND). We still render any

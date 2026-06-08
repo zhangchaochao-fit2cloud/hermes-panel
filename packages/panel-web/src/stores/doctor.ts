@@ -17,12 +17,23 @@ export interface DoctorReport {
   error?: string;
 }
 
+export interface DumpReport {
+  source: string;
+  generatedAt: number;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
+
 export const useDoctorStore = defineStore('doctor', () => {
   const lastRun = ref<number | null>(null);
   const checks = ref<DoctorCheck[]>([]);
   const raw = ref<string>('');
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const dump = ref<DumpReport | null>(null);
+  const dumpLoading = ref(false);
+  const dumpError = ref<string | null>(null);
 
   const counts = computed(() => {
     let ok = 0;
@@ -68,5 +79,33 @@ export const useDoctorStore = defineStore('doctor', () => {
     }
   }
 
-  return { lastRun, checks, raw, loading, error, counts, grouped, run };
+  async function runDump(): Promise<void> {
+    dumpLoading.value = true;
+    dumpError.value = null;
+    dump.value = null;
+    try {
+      const r = await bffFetch<DumpReport>('/api/system/dump');
+      dump.value = r;
+      if (r.error) dumpError.value = r.error;
+    } catch (err) {
+      dumpError.value = (err as Error).message;
+    } finally {
+      dumpLoading.value = false;
+    }
+  }
+
+  return {
+    lastRun,
+    checks,
+    raw,
+    loading,
+    error,
+    counts,
+    grouped,
+    dump,
+    dumpLoading,
+    dumpError,
+    run,
+    runDump,
+  };
 });

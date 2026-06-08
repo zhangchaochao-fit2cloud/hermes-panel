@@ -41,7 +41,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   cron: { group: 'core', coverage: 'ready', route: '/cron', example: 'hermes cron list' },
   webhook: { group: 'ops', coverage: 'ready', route: '/developer#webhook', example: 'hermes webhook list' },
   doctor: { group: 'ops', coverage: 'ready', route: '/developer#doctor', example: 'hermes doctor' },
-  dump: { group: 'ops', coverage: 'partial', route: '/developer#doctor', example: 'hermes dump' },
+  dump: { group: 'ops', coverage: 'ready', route: '/developer#doctor', example: 'hermes dump' },
   debug: { group: 'ops', coverage: 'partial', route: '/developer#logs', example: 'hermes debug share' },
   backup: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes backup' },
   import: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes import backup.zip' },

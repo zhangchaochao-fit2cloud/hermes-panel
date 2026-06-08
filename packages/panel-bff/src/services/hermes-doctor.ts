@@ -16,6 +16,14 @@ export interface DoctorReport {
   error?: string;
 }
 
+export interface DumpReport {
+  source: string;
+  generatedAt: number;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
+
 // Strip ANSI escape sequences from CLI output so the parser sees raw text.
 // The ESC code point is assembled at runtime to keep this source free of
 // literal control bytes.
@@ -69,6 +77,36 @@ export async function runDoctor(): Promise<DoctorReport> {
   const checks = parseDoctorText(stripped);
 
   return errorCode ? { checks, raw, error: errorCode } : { checks, raw };
+}
+
+export async function runDump(): Promise<DumpReport> {
+  const generatedAt = Date.now();
+  try {
+    const { stdout, stderr } = await runHermesCli(['dump'], { timeoutMs: 30_000 });
+    return {
+      source: 'hermes dump',
+      generatedAt,
+      stdout,
+      ...(stderr ? { stderr } : {}),
+    };
+  } catch (err) {
+    if (err instanceof HermesCliError) {
+      logger.warn({ code: err.code }, 'hermes dump failed');
+      return {
+        source: 'hermes dump',
+        generatedAt,
+        stdout: '',
+        error: err.code,
+      };
+    }
+    logger.warn({ err }, 'hermes dump failed unexpectedly');
+    return {
+      source: 'hermes dump',
+      generatedAt,
+      stdout: '',
+      error: 'UNKNOWN',
+    };
+  }
 }
 
 /**
