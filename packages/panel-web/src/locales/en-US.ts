@@ -968,6 +968,8 @@ export default {
       search: 'Search commands, descriptions, or examples...',
       open: 'Open',
       noUi: 'No UI',
+      copyExample: 'Copy',
+      copiedExample: 'Command copied',
       help: 'Help',
       helpTitle: 'Raw help for hermes {command}',
       helpLoading: 'Reading command help...',

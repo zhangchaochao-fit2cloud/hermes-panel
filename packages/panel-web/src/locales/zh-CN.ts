@@ -968,6 +968,8 @@ export default {
       search: '搜索命令、说明或示例...',
       open: '打开入口',
       noUi: '暂无 UI',
+      copyExample: '复制',
+      copiedExample: '命令已复制',
       help: '查看 Help',
       helpTitle: 'hermes {command} 原始 Help',
       helpLoading: '正在读取命令 Help...',
