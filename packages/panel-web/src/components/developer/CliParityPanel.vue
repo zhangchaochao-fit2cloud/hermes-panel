@@ -91,6 +91,12 @@ function descriptionFor(cmd: CliCommandInventoryItem): string {
   return te(key) ? t(key) : cmd.description;
 }
 
+function focusCommand(cmd: CliCommandInventoryItem): void {
+  query.value = cmd.command;
+  coverageFilter.value = cmd.coverage;
+  groupFilter.value = cmd.group;
+}
+
 async function copyReport(): Promise<void> {
   if (reportCommands.value.length === 0) {
     message.warning(t('developer.cliParity.reportEmpty'));
@@ -242,6 +248,13 @@ onMounted(() => {
             {{ descriptionFor(cmd) }}
           </p>
           <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
+          <button
+            type="button"
+            class="backlog-focus"
+            @click="focusCommand(cmd)"
+          >
+            {{ t('developer.cliParity.focusCommand') }}
+          </button>
         </article>
       </div>
     </section>
@@ -374,6 +387,22 @@ onMounted(() => {
   font-size: 11px;
   line-height: 16px;
   padding: 2px 7px;
+}
+
+.backlog-focus {
+  margin-top: 10px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 34%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 7%, var(--bg-card));
+  color: var(--brand-600);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 5px 8px;
+}
+
+.backlog-focus:hover {
+  background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-card));
 }
 
 </style>

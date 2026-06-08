@@ -992,6 +992,7 @@ export default {
       backlogDesc: '这些未完整覆盖的命令直接来自 CLI 清单，用来明确下一步 UI 补齐范围。',
       backlogEmptyTitle: '已发现命令均有 UI 覆盖',
       backlogEmptyDesc: 'Hermes 升级后重新加载清单，可检查是否出现新的 CLI 命令。',
+      focusCommand: '聚焦命令',
       coverage: {
         all: '全部',
         ready: '已覆盖',
