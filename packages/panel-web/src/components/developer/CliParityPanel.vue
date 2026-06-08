@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import type {
   CliCommandCoverage,
@@ -8,10 +9,12 @@ import type {
   CliCommandInventoryResponse,
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
+import { formatCliParityReport } from '@/utils/cli-parity';
 import CliParityCommandCard from './CliParityCommandCard.vue';
 import CliParityFilters from './CliParityFilters.vue';
 
 const { t, te, locale } = useI18n();
+const message = useMessage();
 const query = ref('');
 const coverageFilter = ref<CliCommandCoverage | 'all'>('all');
 const groupFilter = ref<CliCommandGroup | 'all'>('all');
@@ -60,9 +63,29 @@ const generatedAtLabel = computed(() => {
   });
 });
 
+const reportCommands = computed(() =>
+  filtered.value.map(cmd => ({
+    ...cmd,
+    displayDescription: descriptionFor(cmd),
+  })),
+);
+
 function descriptionFor(cmd: CliCommandInventoryItem): string {
   const key = `developer.cliParity.items.${cmd.command}`;
   return te(key) ? t(key) : cmd.description;
+}
+
+async function copyReport(): Promise<void> {
+  if (reportCommands.value.length === 0) {
+    message.warning(t('developer.cliParity.reportEmpty'));
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(formatCliParityReport(reportCommands.value));
+    message.success(t('developer.cliParity.copiedReport'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
 }
 
 async function loadInventory(): Promise<void> {
@@ -114,6 +137,14 @@ onMounted(() => {
               @click="loadInventory"
             >
               {{ loading ? t('developer.cliParity.loading') : t('developer.cliParity.reload') }}
+            </button>
+            <button
+              type="button"
+              class="reload-button"
+              :disabled="filtered.length === 0"
+              @click="copyReport"
+            >
+              {{ t('developer.cliParity.copyReport') }}
             </button>
           </div>
         </div>
