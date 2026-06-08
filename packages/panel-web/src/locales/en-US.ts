@@ -972,6 +972,7 @@ export default {
       groupLabel: 'Group',
       open: 'Open',
       noUi: 'No UI',
+      uiTarget: 'UI target',
       copyExample: 'Copy',
       copiedExample: 'Command copied',
       help: 'Help',

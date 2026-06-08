@@ -972,6 +972,7 @@ export default {
       groupLabel: '分组',
       open: '打开入口',
       noUi: '暂无 UI',
+      uiTarget: 'UI 入口',
       copyExample: '复制',
       copiedExample: '命令已复制',
       help: '查看 Help',

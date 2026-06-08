@@ -90,6 +90,10 @@ async function loadCommandHelp(): Promise<void> {
       <p class="mt-2 text-xs leading-5 text-[var(--text-3)]">
         {{ description }}
       </p>
+      <p class="ui-target">
+        <span>{{ t('developer.cliParity.uiTarget') }}</span>
+        <code>{{ cmd.route ?? t('developer.cliParity.noUi') }}</code>
+      </p>
       <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
     </div>
 
@@ -212,6 +216,25 @@ async function loadCommandHelp(): Promise<void> {
   font-size: 11px;
   line-height: 16px;
   padding: 2px 7px;
+}
+
+.ui-target {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ui-target code {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-2);
+  padding: 2px 6px;
 }
 
 .cli-command.is-ready .coverage-badge {
