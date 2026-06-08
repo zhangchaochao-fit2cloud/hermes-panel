@@ -21,6 +21,18 @@ options:
   -h, --help            show this help message and exit
 `;
 
+const COMMANDS_HELP = `Hermes Agent
+
+Commands:
+  chat        Interactive chat with the agent
+  model       Select default model and provider
+  mcp-server  Run an MCP server
+  chat        Duplicate command should be ignored
+
+Flags:
+  -h, --help  Show help
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -33,6 +45,14 @@ describe('parseHermesHelpCommands', () => {
       { command: 'gateway', description: 'Messaging gateway management' },
       { command: 'doctor', description: 'Check configuration and dependencies' },
       { command: 'logs', description: 'View and filter Hermes log files' },
+    ]);
+  });
+
+  it('extracts commands from a Commands section and stops at flags', () => {
+    expect(parseHermesHelpCommands(COMMANDS_HELP)).toEqual([
+      { command: 'chat', description: 'Interactive chat with the agent' },
+      { command: 'model', description: 'Select default model and provider' },
+      { command: 'mcp-server', description: 'Run an MCP server' },
     ]);
   });
 });

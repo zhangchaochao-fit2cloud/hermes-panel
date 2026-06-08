@@ -69,10 +69,14 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
       inCommandSection = true;
       continue;
     }
+    if (/^\s*commands:\s*$/i.test(trimmed)) {
+      inCommandSection = true;
+      continue;
+    }
     if (!inCommandSection) continue;
-    if (/^options:/i.test(trimmed) || /^Examples:/i.test(trimmed)) break;
+    if (/^\s*(options|flags|global options|examples):/i.test(trimmed)) break;
 
-    const match = trimmed.match(/^\s{4}([a-z][\w-]*)\s{2,}(.+)$/);
+    const match = trimmed.match(/^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/);
     if (!match) continue;
     const command = match[1];
     if (seen.has(command)) continue;
