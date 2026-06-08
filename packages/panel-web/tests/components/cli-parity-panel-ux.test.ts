@@ -36,4 +36,16 @@ describe('CLI parity panel experience', () => {
     expect(source).toContain("t('developer.cliParity.errorHintBin')");
     expect(source).toContain('class="error-command"');
   });
+
+  it('lets users generate official shell completion scripts', () => {
+    const source = readFileSync(panelPath, 'utf8');
+
+    expect(source).toContain("type CompletionShell = 'zsh' | 'bash' | 'fish' | 'powershell'");
+    expect(source).toContain("const completionShells: CompletionShell[] = ['zsh', 'bash', 'fish', 'powershell']");
+    expect(source).toContain('async function loadCompletionScript(): Promise<void>');
+    expect(source).toContain('/api/cli/completion/${shell}');
+    expect(source).toContain("t('developer.cliParity.completionGenerate')");
+    expect(source).toContain("t('developer.cliParity.completionError', { error: completionError })");
+    expect(source).toContain('<CodeBlock');
+  });
 });

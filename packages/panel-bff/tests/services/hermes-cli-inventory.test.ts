@@ -2,6 +2,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 import {
   getCliCommandHelp,
   getCliCommandInventory,
+  getCliCompletionScript,
   isSafeCliCommand,
   parseHermesHelpCommands,
   summarizeCliCommandInventory,
@@ -300,5 +301,32 @@ describe('getCliCommandHelp', () => {
     expect(help.command).toBe('chat');
     expect(help.stdout).toBe('');
     expect(help.error).toBe('HERMES_CLI_NOT_FOUND');
+  });
+});
+
+describe('getCliCompletionScript', () => {
+  it('runs whitelisted shell completion commands', async () => {
+    process.env.HERMES_BIN = '/bin/echo';
+    const completion = await getCliCompletionScript('zsh');
+    expect(completion.shell).toBe('zsh');
+    expect(completion.source).toBe('hermes completion zsh');
+    expect(completion.stdout).toBe('completion zsh\n');
+    expect(completion.error).toBeUndefined();
+  });
+
+  it('rejects unsupported shells before invoking hermes', async () => {
+    process.env.HERMES_BIN = '/bin/echo';
+    const completion = await getCliCompletionScript('zsh;rm');
+    expect(completion.source).toBe('hermes completion zsh;rm');
+    expect(completion.stdout).toBe('');
+    expect(completion.error).toBe('BAD_SHELL');
+  });
+
+  it('returns fallback error when hermes binary is unavailable', async () => {
+    process.env.HERMES_BIN = 'does-not-exist-hermes-for-completion-test';
+    const completion = await getCliCompletionScript('bash');
+    expect(completion.shell).toBe('bash');
+    expect(completion.stdout).toBe('');
+    expect(completion.error).toBe('HERMES_CLI_NOT_FOUND');
   });
 });

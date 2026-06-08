@@ -79,4 +79,34 @@ describe('CLI routes', () => {
       error: 'BAD_COMMAND',
     });
   });
+
+  it('returns shell completion script output for supported shells', async () => {
+    process.env.HERMES_BIN = '/bin/echo';
+    const res = await request
+      .get('/api/cli/completion/zsh')
+      .set('X-Panel-Token', token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      shell: 'zsh',
+      source: 'hermes completion zsh',
+      stdout: 'completion zsh\n',
+    });
+    expect(res.body.error).toBeUndefined();
+  });
+
+  it('rejects unsupported completion shells before invoking hermes', async () => {
+    process.env.HERMES_BIN = '/bin/echo';
+    const res = await request
+      .get('/api/cli/completion/zsh%3Brm')
+      .set('X-Panel-Token', token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      shell: 'zsh;rm',
+      source: 'hermes completion zsh;rm',
+      stdout: '',
+      error: 'BAD_SHELL',
+    });
+  });
 });

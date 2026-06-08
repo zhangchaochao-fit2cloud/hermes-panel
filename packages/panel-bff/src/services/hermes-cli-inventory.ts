@@ -17,6 +17,17 @@ interface CoverageMeta {
   example: string;
 }
 
+export type CliCompletionShell = 'bash' | 'zsh' | 'fish' | 'powershell';
+
+export interface CliCompletionResponse {
+  shell: string;
+  source: string;
+  generatedAt: number;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
+
 const COVERAGE: Record<string, CoverageMeta> = {
   chat: { group: 'core', coverage: 'ready', route: '/chat', example: 'hermes chat -q "Summarize this repo"' },
   model: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes model' },
@@ -49,10 +60,11 @@ const COVERAGE: Record<string, CoverageMeta> = {
   uninstall: { group: 'ops', coverage: 'missing', example: 'hermes uninstall' },
   acp: { group: 'advanced', coverage: 'missing', example: 'hermes acp' },
   profile: { group: 'config', coverage: 'ready', route: '/workspaces', example: 'hermes profile list' },
-  completion: { group: 'advanced', coverage: 'missing', example: 'hermes completion zsh' },
+  completion: { group: 'advanced', coverage: 'ready', route: '/developer#cli-parity', example: 'hermes completion zsh' },
   logs: { group: 'ops', coverage: 'ready', route: '/developer#logs', example: 'hermes logs --since 1h' },
 };
 
+const COMPLETION_SHELLS = new Set<CliCompletionShell>(['bash', 'zsh', 'fish', 'powershell']);
 const DEFAULT_META: CoverageMeta = {
   group: 'advanced',
   coverage: 'missing',
@@ -202,6 +214,41 @@ export async function getCliCommandHelp(command: string): Promise<CliCommandHelp
     return {
       command,
       source: `hermes ${command} --help`,
+      generatedAt,
+      stdout: '',
+      error: code,
+    };
+  }
+}
+
+export async function getCliCompletionScript(shell: string): Promise<CliCompletionResponse> {
+  const generatedAt = Date.now();
+  const source = `hermes completion ${shell}`;
+  if (!COMPLETION_SHELLS.has(shell as CliCompletionShell)) {
+    return {
+      shell,
+      source,
+      generatedAt,
+      stdout: '',
+      error: 'BAD_SHELL',
+    };
+  }
+
+  try {
+    const { stdout, stderr } = await runHermesCli(['completion', shell], { timeoutMs: 8_000 });
+    return {
+      shell,
+      source,
+      generatedAt,
+      stdout,
+      ...(stderr ? { stderr } : {}),
+    };
+  } catch (err) {
+    const code = err instanceof HermesCliError ? err.code : 'UNKNOWN';
+    logger.warn({ err, code, shell }, 'hermes cli completion failed');
+    return {
+      shell,
+      source,
       generatedAt,
       stdout: '',
       error: code,
