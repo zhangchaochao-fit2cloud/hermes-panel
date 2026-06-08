@@ -65,6 +65,16 @@ Options:
   -h, --help  Show help
 `;
 
+const TAB_SEPARATOR_HELP = `Hermes Agent
+
+Commands:
+  status\tShow component status
+  doctor\tCheck configuration and dependencies
+
+Options:
+  -h, --help  Show help
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -104,6 +114,13 @@ describe('parseHermesHelpCommands', () => {
       { command: 'update', description: 'Update Hermes Agent' },
       { command: 'completion', description: 'Print shell completion scripts' },
       { command: 'logs', description: 'View and filter Hermes log files' },
+    ]);
+  });
+
+  it('extracts command descriptions separated by tabs', () => {
+    expect(parseHermesHelpCommands(TAB_SEPARATOR_HELP)).toEqual([
+      { command: 'status', description: 'Show component status' },
+      { command: 'doctor', description: 'Check configuration and dependencies' },
     ]);
   });
 });
