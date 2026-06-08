@@ -147,7 +147,7 @@ async function loadCommandHelp(): Promise<void> {
         {{ t('developer.cliParity.helpError', { error: commandHelpError }) }}
       </div>
       <div
-        v-if="commandHelpLoading"
+        v-else-if="commandHelpLoading"
         class="rounded border border-[var(--border)] bg-[var(--bg-card)] px-3 py-4 text-center text-xs text-[var(--text-3)]"
       >
         {{ t('developer.cliParity.helpLoading') }}

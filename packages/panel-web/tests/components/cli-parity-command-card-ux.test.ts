@@ -13,4 +13,13 @@ describe('CLI parity command card experience', () => {
     expect(source).toContain('class="ui-target"');
     expect(source).toContain(':disabled="!cmd.route"');
   });
+
+  it('does not show the empty help state when command help returns an error', () => {
+    const source = readFileSync(cardPath, 'utf8');
+
+    expect(source).toContain('v-if="commandHelpError"');
+    expect(source).toContain('v-else-if="commandHelpLoading"');
+    expect(source).toContain('v-else-if="commandHelpOutput"');
+    expect(source).toContain("t('developer.cliParity.helpEmpty')");
+  });
 });
