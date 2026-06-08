@@ -32,7 +32,10 @@ const syncing = ref(false);
 const optimizations = ref<Optimization[]>([]);
 
 onMounted(async () => {
-  try { data.value = await bffFetch<CostOverview>('/api/cost/overview'); }
+  try {
+    data.value = await bffFetch<CostOverview>('/api/cost/overview');
+    await loadOptimizations();
+  }
   catch { msg.error(t('cost.loadFailed')); }
   finally { loading.value = false; }
 });
@@ -70,8 +73,34 @@ function confidenceType(pct: number): 'success' | 'warning' | 'default' {
 
 <template>
   <div class="px-6 py-6 max-w-[1400px] mx-auto">
-    <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('cost.title') }}</h2>
-    <p class="text-sm text-[var(--text-3)] mb-6">{{ t('cost.subtitle') }}</p>
+    <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('cost.title') }}</h2>
+        <p class="text-sm text-[var(--text-3)]">{{ t('cost.subtitle') }}</p>
+      </div>
+      <NButton :loading="syncing" :disabled="syncing" size="small" type="primary" @click="syncBilling">
+        {{ syncing ? t('cost.syncing') : t('cost.syncBtn') }}
+      </NButton>
+    </div>
+
+    <section class="mb-6 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+            {{ t('cost.cliEyebrow') }}
+          </p>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <code class="rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1 text-xs text-[var(--text-1)]">hermes insights</code>
+            <span class="text-xs text-[var(--text-3)]">{{ t('cost.cliDesc') }}</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs text-[var(--text-3)]">
+          <span class="rounded border border-[var(--border)] px-2 py-1">{{ t('cost.sourceUsage') }}</span>
+          <span class="rounded border border-[var(--border)] px-2 py-1">{{ t('cost.sourceBudget') }}</span>
+          <span class="rounded border border-[var(--border)] px-2 py-1">{{ t('cost.sourceOptimizations') }}</span>
+        </div>
+      </div>
+    </section>
 
     <NSpin v-if="loading" size="small" class="flex justify-center py-20" />
     <template v-else-if="data">
@@ -138,13 +167,6 @@ function confidenceType(pct: number): 'success' | 'warning' | 'default' {
             <NTag size="tiny">{{ w.exceedStrategy === 'warn' ? t('cost.strategyWarn') : w.exceedStrategy === 'downgrade' ? t('cost.strategyDowngrade') : t('cost.strategyBlock') }}</NTag>
           </div>
         </div>
-      </div>
-
-      <!-- Sync billing toolbar -->
-      <div class="flex items-center gap-3 mb-6">
-        <NButton :loading="syncing" :disabled="syncing" size="small" type="primary" @click="syncBilling">
-          {{ syncing ? t('cost.syncing') : t('cost.syncBtn') }}
-        </NButton>
       </div>
 
       <!-- Optimization suggestions -->

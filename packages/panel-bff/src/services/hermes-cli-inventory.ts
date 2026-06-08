@@ -53,7 +53,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   tools: { group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes tools list' },
   mcp: { group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes mcp list' },
   sessions: { group: 'core', coverage: 'ready', route: '/sessions', example: 'hermes sessions list' },
-  insights: { group: 'advanced', coverage: 'partial', route: '/cost', example: 'hermes insights' },
+  insights: { group: 'advanced', coverage: 'ready', route: '/cost', example: 'hermes insights' },
   claw: { group: 'advanced', coverage: 'missing', example: 'hermes claw --help' },
   version: { group: 'ops', coverage: 'ready', route: '/settings#about', example: 'hermes version' },
   update: { group: 'ops', coverage: 'missing', example: 'hermes update' },
