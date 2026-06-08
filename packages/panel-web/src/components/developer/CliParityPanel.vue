@@ -9,10 +9,12 @@ import type {
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
 import CliParityCommandCard from './CliParityCommandCard.vue';
+import CliParityFilters from './CliParityFilters.vue';
 
 const { t, te, locale } = useI18n();
 const query = ref('');
 const coverageFilter = ref<CliCommandCoverage | 'all'>('all');
+const groupFilter = ref<CliCommandGroup | 'all'>('all');
 const commands = ref<CliCommandInventoryItem[]>([]);
 const source = ref('hermes --help');
 const generatedAt = ref<number | null>(null);
@@ -26,6 +28,7 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
   return commands.value.filter((cmd) => {
     if (coverageFilter.value !== 'all' && cmd.coverage !== coverageFilter.value) return false;
+    if (groupFilter.value !== 'all' && cmd.group !== groupFilter.value) return false;
     if (!q) return true;
     return `${cmd.command} ${cmd.description} ${cmd.example} ${descriptionFor(cmd)}`.toLowerCase().includes(q);
   });
@@ -136,37 +139,13 @@ onMounted(() => {
       </div>
     </section>
 
-    <section class="flex flex-col gap-3 rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4 md:flex-row md:items-center md:justify-between">
-      <label class="min-w-0 flex-1">
-        <span class="sr-only">{{ t('developer.cliParity.search') }}</span>
-        <input
-          v-model="query"
-          class="cli-search"
-          type="search"
-          :placeholder="t('developer.cliParity.search')"
-        >
-      </label>
-      <div class="flex flex-wrap gap-2">
-        <button
-          type="button"
-          class="filter-chip"
-          :class="coverageFilter === 'all' ? 'is-active' : ''"
-          @click="coverageFilter = 'all'"
-        >
-          {{ t('developer.cliParity.coverage.all') }}
-        </button>
-        <button
-          v-for="coverage in coverages"
-          :key="coverage"
-          type="button"
-          class="filter-chip"
-          :class="coverageFilter === coverage ? 'is-active' : ''"
-          @click="coverageFilter = coverage"
-        >
-          {{ t(`developer.cliParity.coverage.${coverage}`) }}
-        </button>
-      </div>
-    </section>
+    <CliParityFilters
+      v-model:query="query"
+      v-model:coverage-filter="coverageFilter"
+      v-model:group-filter="groupFilter"
+      :coverages="coverages"
+      :groups="groups"
+    />
 
     <section
       v-if="error"
@@ -243,23 +222,6 @@ onMounted(() => {
   font-size: 11px;
 }
 
-.cli-search {
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  color: var(--text-1);
-  font-size: 13px;
-  line-height: 20px;
-  outline: none;
-  padding: 8px 10px;
-}
-
-.cli-search:focus {
-  border-color: var(--brand-500);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-500) 18%, transparent);
-}
-
 .reload-button {
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--brand-500) 36%, var(--border));
@@ -273,22 +235,6 @@ onMounted(() => {
 .reload-button:disabled {
   opacity: 0.62;
   cursor: wait;
-}
-
-.filter-chip {
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  color: var(--text-2);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 6px 10px;
-}
-
-.filter-chip.is-active {
-  border-color: color-mix(in srgb, var(--brand-500) 52%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-elevate));
-  color: var(--brand-600);
 }
 
 </style>
