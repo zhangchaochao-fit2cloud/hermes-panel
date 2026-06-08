@@ -34,6 +34,26 @@ Flags:
   -h, --help  Show help
 `;
 
+const AVAILABLE_COMMANDS_HELP = `Hermes Agent
+
+Available commands:
+  backup      Back up the Hermes home directory
+  import      Restore from a Hermes backup
+
+Examples:
+  hermes backup
+`;
+
+const SUBCOMMANDS_HELP = `Hermes Agent
+
+Subcommands:
+  skills      Manage skills
+  plugins     Manage plugins
+
+Arguments:
+  command     Command to run
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -54,6 +74,17 @@ describe('parseHermesHelpCommands', () => {
       { command: 'chat', description: 'Interactive chat with the agent' },
       { command: 'model', description: 'Select default model and provider' },
       { command: 'mcp-server', description: 'Run an MCP server' },
+    ]);
+  });
+
+  it('extracts commands from common help heading variants', () => {
+    expect(parseHermesHelpCommands(AVAILABLE_COMMANDS_HELP)).toEqual([
+      { command: 'backup', description: 'Back up the Hermes home directory' },
+      { command: 'import', description: 'Restore from a Hermes backup' },
+    ]);
+    expect(parseHermesHelpCommands(SUBCOMMANDS_HELP)).toEqual([
+      { command: 'skills', description: 'Manage skills' },
+      { command: 'plugins', description: 'Manage plugins' },
     ]);
   });
 });

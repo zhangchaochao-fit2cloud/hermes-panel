@@ -60,6 +60,8 @@ const DEFAULT_META: CoverageMeta = {
 };
 
 const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
+const COMMAND_SECTION_HEADER = /^\s*(commands|available commands|subcommands):\s*$/i;
+const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|examples|arguments):/i;
 
 export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventoryItem, 'command' | 'description'>[] {
   const commands: Pick<CliCommandInventoryItem, 'command' | 'description'>[] = [];
@@ -73,12 +75,12 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
       inCommandSection = true;
       continue;
     }
-    if (/^\s*commands:\s*$/i.test(trimmed)) {
+    if (COMMAND_SECTION_HEADER.test(trimmed)) {
       inCommandSection = true;
       continue;
     }
     if (!inCommandSection) continue;
-    if (/^\s*(options|flags|global options|examples):/i.test(trimmed)) break;
+    if (HELP_SECTION_BOUNDARY.test(trimmed)) break;
 
     const match = trimmed.match(/^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/);
     if (!match) continue;
