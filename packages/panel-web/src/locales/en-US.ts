@@ -969,6 +969,10 @@ export default {
       open: 'Open',
       noUi: 'No UI',
       empty: 'No matching CLI commands',
+      reload: 'Reload',
+      loading: 'Reading Hermes CLI...',
+      lastUpdated: 'Updated {time}',
+      error: 'CLI inventory failed: {error}',
       groupCount: '{n} commands',
       coverage: {
         all: 'All',

@@ -969,6 +969,10 @@ export default {
       open: '打开入口',
       noUi: '暂无 UI',
       empty: '没有匹配的 CLI 命令',
+      reload: '重新加载',
+      loading: '正在读取 Hermes CLI...',
+      lastUpdated: '更新于 {time}',
+      error: 'CLI inventory 读取失败：{error}',
       groupCount: '{n} 个命令',
       coverage: {
         all: '全部',

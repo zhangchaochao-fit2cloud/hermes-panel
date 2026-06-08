@@ -1,69 +1,34 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import type {
+  CliCommandCoverage,
+  CliCommandGroup,
+  CliCommandInventoryItem,
+  CliCommandInventoryResponse,
+} from '@hermes-panel/shared';
+import { bffFetch } from '@/api/bff';
 
-type Coverage = 'ready' | 'partial' | 'missing';
-type Group = 'core' | 'ops' | 'config' | 'extensions' | 'advanced';
-
-interface CliCommand {
-  command: string;
-  group: Group;
-  coverage: Coverage;
-  route?: string;
-  example: string;
-}
-
-const { t } = useI18n();
+const { t, te, locale } = useI18n();
 const router = useRouter();
 const query = ref('');
-const coverageFilter = ref<Coverage | 'all'>('all');
+const coverageFilter = ref<CliCommandCoverage | 'all'>('all');
+const commands = ref<CliCommandInventoryItem[]>([]);
+const source = ref('hermes --help');
+const generatedAt = ref<number | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
-const commands: CliCommand[] = [
-  { command: 'chat', group: 'core', coverage: 'ready', route: '/chat', example: 'hermes chat -q "Summarize this repo"' },
-  { command: 'model', group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes model' },
-  { command: 'gateway', group: 'ops', coverage: 'ready', route: '/settings#system-health', example: 'hermes gateway run' },
-  { command: 'setup', group: 'config', coverage: 'partial', route: '/settings#system-health', example: 'hermes setup' },
-  { command: 'whatsapp', group: 'ops', coverage: 'partial', route: '/channels', example: 'hermes whatsapp' },
-  { command: 'login', group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes login openai' },
-  { command: 'logout', group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes logout openai' },
-  { command: 'auth', group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes auth list' },
-  { command: 'status', group: 'ops', coverage: 'ready', route: '/settings#system-health', example: 'hermes status' },
-  { command: 'cron', group: 'core', coverage: 'ready', route: '/cron', example: 'hermes cron list' },
-  { command: 'webhook', group: 'ops', coverage: 'ready', route: '/developer#webhook', example: 'hermes webhook list' },
-  { command: 'doctor', group: 'ops', coverage: 'ready', route: '/developer#doctor', example: 'hermes doctor' },
-  { command: 'dump', group: 'ops', coverage: 'partial', route: '/developer#doctor', example: 'hermes dump' },
-  { command: 'debug', group: 'ops', coverage: 'partial', route: '/developer#logs', example: 'hermes debug share' },
-  { command: 'backup', group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes backup' },
-  { command: 'import', group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes import backup.zip' },
-  { command: 'config', group: 'config', coverage: 'partial', route: '/settings', example: 'hermes config set model gpt-4' },
-  { command: 'pairing', group: 'ops', coverage: 'partial', route: '/channels', example: 'hermes pairing list' },
-  { command: 'skills', group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes skills list' },
-  { command: 'plugins', group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes plugins list' },
-  { command: 'memory', group: 'core', coverage: 'ready', route: '/memory', example: 'hermes memory' },
-  { command: 'tools', group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes tools list' },
-  { command: 'mcp', group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes mcp list' },
-  { command: 'sessions', group: 'core', coverage: 'ready', route: '/sessions', example: 'hermes sessions list' },
-  { command: 'insights', group: 'advanced', coverage: 'partial', route: '/cost', example: 'hermes insights' },
-  { command: 'claw', group: 'advanced', coverage: 'missing', example: 'hermes claw --help' },
-  { command: 'version', group: 'ops', coverage: 'ready', route: '/settings#about', example: 'hermes version' },
-  { command: 'update', group: 'ops', coverage: 'missing', example: 'hermes update' },
-  { command: 'uninstall', group: 'ops', coverage: 'missing', example: 'hermes uninstall' },
-  { command: 'acp', group: 'advanced', coverage: 'missing', example: 'hermes acp' },
-  { command: 'profile', group: 'config', coverage: 'ready', route: '/workspaces', example: 'hermes profile list' },
-  { command: 'completion', group: 'advanced', coverage: 'missing', example: 'hermes completion zsh' },
-  { command: 'logs', group: 'ops', coverage: 'ready', route: '/developer#logs', example: 'hermes logs --since 1h' },
-];
-
-const groups: Group[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
-const coverages: Coverage[] = ['ready', 'partial', 'missing'];
+const groups: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
+const coverages: CliCommandCoverage[] = ['ready', 'partial', 'missing'];
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return commands.filter((cmd) => {
+  return commands.value.filter((cmd) => {
     if (coverageFilter.value !== 'all' && cmd.coverage !== coverageFilter.value) return false;
     if (!q) return true;
-    return `${cmd.command} ${cmd.example} ${t(`developer.cliParity.items.${cmd.command}`)}`.toLowerCase().includes(q);
+    return `${cmd.command} ${cmd.description} ${cmd.example} ${descriptionFor(cmd)}`.toLowerCase().includes(q);
   });
 });
 
@@ -77,22 +42,59 @@ const grouped = computed(() =>
 );
 
 const totals = computed(() => ({
-  all: commands.length,
-  ready: commands.filter(cmd => cmd.coverage === 'ready').length,
-  partial: commands.filter(cmd => cmd.coverage === 'partial').length,
-  missing: commands.filter(cmd => cmd.coverage === 'missing').length,
+  all: commands.value.length,
+  ready: commands.value.filter(cmd => cmd.coverage === 'ready').length,
+  partial: commands.value.filter(cmd => cmd.coverage === 'partial').length,
+  missing: commands.value.filter(cmd => cmd.coverage === 'missing').length,
 }));
 
-function coverageClass(coverage: Coverage): string {
+const generatedAtLabel = computed(() => {
+  if (generatedAt.value === null) return '';
+  return new Date(generatedAt.value).toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+});
+
+function coverageClass(coverage: CliCommandCoverage): string {
   if (coverage === 'ready') return 'is-ready';
   if (coverage === 'partial') return 'is-partial';
   return 'is-missing';
+}
+
+function descriptionFor(cmd: CliCommandInventoryItem): string {
+  const key = `developer.cliParity.items.${cmd.command}`;
+  return te(key) ? t(key) : cmd.description;
 }
 
 function go(route?: string): void {
   if (!route) return;
   void router.push(route);
 }
+
+async function loadInventory(): Promise<void> {
+  loading.value = true;
+  error.value = null;
+  try {
+    const data = await bffFetch<CliCommandInventoryResponse>('/api/cli/commands');
+    commands.value = data.commands;
+    source.value = data.source;
+    generatedAt.value = data.generatedAt;
+    error.value = data.error ?? null;
+  } catch (err) {
+    commands.value = [];
+    generatedAt.value = Date.now();
+    error.value = (err as Error).message ?? String(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => {
+  void loadInventory();
+});
 </script>
 
 <template>
@@ -109,7 +111,20 @@ function go(route?: string): void {
           <p class="mt-2 text-sm leading-6 text-[var(--text-3)]">
             {{ t('developer.cliParity.desc') }}
           </p>
-          <pre class="mt-3 inline-flex rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1 text-xs text-[var(--text-2)]">hermes --help</pre>
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <pre class="inline-flex rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1 text-xs text-[var(--text-2)]">{{ source }}</pre>
+            <span v-if="generatedAtLabel" class="text-xs text-[var(--text-3)]">
+              {{ t('developer.cliParity.lastUpdated', { time: generatedAtLabel }) }}
+            </span>
+            <button
+              type="button"
+              class="reload-button"
+              :disabled="loading"
+              @click="loadInventory"
+            >
+              {{ loading ? t('developer.cliParity.loading') : t('developer.cliParity.reload') }}
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-4 gap-2 text-center">
@@ -166,6 +181,20 @@ function go(route?: string): void {
     </section>
 
     <section
+      v-if="error"
+      class="rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3 text-sm text-[var(--color-warning)]"
+    >
+      {{ t('developer.cliParity.error', { error }) }}
+    </section>
+
+    <section
+      v-if="loading && commands.length === 0"
+      class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-8 text-center text-sm text-[var(--text-3)]"
+    >
+      {{ t('developer.cliParity.loading') }}
+    </section>
+
+    <section
       v-for="section in grouped"
       :key="section.group"
       class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4"
@@ -196,7 +225,7 @@ function go(route?: string): void {
               </span>
             </div>
             <p class="mt-2 text-xs leading-5 text-[var(--text-3)]">
-              {{ t(`developer.cliParity.items.${cmd.command}`) }}
+              {{ descriptionFor(cmd) }}
             </p>
             <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
           </div>
@@ -262,6 +291,21 @@ function go(route?: string): void {
 .cli-search:focus {
   border-color: var(--brand-500);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-500) 18%, transparent);
+}
+
+.reload-button {
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 36%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
+  color: var(--brand-600);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 4px 8px;
+}
+
+.reload-button:disabled {
+  opacity: 0.62;
+  cursor: wait;
 }
 
 .filter-chip {
