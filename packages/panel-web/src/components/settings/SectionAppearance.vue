@@ -13,30 +13,32 @@ const { request: requestNotify, granted: notifyGranted } = useDesktopNotify();
 interface ModeOption {
   value: ThemeMode;
   labelKey: string;
+  descKey: string;
+  bestForKey: string;
   icon: string;
   /** Inline mini-preview CSS so the user sees the look without applying */
   previewStyle?: Record<string, string>;
 }
 const modeOptions: ModeOption[] = [
-  { value: 'light', labelKey: 'settings.appearance.mode.light', icon: '☀️',
+  { value: 'light', labelKey: 'settings.appearance.mode.light', descKey: 'settings.appearance.modeDesc.light', bestForKey: 'settings.appearance.modeBestFor.light', icon: '☀️',
     previewStyle: { background: '#f7f8fa' } },
-  { value: 'dark', labelKey: 'settings.appearance.mode.dark', icon: '🌙',
+  { value: 'dark', labelKey: 'settings.appearance.mode.dark', descKey: 'settings.appearance.modeDesc.dark', bestForKey: 'settings.appearance.modeBestFor.dark', icon: '🌙',
     previewStyle: { background: '#0a0a0b' } },
-  { value: 'auto', labelKey: 'settings.appearance.mode.auto', icon: '🖥',
+  { value: 'auto', labelKey: 'settings.appearance.mode.auto', descKey: 'settings.appearance.modeDesc.auto', bestForKey: 'settings.appearance.modeBestFor.auto', icon: '🖥',
     previewStyle: { background: 'linear-gradient(90deg, #f7f8fa 50%, #0a0a0b 50%)' } },
-  { value: 'github-primer', labelKey: 'settings.appearance.mode.githubPrimer', icon: '🐙',
+  { value: 'github-primer', labelKey: 'settings.appearance.mode.githubPrimer', descKey: 'settings.appearance.modeDesc.githubPrimer', bestForKey: 'settings.appearance.modeBestFor.githubPrimer', icon: '🐙',
     previewStyle: { background: 'linear-gradient(135deg, #f6f8fa 0%, #ffffff 70%)', borderTop: '3px solid #0969da' } },
-  { value: 'glass-minimal', labelKey: 'settings.appearance.mode.minimalGlass', icon: '◌',
+  { value: 'glass-minimal', labelKey: 'settings.appearance.mode.minimalGlass', descKey: 'settings.appearance.modeDesc.minimalGlass', bestForKey: 'settings.appearance.modeBestFor.minimalGlass', icon: '◌',
     previewStyle: {
       background: 'radial-gradient(ellipse at 30% 30%, rgba(165, 180, 252, 0.6) 0%, transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(186, 230, 253, 0.6) 0%, transparent 60%), linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)',
     } },
-  { value: 'glass-apple', labelKey: 'settings.appearance.mode.glassApple', icon: '🍎',
+  { value: 'glass-apple', labelKey: 'settings.appearance.mode.glassApple', descKey: 'settings.appearance.modeDesc.glassApple', bestForKey: 'settings.appearance.modeBestFor.glassApple', icon: '🍎',
     previewStyle: {
       background: 'radial-gradient(circle at 30% 30%, #d65a3e 0%, transparent 40%), linear-gradient(135deg, #c378d6 0%, #5b67d6 60%, #2a93cc 100%)',
     } },
-  { value: 'glass-vibrant', labelKey: 'settings.appearance.mode.glassVibrant', icon: '🌈',
+  { value: 'glass-vibrant', labelKey: 'settings.appearance.mode.glassVibrant', descKey: 'settings.appearance.modeDesc.glassVibrant', bestForKey: 'settings.appearance.modeBestFor.glassVibrant', icon: '🌈',
     previewStyle: { background: 'linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee)' } },
-  { value: 'glass-tokyo', labelKey: 'settings.appearance.mode.glassTokyo', icon: '🌃',
+  { value: 'glass-tokyo', labelKey: 'settings.appearance.mode.glassTokyo', descKey: 'settings.appearance.modeDesc.glassTokyo', bestForKey: 'settings.appearance.modeBestFor.glassTokyo', icon: '🌃',
     previewStyle: {
       background: 'radial-gradient(circle at 30% 20%, rgba(122, 162, 247, 0.4) 0%, transparent 60%), #1a1b26',
     } },
@@ -71,12 +73,15 @@ const fontOptions: FontOption[] = [
 
     <!-- Mode -->
     <div class="mb-8">
-      <div class="text-sm font-medium mb-3">{{ t('settings.appearance.mode.label') }}</div>
-      <div class="grid grid-cols-3 gap-3">
+      <div class="mb-3 flex flex-col gap-1">
+        <div class="text-sm font-medium">{{ t('settings.appearance.mode.label') }}</div>
+        <p class="text-xs leading-5 text-[var(--text-3)]">{{ t('settings.appearance.mode.hint') }}</p>
+      </div>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         <button
           v-for="opt in modeOptions"
           :key="opt.value"
-          class="cursor-pointer flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all overflow-hidden text-[var(--text-1)] bg-[var(--bg-card)]"
+          class="cursor-pointer flex flex-col items-stretch gap-2 p-3 rounded-lg border-2 transition-all overflow-hidden text-[var(--text-1)] bg-[var(--bg-card)] text-left"
           :class="
             mode === opt.value
               ? 'border-[var(--brand-500)] shadow-[var(--shadow-2)]'
@@ -95,6 +100,10 @@ const fontOptions: FontOption[] = [
           <div class="flex items-center gap-1.5 text-xs">
             <span>{{ opt.icon }}</span>
             <span class="font-medium">{{ t(opt.labelKey) }}</span>
+          </div>
+          <p class="min-h-[40px] text-xs leading-5 text-[var(--text-3)]">{{ t(opt.descKey) }}</p>
+          <div class="rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-[11px] leading-4 text-[var(--text-2)]">
+            {{ t(opt.bestForKey) }}
           </div>
         </button>
       </div>
