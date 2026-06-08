@@ -75,6 +75,17 @@ Options:
   -h, --help  Show help
 `;
 
+const WRAPPED_DESCRIPTION_HELP = `Hermes Agent
+
+Commands:
+  debug       Upload logs and system information
+              for support review
+  dump        Dump support/debug summaries
+
+Options:
+  -h, --help  Show help
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -121,6 +132,13 @@ describe('parseHermesHelpCommands', () => {
     expect(parseHermesHelpCommands(TAB_SEPARATOR_HELP)).toEqual([
       { command: 'status', description: 'Show component status' },
       { command: 'doctor', description: 'Check configuration and dependencies' },
+    ]);
+  });
+
+  it('joins wrapped command descriptions', () => {
+    expect(parseHermesHelpCommands(WRAPPED_DESCRIPTION_HELP)).toEqual([
+      { command: 'debug', description: 'Upload logs and system information for support review' },
+      { command: 'dump', description: 'Dump support/debug summaries' },
     ]);
   });
 });

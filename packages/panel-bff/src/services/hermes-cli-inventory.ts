@@ -62,6 +62,7 @@ const DEFAULT_META: CoverageMeta = {
 const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
 const COMMAND_SECTION_HEADER = /^\s*(commands|available commands|subcommands):\s*$/i;
 const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|examples|arguments):/i;
+const COMMAND_DESCRIPTION_CONTINUATION = /^\s{6,}(\S.*)$/;
 const COMMAND_LINE_PATTERNS = [
   /^\s{2,}([a-z][\w-]*)\t+(.+)$/,
   /^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/,
@@ -82,6 +83,7 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
   const seen = new Set<string>();
   const lines = stdout.split(/\r?\n/);
   let inCommandSection = false;
+  let lastCommand: Pick<CliCommandInventoryItem, 'command' | 'description'> | null = null;
 
   for (const line of lines) {
     const trimmed = line.trimEnd();
@@ -97,11 +99,21 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
     if (HELP_SECTION_BOUNDARY.test(trimmed)) break;
 
     const parsed = parseCommandHelpLine(trimmed);
-    if (!parsed) continue;
+    if (!parsed) {
+      const continuation = trimmed.match(COMMAND_DESCRIPTION_CONTINUATION);
+      if (lastCommand && continuation) {
+        lastCommand.description = `${lastCommand.description} ${continuation[1].trim()}`;
+      }
+      continue;
+    }
     const command = parsed.command;
-    if (seen.has(command)) continue;
+    if (seen.has(command)) {
+      lastCommand = null;
+      continue;
+    }
     seen.add(command);
     commands.push(parsed);
+    lastCommand = parsed;
   }
 
   return commands;
