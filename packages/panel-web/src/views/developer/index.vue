@@ -9,11 +9,12 @@ import CodeGen from '@/components/developer/CodeGen.vue';
 import WebhookTester from '@/components/developer/WebhookTester.vue';
 import LogsViewer from '@/components/developer/LogsViewer.vue';
 import DoctorPanel from '@/components/developer/DoctorPanel.vue';
+import CliParityPanel from '@/components/developer/CliParityPanel.vue';
 
 const { t } = useI18n();
 const route = useRoute();
 
-const VALID_TABS = ['playground', 'sse', 'codegen', 'webhook', 'logs', 'doctor'] as const;
+const VALID_TABS = ['cli-parity', 'playground', 'sse', 'codegen', 'webhook', 'logs', 'doctor'] as const;
 type DevTab = (typeof VALID_TABS)[number];
 
 function tabFromHash(hash: string): DevTab | null {
@@ -21,7 +22,7 @@ function tabFromHash(hash: string): DevTab | null {
   return (VALID_TABS as readonly string[]).includes(key) ? (key as DevTab) : null;
 }
 
-const tab = ref<DevTab>(tabFromHash(route.hash) ?? 'playground');
+const tab = ref<DevTab>(tabFromHash(route.hash) ?? 'cli-parity');
 
 onMounted(() => {
   const fromHash = tabFromHash(route.hash);
@@ -43,6 +44,9 @@ watch(() => route.hash, h => {
       </header>
 
       <NTabs v-model:value="tab" type="line" animated>
+        <NTabPane name="cli-parity" :tab="t('developer.tabs.cliParity')">
+          <CliParityPanel />
+        </NTabPane>
         <NTabPane name="playground" :tab="t('developer.tabs.playground')">
           <ApiPlayground />
         </NTabPane>
