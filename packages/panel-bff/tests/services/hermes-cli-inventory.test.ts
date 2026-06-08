@@ -108,6 +108,17 @@ Additional Help Topics:
                       used by Hermes
 `;
 
+const USAGE_ARGUMENT_HELP = `Hermes Agent
+
+Commands:
+  completion [shell]  Print shell completion scripts
+  profile <name>      Switch active profile
+  mcp {server}        Run an MCP server
+
+Options:
+  -h, --help  Show help
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -175,6 +186,14 @@ describe('parseHermesHelpCommands', () => {
     expect(parseHermesHelpCommands(HELP_TOPICS_HELP)).toEqual([
       { command: 'config', description: 'View and edit configuration' },
       { command: 'mcp', description: 'Manage MCP servers' },
+    ]);
+  });
+
+  it('extracts command names when help includes usage arguments', () => {
+    expect(parseHermesHelpCommands(USAGE_ARGUMENT_HELP)).toEqual([
+      { command: 'completion', description: 'Print shell completion scripts' },
+      { command: 'profile', description: 'Switch active profile' },
+      { command: 'mcp', description: 'Run an MCP server' },
     ]);
   });
 });

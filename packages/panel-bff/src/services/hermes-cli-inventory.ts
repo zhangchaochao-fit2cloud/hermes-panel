@@ -65,6 +65,7 @@ const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|global flags|lo
 const COMMAND_DESCRIPTION_CONTINUATION = /^\s{6,}(\S.*)$/;
 const COMMAND_LINE_PATTERNS = [
   /^\s{2,}([a-z][\w-]*)\t+(.+)$/,
+  /^\s{2,}([a-z][\w-]*)(?:\s+(?:<[^>]+>|\[[^\]]+\]|\{[^}]+\}))+\s{2,}(.+)$/,
   /^\s{2,}([a-z][\w-]*)\s{2,}(.+)$/,
   /^\s{2,}([a-z][\w-]*)\s+-\s+(.+)$/,
   /^\s{2,}([a-z][\w-]*):\s+(.+)$/,
