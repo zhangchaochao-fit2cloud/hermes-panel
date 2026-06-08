@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { CliCommandCoverage, CliCommandGroup, CliCommandGroupSummary } from '@hermes-panel/shared';
 import { useI18n } from 'vue-i18n';
 
-defineProps<{
+const props = defineProps<{
   query: string;
   coverageFilter: CliCommandCoverage | 'all';
   groupFilter: CliCommandGroup | 'all';
@@ -18,20 +19,40 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const hasActiveFilters = computed(() =>
+  props.query.trim() !== '' || props.coverageFilter !== 'all' || props.groupFilter !== 'all',
+);
+
+function resetFilters(): void {
+  emit('update:query', '');
+  emit('update:coverageFilter', 'all');
+  emit('update:groupFilter', 'all');
+}
 </script>
 
 <template>
   <section class="cli-filters rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4">
-    <label class="min-w-0 flex-1">
-      <span class="sr-only">{{ t('developer.cliParity.search') }}</span>
-      <input
-        class="cli-search"
-        type="search"
-        :value="query"
-        :placeholder="t('developer.cliParity.search')"
-        @input="emit('update:query', ($event.target as HTMLInputElement).value)"
+    <div class="search-row">
+      <label class="min-w-0 flex-1">
+        <span class="sr-only">{{ t('developer.cliParity.search') }}</span>
+        <input
+          class="cli-search"
+          type="search"
+          :value="query"
+          :placeholder="t('developer.cliParity.search')"
+          @input="emit('update:query', ($event.target as HTMLInputElement).value)"
+        >
+      </label>
+      <button
+        type="button"
+        class="reset-button"
+        :disabled="!hasActiveFilters"
+        @click="resetFilters"
       >
-    </label>
+        {{ t('developer.cliParity.resetFilters') }}
+      </button>
+    </div>
 
     <div class="filter-row">
       <span class="filter-label">{{ t('developer.cliParity.coverageLabel') }}</span>
@@ -86,6 +107,17 @@ const { t } = useI18n();
   gap: 12px;
 }
 
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-row label {
+  min-width: min(260px, 100%);
+}
+
 .cli-search {
   width: 100%;
   border-radius: var(--radius-md);
@@ -101,6 +133,25 @@ const { t } = useI18n();
 .cli-search:focus {
   border-color: var(--brand-500);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-500) 18%, transparent);
+}
+
+.reset-button {
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 34%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 7%, var(--bg-card));
+  color: var(--brand-600);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 8px 10px;
+}
+
+.reset-button:disabled {
+  border-color: var(--border);
+  background: var(--bg-elevate);
+  color: var(--text-3);
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .filter-row {

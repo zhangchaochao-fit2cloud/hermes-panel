@@ -966,6 +966,7 @@ export default {
       title: 'Hermes CLI 覆盖矩阵',
       desc: '基于本机 `hermes --help` 的顶层命令清单。这里记录每个命令是否已有 UI 入口、覆盖程度和对应示例，后续补齐 100% CLI parity 时以此为工程待办。',
       search: '搜索命令、说明或示例...',
+      resetFilters: '重置筛选',
       coverageLabel: '覆盖',
       groupLabel: '分组',
       open: '打开入口',

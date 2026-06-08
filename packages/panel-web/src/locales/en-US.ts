@@ -966,6 +966,7 @@ export default {
       title: 'Hermes CLI coverage matrix',
       desc: 'Top-level command inventory from the local `hermes --help`. This records whether each command has a UI entry, how complete the coverage is, and an example command so 100% CLI parity remains an explicit engineering backlog.',
       search: 'Search commands, descriptions, or examples...',
+      resetFilters: 'Reset filters',
       coverageLabel: 'Coverage',
       groupLabel: 'Group',
       open: 'Open',
