@@ -987,6 +987,11 @@ export default {
       lastUpdated: '更新于 {time}',
       error: 'CLI inventory 读取失败：{error}',
       groupCount: '{n} 个命令',
+      backlogEyebrow: '{n} 个待补 CLI 缺口',
+      backlogTitle: '下一批对齐缺口',
+      backlogDesc: '这些未完整覆盖的命令直接来自 CLI 清单，用来明确下一步 UI 补齐范围。',
+      backlogEmptyTitle: '已发现命令均有 UI 覆盖',
+      backlogEmptyDesc: 'Hermes 升级后重新加载清单，可检查是否出现新的 CLI 命令。',
       coverage: {
         all: '全部',
         ready: '已覆盖',

@@ -11,7 +11,7 @@ import type {
   CliCommandInventorySummary,
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
-import { formatCliParityReport } from '@/utils/cli-parity';
+import { formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
 import CliParityCommandCard from './CliParityCommandCard.vue';
 import CliParityFilters from './CliParityFilters.vue';
 
@@ -82,6 +82,9 @@ const reportCommands = computed(() =>
     displayDescription: descriptionFor(cmd),
   })),
 );
+
+const backlogCommands = computed(() => selectCliParityBacklog(commands.value, 3));
+const backlogCount = computed(() => inventoryTotals.value.partial + inventoryTotals.value.missing);
 
 function descriptionFor(cmd: CliCommandInventoryItem): string {
   const key = `developer.cliParity.items.${cmd.command}`;
@@ -185,6 +188,64 @@ onMounted(() => {
       </div>
     </section>
 
+    <section
+      v-if="commands.length > 0"
+      class="cli-backlog rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4"
+    >
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+            {{ t('developer.cliParity.backlogEyebrow', { n: backlogCount }) }}
+          </p>
+          <h3 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
+            {{ backlogCommands.length > 0 ? t('developer.cliParity.backlogTitle') : t('developer.cliParity.backlogEmptyTitle') }}
+          </h3>
+          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
+            {{ backlogCommands.length > 0 ? t('developer.cliParity.backlogDesc') : t('developer.cliParity.backlogEmptyDesc') }}
+          </p>
+        </div>
+        <div
+          v-if="backlogCommands.length > 0"
+          class="backlog-actions"
+        >
+          <button
+            type="button"
+            class="reload-button"
+            @click="coverageFilter = 'partial'"
+          >
+            {{ t('developer.cliParity.coverage.partial') }}
+          </button>
+          <button
+            type="button"
+            class="reload-button"
+            @click="coverageFilter = 'missing'"
+          >
+            {{ t('developer.cliParity.coverage.missing') }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="backlogCommands.length > 0"
+        class="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3"
+      >
+        <article
+          v-for="cmd in backlogCommands"
+          :key="cmd.command"
+          class="backlog-item"
+        >
+          <div class="flex flex-wrap items-center gap-2">
+            <code>hermes {{ cmd.command }}</code>
+            <span>{{ t(`developer.cliParity.coverage.${cmd.coverage}`) }}</span>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-[var(--text-3)]">
+            {{ descriptionFor(cmd) }}
+          </p>
+          <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
+        </article>
+      </div>
+    </section>
+
     <CliParityFilters
       v-model:query="query"
       v-model:coverage-filter="coverageFilter"
@@ -282,6 +343,37 @@ onMounted(() => {
 .reload-button:disabled {
   opacity: 0.62;
   cursor: wait;
+}
+
+.backlog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.backlog-item {
+  min-width: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-elevate);
+  padding: 10px;
+}
+
+.backlog-item code {
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-size: 12px;
+  padding: 3px 7px;
+}
+
+.backlog-item span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand-500) 36%, var(--border));
+  color: var(--brand-600);
+  font-size: 11px;
+  line-height: 16px;
+  padding: 2px 7px;
 }
 
 </style>

@@ -987,6 +987,11 @@ export default {
       lastUpdated: 'Updated {time}',
       error: 'CLI inventory failed: {error}',
       groupCount: '{n} commands',
+      backlogEyebrow: '{n} open CLI gaps',
+      backlogTitle: 'Next parity gaps',
+      backlogDesc: 'These incomplete commands come directly from the CLI inventory and keep the next UI work visible.',
+      backlogEmptyTitle: 'All discovered commands have UI coverage',
+      backlogEmptyDesc: 'Reload the inventory after upgrading Hermes to check whether new CLI commands appeared.',
       coverage: {
         all: 'All',
         ready: 'Covered',

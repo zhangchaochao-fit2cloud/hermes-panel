@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCliParityReport } from '@/utils/cli-parity';
+import { formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
 
 const generatedAt = new Date('2026-06-08T10:00:00.000Z');
 
@@ -41,5 +41,42 @@ describe('formatCliParityReport', () => {
     expect(report).toContain('- [partial] hermes config -> /settings (hermes config set model gpt-4)');
     expect(report).toContain('| hermes chat | ready | core | /chat | hermes chat -q "hello" | Localized chat description |');
     expect(report).toContain('Config \\| with pipe');
+  });
+});
+
+describe('selectCliParityBacklog', () => {
+  it('keeps CLI order while selecting incomplete commands', () => {
+    expect(selectCliParityBacklog([
+      {
+        command: 'chat',
+        description: 'Chat',
+        group: 'core',
+        coverage: 'ready',
+        route: '/chat',
+        example: 'hermes chat',
+      },
+      {
+        command: 'setup',
+        description: 'Setup',
+        group: 'config',
+        coverage: 'partial',
+        route: '/settings',
+        example: 'hermes setup',
+      },
+      {
+        command: 'update',
+        description: 'Update',
+        group: 'ops',
+        coverage: 'missing',
+        example: 'hermes update',
+      },
+      {
+        command: 'completion',
+        description: 'Completion',
+        group: 'advanced',
+        coverage: 'missing',
+        example: 'hermes completion zsh',
+      },
+    ], 2).map(cmd => cmd.command)).toEqual(['setup', 'update']);
   });
 });

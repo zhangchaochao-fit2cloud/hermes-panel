@@ -4,6 +4,15 @@ export interface CliParityReportItem extends CliCommandInventoryItem {
   displayDescription?: string;
 }
 
+export function selectCliParityBacklog(
+  commands: CliCommandInventoryItem[],
+  limit = 3,
+): CliCommandInventoryItem[] {
+  return commands
+    .filter(cmd => cmd.coverage !== 'ready')
+    .slice(0, limit);
+}
+
 export function formatCliParityReport(
   commands: CliParityReportItem[],
   generatedAt: Date = new Date(),
