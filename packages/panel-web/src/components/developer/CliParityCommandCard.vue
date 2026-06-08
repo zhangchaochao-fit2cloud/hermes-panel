@@ -203,6 +203,7 @@ async function loadCommandHelp(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .command-help {
@@ -295,5 +296,21 @@ async function loadCommandHelp(): Promise<void> {
   background: var(--bg-card);
   color: var(--text-3);
   cursor: default;
+}
+
+@media (max-width: 720px) {
+  .cli-command {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .command-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .open-button {
+    flex: 1 1 120px;
+    text-align: center;
+  }
 }
 </style>

@@ -32,4 +32,13 @@ describe('CLI parity command card experience', () => {
     expect(source).toContain("t('developer.cliParity.closeHelp')");
     expect(source).toContain('class="command-help-close"');
   });
+
+  it('keeps command actions usable on narrow screens', () => {
+    const source = readFileSync(cardPath, 'utf8');
+
+    expect(source).toContain('@media (max-width: 720px)');
+    expect(source).toContain('grid-template-columns: minmax(0, 1fr)');
+    expect(source).toContain('flex-wrap: wrap');
+    expect(source).toContain('flex: 1 1 120px');
+  });
 });
