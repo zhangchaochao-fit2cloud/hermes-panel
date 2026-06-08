@@ -61,7 +61,7 @@ const DEFAULT_META: CoverageMeta = {
 
 const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
 const COMMAND_SECTION_HEADER = /^\s*(commands|available commands|subcommands):\s*$/i;
-const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|examples|arguments):/i;
+const HELP_SECTION_BOUNDARY = /^\s*(options|flags|global options|global flags|local flags|examples|arguments):/i;
 const COMMAND_DESCRIPTION_CONTINUATION = /^\s{6,}(\S.*)$/;
 const COMMAND_LINE_PATTERNS = [
   /^\s{2,}([a-z][\w-]*)\t+(.+)$/,

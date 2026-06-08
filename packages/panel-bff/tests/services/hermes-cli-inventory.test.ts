@@ -86,6 +86,17 @@ Options:
   -h, --help  Show help
 `;
 
+const GLOBAL_FLAGS_HELP = `Hermes Agent
+
+Commands:
+  status      Show component status
+  logs        View and filter logs
+
+Global Flags:
+      --config string
+                  config file path
+`;
+
 afterEach(() => {
   delete process.env.HERMES_BIN;
 });
@@ -139,6 +150,13 @@ describe('parseHermesHelpCommands', () => {
     expect(parseHermesHelpCommands(WRAPPED_DESCRIPTION_HELP)).toEqual([
       { command: 'debug', description: 'Upload logs and system information for support review' },
       { command: 'dump', description: 'Dump support/debug summaries' },
+    ]);
+  });
+
+  it('stops before global flags without appending flag descriptions', () => {
+    expect(parseHermesHelpCommands(GLOBAL_FLAGS_HELP)).toEqual([
+      { command: 'status', description: 'Show component status' },
+      { command: 'logs', description: 'View and filter logs' },
     ]);
   });
 });
