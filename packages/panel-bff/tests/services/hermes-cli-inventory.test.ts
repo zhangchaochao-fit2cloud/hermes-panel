@@ -64,13 +64,25 @@ describe('getCliCommandInventory', () => {
     const inventory = await getCliCommandInventory();
     expect(inventory.source).toBe('hermes --help');
     expect(inventory.commands).toEqual([]);
-    expect(inventory.summary).toEqual({ all: 0, ready: 0, partial: 0, missing: 0 });
+    expect(inventory.summary).toEqual({
+      all: 0,
+      ready: 0,
+      partial: 0,
+      missing: 0,
+      groups: {
+        core: 0,
+        config: 0,
+        extensions: 0,
+        ops: 0,
+        advanced: 0,
+      },
+    });
     expect(inventory.error).toBe('HERMES_CLI_NOT_FOUND');
   });
 });
 
 describe('summarizeCliCommandInventory', () => {
-  it('counts commands by coverage', () => {
+  it('counts commands by coverage and group', () => {
     expect(summarizeCliCommandInventory([
       {
         command: 'chat',
@@ -95,7 +107,19 @@ describe('summarizeCliCommandInventory', () => {
         coverage: 'missing',
         example: 'hermes update',
       },
-    ])).toEqual({ all: 3, ready: 1, partial: 1, missing: 1 });
+    ])).toEqual({
+      all: 3,
+      ready: 1,
+      partial: 1,
+      missing: 1,
+      groups: {
+        core: 1,
+        config: 1,
+        extensions: 0,
+        ops: 1,
+        advanced: 0,
+      },
+    });
   });
 });
 

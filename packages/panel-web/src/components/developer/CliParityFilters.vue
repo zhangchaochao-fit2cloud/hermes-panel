@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CliCommandCoverage, CliCommandGroup } from '@hermes-panel/shared';
+import type { CliCommandCoverage, CliCommandGroup, CliCommandGroupSummary } from '@hermes-panel/shared';
 import { useI18n } from 'vue-i18n';
 
 defineProps<{
@@ -8,6 +8,7 @@ defineProps<{
   groupFilter: CliCommandGroup | 'all';
   coverages: CliCommandCoverage[];
   groups: CliCommandGroup[];
+  groupCounts: CliCommandGroupSummary;
 }>();
 
 const emit = defineEmits<{
@@ -72,7 +73,8 @@ const { t } = useI18n();
         :class="groupFilter === group ? 'is-active' : ''"
         @click="emit('update:groupFilter', group)"
       >
-        {{ t(`developer.cliParity.groups.${group}`) }}
+        <span>{{ t(`developer.cliParity.groups.${group}`) }}</span>
+        <span class="filter-count">{{ groupCounts[group] }}</span>
       </button>
     </div>
   </section>
@@ -116,6 +118,9 @@ const { t } = useI18n();
 }
 
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-elevate);
@@ -129,5 +134,16 @@ const { t } = useI18n();
   border-color: color-mix(in srgb, var(--brand-500) 52%, var(--border));
   background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-elevate));
   color: var(--brand-600);
+}
+
+.filter-count {
+  min-width: 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: inherit;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 5px;
+  text-align: center;
 }
 </style>

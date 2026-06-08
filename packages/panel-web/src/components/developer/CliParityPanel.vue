@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type {
   CliCommandCoverage,
   CliCommandGroup,
+  CliCommandGroupSummary,
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
   CliCommandInventorySummary,
@@ -56,6 +57,14 @@ const totals = computed(() => ({
 }));
 
 const inventoryTotals = computed(() => summary.value ?? totals.value);
+
+const groupCounts = computed<CliCommandGroupSummary>(() => {
+  if (summary.value?.groups) return summary.value.groups;
+  return groups.reduce<CliCommandGroupSummary>((acc, group) => {
+    acc[group] = commands.value.filter(cmd => cmd.group === group).length;
+    return acc;
+  }, {} as CliCommandGroupSummary);
+});
 
 const generatedAtLabel = computed(() => {
   if (generatedAt.value === null) return '';
@@ -182,6 +191,7 @@ onMounted(() => {
       v-model:group-filter="groupFilter"
       :coverages="coverages"
       :groups="groups"
+      :group-counts="groupCounts"
     />
 
     <section

@@ -2,6 +2,7 @@ import type {
   CliCommandHelpResponse,
   CliCommandCoverage,
   CliCommandGroup,
+  CliCommandGroupSummary,
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
   CliCommandInventorySummary,
@@ -58,6 +59,8 @@ const DEFAULT_META: CoverageMeta = {
   example: 'hermes <command> --help',
 };
 
+const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
+
 export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventoryItem, 'command' | 'description'>[] {
   const commands: Pick<CliCommandInventoryItem, 'command' | 'description'>[] = [];
   const seen = new Set<string>();
@@ -89,11 +92,20 @@ export function parseHermesHelpCommands(stdout: string): Pick<CliCommandInventor
 }
 
 export function summarizeCliCommandInventory(commands: CliCommandInventoryItem[]): CliCommandInventorySummary {
+  const groups = CLI_COMMAND_GROUPS.reduce<CliCommandGroupSummary>((acc, group) => {
+    acc[group] = 0;
+    return acc;
+  }, {} as CliCommandGroupSummary);
+  for (const cmd of commands) {
+    groups[cmd.group] += 1;
+  }
+
   return {
     all: commands.length,
     ready: commands.filter(cmd => cmd.coverage === 'ready').length,
     partial: commands.filter(cmd => cmd.coverage === 'partial').length,
     missing: commands.filter(cmd => cmd.coverage === 'missing').length,
+    groups,
   };
 }
 

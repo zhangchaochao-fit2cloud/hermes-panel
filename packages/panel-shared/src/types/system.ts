@@ -17,6 +17,7 @@ export interface HealthStatus {
 
 export type CliCommandCoverage = 'ready' | 'partial' | 'missing';
 export type CliCommandGroup = 'core' | 'config' | 'extensions' | 'ops' | 'advanced';
+export type CliCommandGroupSummary = Record<CliCommandGroup, number>;
 
 export interface CliCommandInventoryItem {
   command: string;
@@ -32,6 +33,7 @@ export interface CliCommandInventorySummary {
   ready: number;
   partial: number;
   missing: number;
+  groups: CliCommandGroupSummary;
 }
 
 export interface CliCommandInventoryResponse {
