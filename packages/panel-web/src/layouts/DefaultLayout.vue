@@ -9,13 +9,19 @@ import AppRouteTabs from '@/components/shared/AppRouteTabs.vue';
 import EventStreamPanel from '@/components/shared/EventStreamPanel.vue';
 import GlobalSearchModal from '@/components/shared/GlobalSearchModal.vue';
 import { useAppearanceStore } from '@/stores/appearance';
+import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
 const route = useRoute();
 const appearance = useAppearanceStore();
 const { routeTabsEnabled } = storeToRefs(appearance);
+const { isMobile } = useBreakpoint();
 const showStream = ref(false);
-const sidebarCollapsed = ref(false);
+function isMobileViewport(): boolean {
+  return window.matchMedia('(max-width: 767.98px)').matches;
+}
+
+const sidebarCollapsed = ref(isMobileViewport());
 const isOffline = ref(!navigator.onLine);
 
 function handleOnline(): void { isOffline.value = false; }
@@ -42,6 +48,10 @@ onMounted(() => {
 
 watch(showStream, (v) => {
   localStorage.setItem('panel.showEventStream', String(v));
+});
+
+watch(isMobile, (mobile) => {
+  if (mobile) sidebarCollapsed.value = true;
 });
 
 // Event stream tail panel is suppressed on routes that want full height.

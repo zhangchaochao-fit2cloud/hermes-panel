@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const drawerPath = join(process.cwd(), 'src/components/chat/ChatSessionsDrawer.vue');
+const chatViewPath = join(process.cwd(), 'src/views/chat/index.vue');
+const defaultLayoutPath = join(process.cwd(), 'src/layouts/DefaultLayout.vue');
 
 describe('chat sessions drawer polish', () => {
   it('renders sessions as a quiet one-line list with hover-only actions', () => {
@@ -39,5 +41,26 @@ describe('chat sessions drawer polish', () => {
     expect(source).toContain('session-pinned-more');
     expect(source).toContain("t('chat.sidebar.pinnedMore'");
     expect(source).toContain("t('chat.sidebar.pinnedLess')");
+  });
+
+  it('keeps mobile chat focused by collapsing the sessions drawer by default', () => {
+    const source = readFileSync(chatViewPath, 'utf8');
+
+    expect(source).toContain('function isMobileViewport()');
+    expect(source).toContain('const sidebarCollapsed = ref(isMobileViewport() || readDesktopSidebarCollapsed())');
+    expect(source).toContain('if (isMobile.value) return;');
+    expect(source).toContain('watch(isMobile, mobile =>');
+    expect(source).toContain('sidebarCollapsed.value = mobile ? true : readDesktopSidebarCollapsed()');
+    expect(source).toContain('if (isMobileViewport())');
+  });
+
+  it('collapses the global app sidebar on mobile so chat has usable width', () => {
+    const source = readFileSync(defaultLayoutPath, 'utf8');
+
+    expect(source).toContain("import { useBreakpoint } from '@/composables/use-breakpoint'");
+    expect(source).toContain('const { isMobile } = useBreakpoint()');
+    expect(source).toContain('const sidebarCollapsed = ref(isMobileViewport())');
+    expect(source).toContain('watch(isMobile, (mobile) =>');
+    expect(source).toContain('if (mobile) sidebarCollapsed.value = true');
   });
 });

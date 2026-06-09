@@ -122,9 +122,21 @@ const changedFilesSummary = computed(() => {
 const { isMobile } = useBreakpoint();
 
 const SIDEBAR_KEY = 'panel.chat.sidebar.collapsed';
-const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === '1');
+function isMobileViewport(): boolean {
+  return window.matchMedia('(max-width: 767.98px)').matches;
+}
+
+function readDesktopSidebarCollapsed(): boolean {
+  return localStorage.getItem(SIDEBAR_KEY) === '1';
+}
+
+const sidebarCollapsed = ref(isMobileViewport() || readDesktopSidebarCollapsed());
 watch(sidebarCollapsed, v => {
+  if (isMobile.value) return;
   localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0');
+});
+watch(isMobile, mobile => {
+  sidebarCollapsed.value = mobile ? true : readDesktopSidebarCollapsed();
 });
 
 watch(model, v => { localStorage.setItem('panel.chat.lastModel', v); });
@@ -141,7 +153,7 @@ function dismissHoverHint(): void {
 
 function onSelectSession(id: string): void {
   // 移动端选完自动关 drawer，让会话占满屏
-  if (window.matchMedia('(max-width: 767.98px)').matches) {
+  if (isMobileViewport()) {
     sidebarCollapsed.value = true;
   }
   if (session.sessionId === id) return;
@@ -163,13 +175,16 @@ function appendComposerText(content: string): void {
 }
 
 function onSelectCronAggregate(jobId: string): void {
-  if (window.matchMedia('(max-width: 767.98px)').matches) {
+  if (isMobileViewport()) {
     sidebarCollapsed.value = true;
   }
   void router.push({ path: '/chat', query: { cron: jobId } });
 }
 
 function onNewChat(): void {
+  if (isMobileViewport()) {
+    sidebarCollapsed.value = true;
+  }
   session.reset();
   // Drop query state so a subsequent reload doesn't re-pop the old session.
   if (route.query.resume || route.query.cron || route.query.new) {
