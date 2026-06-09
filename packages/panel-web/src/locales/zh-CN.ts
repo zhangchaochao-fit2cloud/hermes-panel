@@ -1238,6 +1238,26 @@ export default {
           desc: '查看已支持、受保护和仍缺失的 Hermes 命令。',
         },
       },
+      launcher: {
+        eyebrow: '任务启动器',
+        title: '先告诉 Hermes 要做什么',
+        desc: '从真实任务开始。提示词会带到 Chat 或角色房间，Dashboard 继续聚焦 AI 工作本身。',
+        placeholder: '让 Hermes 审查 diff、解释报错、构建组件，或规划下一步...',
+        defaultPrompt: '确认当前 Hermes 模型，然后询问我下一步要执行什么任务。',
+        examplesLabel: '示例提示词',
+        exampleLabels: {
+          debug: '排障',
+          build: '构建',
+          explain: '解释',
+        },
+        examples: {
+          debug: '帮我排查最新失败的 Hermes Panel 页面，编辑前先列出最可能的根因。',
+          build: '按小步安全方式完成下一项 UX 优化，然后运行针对性测试。',
+          explain: '说明 Hermes Panel 里直接对话、角色协作、定时自动化分别该用哪个功能。',
+        },
+        chat: '开始对话',
+        room: '角色房间',
+      },
       modes: {
         title: '选择和 AI 对话的方式',
         subtitle: '大部分工作从这四个入口开始。',

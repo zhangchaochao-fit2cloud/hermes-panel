@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 const dashboardPath = join(process.cwd(), 'src/views/dashboard/index.vue');
 const quickStartPath = join(process.cwd(), 'src/components/dashboard/DashboardQuickStart.vue');
 const workbenchHubPath = join(process.cwd(), 'src/components/dashboard/DashboardWorkbenchHub.vue');
+const taskLauncherPath = join(process.cwd(), 'src/components/dashboard/DashboardTaskLauncher.vue');
 const firstRunPath = join(process.cwd(), 'src/components/dashboard/DashboardFirstRunPath.vue');
 const enPath = join(process.cwd(), 'src/locales/en-US.ts');
 const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
@@ -14,14 +15,17 @@ describe('Dashboard quick start UX', () => {
     const dashboard = readFileSync(dashboardPath, 'utf8');
     const quickStart = readFileSync(quickStartPath, 'utf8');
     const workbench = readFileSync(workbenchHubPath, 'utf8');
+    const taskLauncher = readFileSync(taskLauncherPath, 'utf8');
     const firstRun = readFileSync(firstRunPath, 'utf8');
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
     expect(dashboard).toContain('DashboardWorkbenchHub');
     expect(dashboard).toContain('DashboardQuickStart');
+    expect(dashboard).toContain('showSetupPath');
+    expect(dashboard).toContain('v-if="showSetupPath"');
     expect(dashboard.indexOf('<DashboardWorkbenchHub')).toBeLessThan(dashboard.indexOf('<StatCard'));
-    expect(dashboard.indexOf('<DashboardQuickStart')).toBeLessThan(dashboard.indexOf('<StatCard'));
+    expect(workbench).toContain('DashboardTaskLauncher');
     expect(dashboard).toContain("dashboard.sections.operations.title");
     expect(dashboard).toContain("dashboard.sections.capabilities.title");
     expect(dashboard).toContain("dashboard.sections.history.title");
@@ -35,6 +39,12 @@ describe('Dashboard quick start UX', () => {
     expect(workbench).toContain("localStorage.setItem('panel.chat.draft.new'");
     expect(workbench).toContain("draftKey: 'dashboard.workbench.actions.chat.prompt'");
     expect(workbench).toContain("draftKey: 'dashboard.workbench.modes.direct.prompt'");
+    expect(taskLauncher).toContain("localStorage.setItem('panel.chat.draft.new'");
+    expect(taskLauncher).toContain("router.push({ path: '/chat'");
+    expect(taskLauncher).toContain("router.push('/chat-room')");
+    expect(taskLauncher).toContain("dashboard.workbench.launcher.examples");
+    expect(taskLauncher).toContain('function onInputKeydown');
+    expect(taskLauncher).toContain('@keydown="onInputKeydown"');
     expect(quickStart).toContain("route: '/settings#providers'");
     expect(quickStart).toContain("route: '/chat'");
     expect(quickStart).toContain("route: '/chat-room'");
@@ -55,6 +65,8 @@ describe('Dashboard quick start UX', () => {
     expect(en).toContain('Choose the right Hermes surface');
     expect(en).toContain('Resume where you left off');
     expect(en).toContain('Configure free/local model');
+    expect(en).toContain('Tell Hermes what to do first');
+    expect(en).toContain('Start chat');
     expect(en).toContain('Official CLI parity');
     expect(en).toContain('Fastest path to the first reply');
     expect(en).toContain('Try free local');
@@ -67,6 +79,8 @@ describe('Dashboard quick start UX', () => {
     expect(zh).toContain('选择合适的 Hermes 使用面');
     expect(zh).toContain('从上次停下的位置继续');
     expect(zh).toContain('配置免费/本地模型');
+    expect(zh).toContain('先告诉 Hermes 要做什么');
+    expect(zh).toContain('开始对话');
     expect(zh).toContain('官方 CLI 覆盖');
     expect(zh).toContain('最快获得第一条回复');
     expect(zh).toContain('试用免费本地');

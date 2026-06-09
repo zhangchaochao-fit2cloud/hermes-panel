@@ -1238,6 +1238,26 @@ export default {
           desc: 'Review supported, guarded, and missing Hermes commands.',
         },
       },
+      launcher: {
+        eyebrow: 'Task launcher',
+        title: 'Tell Hermes what to do first',
+        desc: 'Start from a real task. The prompt moves into Chat or the role room so the dashboard stays focused on AI work.',
+        placeholder: 'Ask Hermes to review a diff, explain an error, build a component, or plan the next step...',
+        defaultPrompt: 'Confirm the active Hermes model and ask me what task to run next.',
+        examplesLabel: 'Example prompts',
+        exampleLabels: {
+          debug: 'Debug',
+          build: 'Build',
+          explain: 'Explain',
+        },
+        examples: {
+          debug: 'Help me debug the latest failing Hermes Panel page and list the likely root cause before editing.',
+          build: 'Build the next UX improvement in small safe steps, then run focused tests.',
+          explain: 'Explain which Hermes Panel feature I should use for direct chat, role collaboration, or scheduled automation.',
+        },
+        chat: 'Start chat',
+        room: 'Role room',
+      },
       modes: {
         title: 'Choose how to talk to AI',
         subtitle: 'Most work starts in one of these four routes.',

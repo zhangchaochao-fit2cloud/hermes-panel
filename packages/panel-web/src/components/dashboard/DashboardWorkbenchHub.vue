@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import type { HealthStatus } from '@hermes-panel/shared';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import GatewayControl from '@/components/shared/GatewayControl.vue';
+import DashboardTaskLauncher from './DashboardTaskLauncher.vue';
 
 type ActionTone = 'primary' | 'setup' | 'agent';
 type ReadinessState = 'ready' | 'action' | 'checking';
@@ -142,6 +143,8 @@ function go(action: HubAction | ModeItem | ReadinessItem): void {
         <GatewayControl />
       </div>
     </div>
+
+    <DashboardTaskLauncher />
 
     <div class="workbench-actions">
       <button

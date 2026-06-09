@@ -129,6 +129,7 @@ onMounted(() => {
 
 // Provide the typed health value to the welcome header
 const healthTyped = computed<HealthStatus | null>(() => health.value ?? null);
+const showSetupPath = computed(() => healthLoading.value || !healthTyped.value?.hermes.running);
 
 const todayUsdLabel = computed(() => {
   const v = overall.value.today_cost_usd;
@@ -142,7 +143,7 @@ const todayUsdLabel = computed(() => {
     <div class="dashboard-shell mx-auto flex max-w-[1320px] flex-col gap-5 px-4 py-4 sm:gap-7 sm:px-6 sm:py-6">
       <DashboardWorkbenchHub :health="healthTyped" :loading="healthLoading" />
 
-      <DashboardQuickStart :health="healthTyped" :loading="healthLoading" />
+      <DashboardQuickStart v-if="showSetupPath" :health="healthTyped" :loading="healthLoading" />
 
       <section class="dashboard-section" aria-labelledby="dashboard-operations-title">
         <header class="dashboard-section-header">
