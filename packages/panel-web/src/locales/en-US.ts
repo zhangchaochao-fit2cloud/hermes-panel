@@ -284,6 +284,40 @@ export default {
       stateWarning: 'Provider state warning: {error}',
       credential: 'Active credential: {credential}',
     },
+    slash: {
+      title: 'Prompt shortcuts',
+      hint: 'type / to filter',
+      help: {
+        label: 'Explain chat controls',
+        desc: 'Model, mode, files, tools, and approvals',
+        prompt: 'Explain the available chat controls in this panel: model selection, conversation modes, file attachments, tools, approvals, and when I should use each one.',
+      },
+      model: {
+        label: 'Check model setup',
+        desc: 'Confirm provider, credential, and fallback path',
+        prompt: 'Check whether the current model setup is ready. Explain the active model/provider, whether a credential is visible, and the fastest safe fix if it is not ready.',
+      },
+      local: {
+        label: 'Use free local model',
+        desc: 'Start with Ollama or a local compatible endpoint',
+        prompt: 'Use my local free model if available. First confirm the expected local endpoint, then give me a short test prompt I can run without spending cloud credits.',
+      },
+      tools: {
+        label: 'List useful tools',
+        desc: 'Show what this chat can use right now',
+        prompt: 'List the tools and integrations currently useful for this task, then suggest the safest next action before making changes.',
+      },
+      review: {
+        label: 'Review current work',
+        desc: 'Find risks, regressions, and missing tests',
+        prompt: 'Review the current workspace changes. Prioritize bugs, behavioral regressions, missing tests, and user experience risks. Keep findings concrete with file references.',
+      },
+      plan: {
+        label: 'Plan before editing',
+        desc: 'Break the task into small verified steps',
+        prompt: 'Create a short implementation plan with task decomposition, dependency order, validation steps, and acceptance criteria before editing files.',
+      },
+    },
     composer: {
       placeholder: "Describe the task, {'@@'}mention a role, or add files. Shift+Enter for newline...",
       placeholderWithWorkspace: "Work in {workspace}: describe the task, {'@@'}mention a role, or add files...",

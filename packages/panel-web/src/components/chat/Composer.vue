@@ -5,6 +5,7 @@ import { NDropdown } from 'naive-ui';
 import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
 import ExecutionModePicker from './ExecutionModePicker.vue';
+import SlashPromptShortcuts from './SlashPromptShortcuts.vue';
 import { useExecutionMode } from '@/composables/useExecutionMode';
 import { useSmartSuggestion } from '@/composables/useSmartSuggestion';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
@@ -178,6 +179,14 @@ const mentionedRoles = computed<RoleDef[]>(() => {
   return roles.filter(r => r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
 });
 const showMentions = computed(() => mentionedRoles.value.length > 0);
+const slashCommandQuery = computed(() => {
+  const value = text.value.trimStart();
+  if (!value.startsWith('/')) return null;
+  const query = value.slice(1);
+  if (/\s/.test(query)) return null;
+  return query.toLowerCase();
+});
+const showSlashCommands = computed(() => slashCommandQuery.value !== null);
 
 function selectMention(role: RoleDef): void {
   const atIdx = text.value.lastIndexOf('@');
@@ -187,6 +196,11 @@ function selectMention(role: RoleDef): void {
     textareaRef.value?.focus();
     resize();
   });
+}
+
+function selectSlashPrompt(prompt: string): void {
+  text.value = prompt;
+  focus();
 }
 
 const sendChord = computed(() => hotkeys.bindings.send);
@@ -473,6 +487,13 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
     @dragleave="onDragLeave"
     @drop="onDrop"
   >
+    <!-- Slash prompt shortcuts -->
+    <SlashPromptShortcuts
+      v-if="showSlashCommands"
+      :query="slashCommandQuery ?? ''"
+      @pick="selectSlashPrompt"
+    />
+
     <!-- @mention suggestions -->
     <div v-if="showMentions" class="composer-mentions flex flex-wrap gap-1.5 px-5 pt-3 pb-0">
       <button
