@@ -6,6 +6,9 @@ import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor } from '@/data/roles';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import GoalTemplatePicker from '@/components/goals/GoalTemplatePicker.vue';
+import { buildGoalTemplates, type GoalTemplate } from '@/data/goalTemplates';
 import { useI18n } from 'vue-i18n';
 
 interface Goal {
@@ -23,6 +26,7 @@ const { t } = useI18n();
 const workspaces = useWorkspacesStore();
 const goals = ref<Goal[]>([]);
 const loading = ref(false);
+const loadError = ref<string | null>(null);
 const showCreate = ref(false);
 const selectedGoal = ref<Goal | null>(null);
 
@@ -36,12 +40,18 @@ const form = ref({
 });
 
 const roles = computed(() => workspaces.activeId ? teamFor(workspaces.activeId) : []);
+const goalTemplates = computed<GoalTemplate[]>(() => buildGoalTemplates(t));
 
 onMounted(async () => { await fetchGoals(); });
 
 async function fetchGoals(): Promise<void> {
   loading.value = true;
-  try { goals.value = await bffFetch<Goal[]>('/api/goals'); }
+  try {
+    goals.value = await bffFetch<Goal[]>('/api/goals');
+    loadError.value = null;
+  } catch (err) {
+    loadError.value = errorMessage(err);
+  }
   finally { loading.value = false; }
 }
 
@@ -49,32 +59,60 @@ async function handleCreate(): Promise<void> {
   if (!form.value.objective) return;
   const doneWhen = String(form.value.doneWhen || '').split('\n').filter(Boolean);
   const stopIf = String(form.value.stopIf || '').split('\n').filter(Boolean);
-  await bffFetch('/api/goals', {
-    method: 'POST',
-    body: JSON.stringify({ ...form.value, doneWhen, stopIf, tokenBudgetK: Number(form.value.tokenBudgetK)||100, turnBudget: Number(form.value.turnBudget)||8 }),
-  });
-  showCreate.value = false;
-  form.value = { objective: '', scopeBoundary: t('goals.scopeDefault'), doneWhen: '', stopIf: '', tokenBudgetK: '100', turnBudget: '8' };
-  await fetchGoals();
-  msg.success(t('goals.created'));
+  try {
+    await bffFetch('/api/goals', {
+      method: 'POST',
+      body: JSON.stringify({ ...form.value, doneWhen, stopIf, tokenBudgetK: Number(form.value.tokenBudgetK)||100, turnBudget: Number(form.value.turnBudget)||8 }),
+    });
+    showCreate.value = false;
+    form.value = { objective: '', scopeBoundary: t('goals.scopeDefault'), doneWhen: '', stopIf: '', tokenBudgetK: '100', turnBudget: '8' };
+    await fetchGoals();
+    msg.success(t('goals.created'));
+  } catch (err) {
+    loadError.value = errorMessage(err);
+  }
 }
 
 async function handlePause(id: string): Promise<void> {
-  await bffFetch(`/api/goals/${id}/pause`, { method: 'POST' });
-  await fetchGoals();
+  try {
+    await bffFetch(`/api/goals/${id}/pause`, { method: 'POST' });
+    await fetchGoals();
+  } catch (err) {
+    loadError.value = errorMessage(err);
+  }
 }
 
 async function handleResume(id: string): Promise<void> {
-  await bffFetch(`/api/goals/${id}/resume`, { method: 'POST' });
-  await fetchGoals();
+  try {
+    await bffFetch(`/api/goals/${id}/resume`, { method: 'POST' });
+    await fetchGoals();
+  } catch (err) {
+    loadError.value = errorMessage(err);
+  }
 }
 
 async function handleDelete(id: string): Promise<void> {
-  await bffFetch(`/api/goals/${id}`, { method: 'DELETE' });
-  await fetchGoals();
+  try {
+    await bffFetch(`/api/goals/${id}`, { method: 'DELETE' });
+    await fetchGoals();
+  } catch (err) {
+    loadError.value = errorMessage(err);
+  }
 }
 
 function selectGoal(g: Goal): void { selectedGoal.value = g; }
+
+function applyTemplate(template: GoalTemplate): void {
+  form.value = {
+    objective: template.objective,
+    scopeBoundary: template.scopeBoundary,
+    doneWhen: template.doneWhen.join('\n'),
+    stopIf: template.stopIf.join('\n'),
+    tokenBudgetK: String(template.tokenBudgetK),
+    turnBudget: String(template.turnBudget),
+  };
+  showCreate.value = true;
+}
 
 function statusColor(s: string): 'info' | 'warning' | 'error' | 'success' | 'default' {
   const map: Record<string, 'info' | 'warning' | 'error' | 'success' | 'default'> = { active: 'info', paused: 'warning', budget_limited: 'error', completed: 'success', failed: 'error' };
@@ -88,6 +126,10 @@ function statusLabel(s: string): string {
 function budgetPct(g: Goal): number {
   return Math.min(100, Math.round((g.tokensUsed / (g.tokenBudgetK * 1000)) * 100));
 }
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 </script>
 
 <template>
@@ -100,6 +142,16 @@ function budgetPct(g: Goal): number {
       </div>
       <NButton type="primary" @click="showCreate = true">{{ t('goals.create') }}</NButton>
     </div>
+
+    <GoalTemplatePicker :templates="goalTemplates" @select="applyTemplate" />
+
+    <ErrorBanner
+      v-if="loadError"
+      class="mb-4"
+      :message="loadError"
+      :retry-label="t('common.retry')"
+      @retry="fetchGoals"
+    />
 
     <!-- Goal Grid -->
     <NSpin v-if="loading" size="small" class="flex justify-center py-12" />

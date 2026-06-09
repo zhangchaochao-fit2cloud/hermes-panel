@@ -1781,6 +1781,54 @@ export default {
     statusBudgetLimited: '预算耗尽',
     statusCompleted: '已完成',
     statusFailed: '失败',
+    templates: {
+      eyebrow: '快速开始',
+      title: '从成熟工作流开始',
+      description: '一键填入目标、范围、预算、验收条件和停止条件，减少用户理解成本。',
+      use: '使用模板',
+      releaseReview: {
+        title: '发布就绪评审',
+        description: '发布前检查当前改动、风险点和验证覆盖。',
+        objective: '评审当前版本发布就绪度，并找出发布前必须修复的问题。',
+        scope: '只检查和修改与当前发布就绪评审相关的文件。',
+        doneWhen: {
+          tests: '相关测试和类型检查已运行，或明确记录无法运行的原因',
+          risks: '行为回归、用户体验缺口和缺失覆盖已记录',
+          summary: '已准备简明的发布就绪总结',
+        },
+        stopIf: {
+          breakingChange: '发现破坏 API、SSE、CLI fallback 或 DB 兼容性的风险时停止',
+        },
+      },
+      bugTriage: {
+        title: 'Bug 排查与修复',
+        description: '复现缺陷、定位原因、做最小安全修复并验证。',
+        objective: '排查一个用户可感知的 Bug，实施最小安全修复并验证结果。',
+        scope: '只触碰复现、修复和验证该 Bug 所必需的文件。',
+        doneWhen: {
+          repro: 'Bug 已复现，或已记录缺失的复现证据',
+          fix: '已实施聚焦修复，没有无关重构',
+          verify: '已记录回归覆盖或手动验证路径',
+        },
+        stopIf: {
+          noRepro: '无法复现且没有可信失败信号时停止',
+        },
+      },
+      docsCleanup: {
+        title: '文档与示例整理',
+        description: '用准确文档、示例和链接让隐藏能力可发现。',
+        objective: '改进一个容易困惑的 Hermes Panel 工作流的用户文档和示例。',
+        scope: '只更新与所选工作流直接相关的文档、示例或 UI 文案。',
+        doneWhen: {
+          current: '文档与当前 CLI 和 UI 行为一致',
+          examples: '至少包含一个具体示例',
+          links: '相关导航或参考链接已检查',
+        },
+        stopIf: {
+          contract: '如果文档暴露出必须先改代码的实现不一致，则停止',
+        },
+      },
+    },
   },
   chatRoom: {
     roomList: '房间列表',

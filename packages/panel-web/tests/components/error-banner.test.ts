@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 const errorBannerPath = join(process.cwd(), 'src/components/shared/ErrorBanner.vue');
 const pageErrorFiles = [
   'src/views/cron/index.vue',
+  'src/views/goals/index.vue',
   'src/views/sessions/index.vue',
   'src/views/memory/index.vue',
 ];

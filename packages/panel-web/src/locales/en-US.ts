@@ -1796,6 +1796,54 @@ export default {
     statusBudgetLimited: 'Budget limited',
     statusCompleted: 'Completed',
     statusFailed: 'Failed',
+    templates: {
+      eyebrow: 'Quick start',
+      title: 'Start from a proven workflow',
+      description: 'Use a template to fill the objective, scope, budget, acceptance criteria, and stop condition in one click.',
+      use: 'Use template',
+      releaseReview: {
+        title: 'Release readiness review',
+        description: 'Check current changes, risk points, and verification coverage before shipping.',
+        objective: 'Review current release readiness and identify the fixes required before shipping.',
+        scope: 'Only inspect and change files related to the current release readiness review.',
+        doneWhen: {
+          tests: 'Relevant tests and type checks are run or clearly listed if unavailable',
+          risks: 'Behavioral regressions, UX gaps, and missing coverage are documented',
+          summary: 'A concise release readiness summary is prepared',
+        },
+        stopIf: {
+          breakingChange: 'Stop if a breaking API, SSE, CLI fallback, or DB compatibility risk is found',
+        },
+      },
+      bugTriage: {
+        title: 'Bug triage and fix',
+        description: 'Reproduce a defect, isolate the cause, apply a focused fix, and verify it.',
+        objective: 'Investigate a user-visible bug, implement the smallest safe fix, and verify the result.',
+        scope: 'Only touch files required to reproduce, fix, and verify the reported bug.',
+        doneWhen: {
+          repro: 'The bug is reproduced or the missing reproduction evidence is documented',
+          fix: 'A focused fix is implemented without unrelated refactors',
+          verify: 'Regression coverage or a manual verification path is recorded',
+        },
+        stopIf: {
+          noRepro: 'Stop if the issue cannot be reproduced and no credible failure signal remains',
+        },
+      },
+      docsCleanup: {
+        title: 'Docs and example cleanup',
+        description: 'Make hidden behavior discoverable with accurate docs, examples, and links.',
+        objective: 'Improve user-facing documentation and examples for a confusing Hermes Panel workflow.',
+        scope: 'Only update docs, examples, or UI copy directly related to the selected workflow.',
+        doneWhen: {
+          current: 'Documentation matches current CLI and UI behavior',
+          examples: 'At least one concrete example is included',
+          links: 'Related navigation or reference links are checked',
+        },
+        stopIf: {
+          contract: 'Stop if the docs reveal an implementation mismatch that needs code changes first',
+        },
+      },
+    },
   },
   chatRoom: {
     roomList: 'Rooms',
