@@ -275,7 +275,8 @@ EOF
         }),
         expect.objectContaining({
           command: 'uninstall',
-          coverage: 'missing',
+          coverage: 'partial',
+          route: '/developer#cli-parity',
           risk: 'destructive',
           fallback: 'hermes uninstall --help',
         }),
@@ -286,8 +287,8 @@ EOF
           fallback: 'hermes acp --help',
         }),
       ]);
-      expect(inventory.summary.partial).toBe(2);
-      expect(inventory.summary.missing).toBe(2);
+      expect(inventory.summary.partial).toBe(3);
+      expect(inventory.summary.missing).toBe(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

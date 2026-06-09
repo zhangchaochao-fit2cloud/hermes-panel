@@ -60,7 +60,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   claw: { group: 'advanced', coverage: 'missing', example: 'hermes claw --help', risk: 'migration', fallback: 'hermes claw --help' },
   version: { group: 'ops', coverage: 'ready', route: '/settings#about', example: 'hermes version' },
   update: { group: 'ops', coverage: 'partial', route: '/developer#cli-parity', example: 'hermes update', risk: 'guarded', fallback: 'hermes update --help' },
-  uninstall: { group: 'ops', coverage: 'missing', example: 'hermes uninstall', risk: 'destructive', fallback: 'hermes uninstall --help' },
+  uninstall: { group: 'ops', coverage: 'partial', route: '/developer#cli-parity', example: 'hermes uninstall', risk: 'destructive', fallback: 'hermes uninstall --help' },
   acp: { group: 'advanced', coverage: 'missing', example: 'hermes acp', risk: 'protocol', fallback: 'hermes acp --help' },
   profile: { group: 'config', coverage: 'ready', route: '/workspaces', example: 'hermes profile list' },
   completion: { group: 'advanced', coverage: 'ready', route: '/developer#cli-parity', example: 'hermes completion zsh' },
