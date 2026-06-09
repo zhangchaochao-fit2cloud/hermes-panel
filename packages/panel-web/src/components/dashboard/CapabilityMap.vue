@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { useTaskDraft, type PendingTaskTarget } from '@/composables/useTaskDraft';
 import CapabilityMapItem from './CapabilityMapItem.vue';
 
 type CapabilityState = 'ready' | 'partial' | 'planned';
@@ -12,7 +13,7 @@ interface CapabilityItem {
   route?: string;
   useRoute?: string;
   promptKey?: string;
-  pendingKey?: 'panel.pendingGoalObjective' | 'panel.pendingCronPrompt' | 'panel.pendingRoomPrompt';
+  pendingTarget?: PendingTaskTarget;
 }
 
 interface CapabilitySection {
@@ -22,6 +23,7 @@ interface CapabilitySection {
 
 const { t } = useI18n();
 const router = useRouter();
+const { openChatDraft, openPendingTask } = useTaskDraft();
 
 const sections: CapabilitySection[] = [
   {
@@ -34,7 +36,7 @@ const sections: CapabilitySection[] = [
       { key: 'gateway', state: 'ready', route: '/settings#system-health' },
       { key: 'cliParity', state: 'ready', route: '/developer#cli-parity' },
       { key: 'memory', state: 'ready', route: '/memory', useRoute: '/chat', promptKey: 'dashboard.capabilityMap.prompts.memory' },
-      { key: 'cron', state: 'ready', route: '/cron', useRoute: '/cron', promptKey: 'dashboard.capabilityMap.prompts.cron', pendingKey: 'panel.pendingCronPrompt' },
+      { key: 'cron', state: 'ready', route: '/cron', useRoute: '/cron', promptKey: 'dashboard.capabilityMap.prompts.cron', pendingTarget: 'cron' },
       { key: 'files', state: 'ready', route: '/files' },
     ],
   },
@@ -42,12 +44,12 @@ const sections: CapabilitySection[] = [
     key: 'panel',
     items: [
       { key: 'workspaces', state: 'ready', route: '/workspaces' },
-      { key: 'goals', state: 'ready', route: '/goals', useRoute: '/goals', promptKey: 'dashboard.capabilityMap.prompts.goals', pendingKey: 'panel.pendingGoalObjective' },
+      { key: 'goals', state: 'ready', route: '/goals', useRoute: '/goals', promptKey: 'dashboard.capabilityMap.prompts.goals', pendingTarget: 'goal' },
       { key: 'cost', state: 'ready', route: '/cost', useRoute: '/chat', promptKey: 'dashboard.capabilityMap.prompts.cost' },
       { key: 'developer', state: 'ready', route: '/developer' },
       { key: 'sandbox', state: 'ready', route: '/sandbox' },
       { key: 'channels', state: 'ready', route: '/channels' },
-      { key: 'chatRoom', state: 'ready', route: '/chat-room', useRoute: '/chat-room', promptKey: 'dashboard.capabilityMap.prompts.chatRoom', pendingKey: 'panel.pendingRoomPrompt' },
+      { key: 'chatRoom', state: 'ready', route: '/chat-room', useRoute: '/chat-room', promptKey: 'dashboard.capabilityMap.prompts.chatRoom', pendingTarget: 'room' },
       { key: 'intent', state: 'ready', route: '/intent' },
     ],
   },
@@ -101,16 +103,14 @@ function useCapability(item: CapabilityItem): void {
   }
   if (item.promptKey) {
     const prompt = t(item.promptKey);
-    try {
-      if (item.pendingKey) sessionStorage.setItem(item.pendingKey, prompt);
-      else localStorage.setItem('panel.chat.draft.new', prompt);
-    } catch {
-      /* route still works when storage is unavailable */
+    if (item.pendingTarget) {
+      void openPendingTask(item.pendingTarget, prompt);
+      return;
     }
-  }
-  if (item.useRoute === '/chat') {
-    void router.push({ path: '/chat', query: { new: String(Date.now()) } });
-    return;
+    if (item.useRoute === '/chat') {
+      void openChatDraft(prompt);
+      return;
+    }
   }
   go(item.useRoute);
 }

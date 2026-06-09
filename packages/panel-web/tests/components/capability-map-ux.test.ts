@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const capabilityMapPath = join(process.cwd(), 'src/components/dashboard/CapabilityMap.vue');
 const capabilityMapItemPath = join(process.cwd(), 'src/components/dashboard/CapabilityMapItem.vue');
+const taskDraftPath = join(process.cwd(), 'src/composables/useTaskDraft.ts');
 const enPath = join(process.cwd(), 'src/locales/en-US.ts');
 const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
 
@@ -11,6 +12,7 @@ describe('Capability map UX', () => {
   it('surfaces the live CLI parity backlog from the dashboard', () => {
     const source = readFileSync(capabilityMapPath, 'utf8');
     const item = readFileSync(capabilityMapItemPath, 'utf8');
+    const taskDraft = readFileSync(taskDraftPath, 'utf8');
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
@@ -18,11 +20,15 @@ describe('Capability map UX', () => {
     expect(source).toContain('dashboard.capabilityMap.items');
     expect(source).toContain('CapabilityMapItem');
     expect(source).toContain("useRoute: '/chat'");
-    expect(source).toContain("pendingKey: 'panel.pendingGoalObjective'");
-    expect(source).toContain("pendingKey: 'panel.pendingCronPrompt'");
-    expect(source).toContain("pendingKey: 'panel.pendingRoomPrompt'");
-    expect(source).toContain("localStorage.setItem('panel.chat.draft.new'");
-    expect(source).toContain('sessionStorage.setItem(item.pendingKey, prompt)');
+    expect(source).toContain("pendingTarget: 'goal'");
+    expect(source).toContain("pendingTarget: 'cron'");
+    expect(source).toContain("pendingTarget: 'room'");
+    expect(source).toContain('openChatDraft(prompt)');
+    expect(source).toContain('openPendingTask(item.pendingTarget, prompt)');
+    expect(taskDraft).toContain("export const CHAT_DRAFT_KEY = 'panel.chat.draft.new'");
+    expect(taskDraft).toContain("goal: GOAL_OBJECTIVE_KEY");
+    expect(taskDraft).toContain("cron: CRON_PROMPT_KEY");
+    expect(taskDraft).toContain("room: ROOM_PROMPT_KEY");
     expect(item).toContain("$emit('open')");
     expect(item).toContain("$emit('use')");
     expect(item).toContain('capability-actions');

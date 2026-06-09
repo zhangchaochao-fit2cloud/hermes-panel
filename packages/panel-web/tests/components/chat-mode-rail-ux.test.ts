@@ -29,7 +29,7 @@ describe('chat mode rail UX', () => {
     const rail = readFileSync(railPath, 'utf8');
 
     expect(view).toContain('function onModeRailRoute');
-    expect(view).toContain("sessionStorage.setItem('panel.pendingCronPrompt'");
+    expect(view).toContain("storePendingTask('cron', payload.prompt)");
     expect(view).toContain('composerRef.value?.setText(payload.prompt)');
     expect(view).toContain('void router.push(payload.route)');
     expect(rail).toContain("route: '/chat-room'");

@@ -2,15 +2,15 @@
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import { NButton, NTag, useMessage } from 'naive-ui';
 import { useProvidersStore } from '@/stores/providers';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 
 const emit = defineEmits<{ (e: 'add-credential', provider: string): void }>();
 
 const { t } = useI18n();
-const router = useRouter();
+const { openChatDraft } = useTaskDraft();
 const message = useMessage();
 const store = useProvidersStore();
 const {
@@ -78,12 +78,7 @@ function discoverRuntimeModels(): void {
 }
 
 function openTestChat(): void {
-  try {
-    localStorage.setItem('panel.chat.draft.new', t('settings.providers.readiness.testPrompt'));
-  } catch {
-    /* draft is optional */
-  }
-  void router.push({ path: '/chat', query: { new: String(Date.now()) } });
+  void openChatDraft(t('settings.providers.readiness.testPrompt'));
 }
 </script>
 

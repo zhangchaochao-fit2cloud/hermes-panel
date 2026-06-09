@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import type { HealthStatus } from '@hermes-panel/shared';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import GatewayControl from '@/components/shared/GatewayControl.vue';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import DashboardTaskLauncher from './DashboardTaskLauncher.vue';
 
 type ActionTone = 'primary' | 'setup' | 'agent';
@@ -36,7 +36,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
+const { openChatDraft, openPendingTask, openRoute } = useTaskDraft();
 
 const hermesReady = computed(() => !!props.health?.hermes.running);
 const healthState = computed<'connected' | 'connecting' | 'disconnected' | 'unknown'>(() => {
@@ -69,6 +69,7 @@ const primaryActions: HubAction[] = [
     key: 'goal',
     route: '/goals',
     tone: 'agent',
+    draftKey: 'dashboard.workbench.actions.goal.prompt',
   },
 ];
 
@@ -110,22 +111,32 @@ const modes: ModeItem[] = [
   },
 ];
 
-function writeDraft(draftKey?: string): void {
-  if (!draftKey) return;
-  try {
-    localStorage.setItem('panel.chat.draft.new', t(draftKey));
-  } catch {
-    /* navigation still works when storage is unavailable */
-  }
-}
-
 function go(action: HubAction | ModeItem | ReadinessItem): void {
-  writeDraft('draftKey' in action ? action.draftKey : undefined);
+  const draftKey = 'draftKey' in action ? action.draftKey : undefined;
+  if (draftKey) {
+    const prompt = t(draftKey);
+    if (action.route === '/goals') {
+      void openPendingTask('goal', prompt);
+      return;
+    }
+    if (action.route === '/chat-room') {
+      void openPendingTask('room', prompt);
+      return;
+    }
+    if (action.route === '/cron') {
+      void openPendingTask('cron', prompt);
+      return;
+    }
+    if (action.route === '/chat' || ('forceNewChat' in action && action.forceNewChat)) {
+      void openChatDraft(prompt);
+      return;
+    }
+  }
   if ('forceNewChat' in action && action.forceNewChat) {
-    void router.push({ path: action.route, query: { new: String(Date.now()) } });
+    void openRoute({ path: action.route, query: { new: String(Date.now()) } });
     return;
   }
-  void router.push(action.route);
+  void openRoute(action.route);
 }
 </script>
 

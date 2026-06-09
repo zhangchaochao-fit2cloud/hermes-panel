@@ -8,6 +8,7 @@ const composerPath = join(process.cwd(), 'src/components/chat/Composer.vue');
 const chatPath = join(process.cwd(), 'src/views/chat/index.vue');
 const goalsPath = join(process.cwd(), 'src/views/goals/index.vue');
 const roomPath = join(process.cwd(), 'src/views/chat-room/index.vue');
+const taskDraftPath = join(process.cwd(), 'src/composables/useTaskDraft.ts');
 const enPath = join(process.cwd(), 'src/locales/en-US.ts');
 const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
 
@@ -19,6 +20,7 @@ describe('composer task actions UX', () => {
     const chat = readFileSync(chatPath, 'utf8');
     const goals = readFileSync(goalsPath, 'utf8');
     const room = readFileSync(roomPath, 'utf8');
+    const taskDraft = readFileSync(taskDraftPath, 'utf8');
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
@@ -42,16 +44,23 @@ describe('composer task actions UX', () => {
     expect(composer).toContain('ComposerTaskAdvisor');
     expect(composer).toContain("payload.action === 'tools'");
     expect(composer).toContain("emit('taskAction', payload)");
-    expect(chat).toContain("sessionStorage.setItem(key, prompt)");
-    expect(chat).toContain("'panel.pendingGoalObjective'");
-    expect(chat).toContain("'panel.pendingCronPrompt'");
-    expect(chat).toContain("'panel.pendingRoomPrompt'");
+    expect(chat).toContain("import { useTaskDraft }");
+    expect(chat).toContain("openPendingTask('goal', payload.prompt)");
+    expect(chat).toContain("openPendingTask('cron', payload.prompt)");
+    expect(chat).toContain("openPendingTask('room', payload.prompt)");
+    expect(taskDraft).toContain("export const GOAL_OBJECTIVE_KEY = 'panel.pendingGoalObjective'");
+    expect(taskDraft).toContain("export const CRON_PROMPT_KEY = 'panel.pendingCronPrompt'");
+    expect(taskDraft).toContain("export const ROOM_PROMPT_KEY = 'panel.pendingRoomPrompt'");
     expect(chat).toContain("payload.action === 'model'");
     expect(chat).toContain("hash: '#providers'");
     expect(goals).toContain('applyPendingGoalObjective');
     expect(goals).toContain("sessionStorage.getItem('panel.pendingGoalObjective')");
     expect(room).toContain('initializeRoomFromPendingPrompt');
     expect(room).toContain("sessionStorage.getItem('panel.pendingRoomPrompt')");
+    expect(room.indexOf('input.value = pending')).toBeLessThan(room.indexOf('await store.fetchRooms()'));
+    expect(room).toContain('catch (err)');
+    expect(room).toContain('create-modal-draft');
+    expect(room).toContain("t('chatRoom.pendingDraftLabel')");
 
     expect(zh).toContain('让能力参与当前任务');
     expect(zh).toContain('设为长线目标');
@@ -60,11 +69,13 @@ describe('composer task actions UX', () => {
     expect(zh).toContain('使用工具与记忆');
     expect(zh).toContain('配置免费或本地模型');
     expect(zh).toContain('建议下一步');
+    expect(zh).toContain('待发送任务');
     expect(en).toContain('Use capabilities in this task');
     expect(en).toContain('Set as long-running goal');
     expect(en).toContain('Schedule recurring run');
     expect(en).toContain('Send to role room');
     expect(en).toContain('Configure a free or local model');
     expect(en).toContain('Suggested next step');
+    expect(en).toContain('Task ready to send');
   });
 });

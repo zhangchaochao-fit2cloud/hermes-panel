@@ -30,11 +30,13 @@ import { useSessionsStore } from '@/stores/sessions';
 import { useAssistantOptions } from '@/composables/useAssistantOptions';
 import { useCronAggregateView } from '@/composables/useCronAggregateView';
 import { useChatExport } from '@/composables/useChatExport';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import { detectMention, type RoleDef } from '@/data/roles';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { getToolEditSummary } from '@/utils/tool-call-facts';
 
 const { t } = useI18n();
+const { openPendingTask, storePendingTask } = useTaskDraft();
 const session = useSessionStore();
 const stream = useChatStreamStore();
 const system = useSystemStore();
@@ -173,39 +175,24 @@ function onReadinessPrompt(content: string): void {
 
 function onModeRailRoute(payload: { route: string; prompt?: string; storage?: 'cron' }): void {
   if (payload.storage === 'cron' && payload.prompt) {
-    try {
-      sessionStorage.setItem('panel.pendingCronPrompt', payload.prompt);
-    } catch {
-      /* route still works when session storage is unavailable */
-    }
+    storePendingTask('cron', payload.prompt);
   } else if (payload.prompt) {
     composerRef.value?.setText(payload.prompt);
   }
   void router.push(payload.route);
 }
 
-function storePendingTask(key: string, prompt: string): void {
-  try {
-    sessionStorage.setItem(key, prompt);
-  } catch {
-    /* route still works when session storage is unavailable */
-  }
-}
-
 function onComposerTaskAction(payload: ComposerTaskActionPayload): void {
   if (payload.action === 'goal') {
-    storePendingTask('panel.pendingGoalObjective', payload.prompt);
-    void router.push('/goals');
+    void openPendingTask('goal', payload.prompt);
     return;
   }
   if (payload.action === 'cron') {
-    storePendingTask('panel.pendingCronPrompt', payload.prompt);
-    void router.push('/cron');
+    void openPendingTask('cron', payload.prompt);
     return;
   }
   if (payload.action === 'room') {
-    storePendingTask('panel.pendingRoomPrompt', payload.prompt);
-    void router.push('/chat-room');
+    void openPendingTask('room', payload.prompt);
     return;
   }
   if (payload.action === 'model') {

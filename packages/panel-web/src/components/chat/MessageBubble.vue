@@ -13,6 +13,7 @@ import {
 import { extractMarkdownImages, stripMarkdownImages } from '@/utils/markdown-images';
 import { getToolCallFacts } from '@/utils/tool-call-facts';
 import { relativeTime, absoluteTime, type Locale } from '@/utils/relative-time';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import ToolCallCard from './ToolCallCard.vue';
 
 const props = defineProps<{
@@ -74,6 +75,7 @@ function onEditorKey(e: KeyboardEvent): void {
 const { t, locale } = useI18n();
 const toast = useMessage();
 const router = useRouter();
+const { storePendingTask } = useTaskDraft();
 const proseRef = ref<HTMLElement | null>(null);
 const rootRef = ref<HTMLElement | null>(null);
 const selectionBubble = ref<{ text: string; left: number; top: number } | null>(null);
@@ -387,9 +389,7 @@ function addSelectionToComposer(): void {
 // 把 user prompt 安排为定时任务：通过 sessionStorage 携带 prompt 到 /cron 页，
 // 那边 mount 时检查并打开 CreateJobModal 预填。
 function scheduleAsCron(): void {
-  try {
-    sessionStorage.setItem('panel.pendingCronPrompt', props.message.content);
-  } catch { /* ignore */ }
+  storePendingTask('cron', props.message.content);
   void router.push('/cron');
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
 import type { CommandPaletteIconKey } from '@/commands/icons';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import ControlCenterIcon from './ControlCenterIcon.vue';
 
 const props = withDefaults(defineProps<{
@@ -18,20 +18,15 @@ const props = withDefaults(defineProps<{
   icon: 'chat',
 });
 
-const router = useRouter();
+const { openChatDraft, openRoute } = useTaskDraft();
 
 function useInChat(): void {
-  try {
-    localStorage.setItem('panel.chat.draft.new', props.prompt);
-  } catch {
-    /* navigation still works when storage is unavailable */
-  }
-  void router.push({ path: '/chat', query: { new: String(Date.now()) } });
+  void openChatDraft(props.prompt);
 }
 
 function openSecondary(): void {
   if (!props.secondaryTo) return;
-  void router.push(props.secondaryTo);
+  void openRoute(props.secondaryTo);
 }
 </script>
 

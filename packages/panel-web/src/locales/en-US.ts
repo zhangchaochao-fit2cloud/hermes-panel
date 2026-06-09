@@ -1296,6 +1296,7 @@ export default {
           title: 'Run a goal with agents',
           desc: 'Use the goal engine for longer work that needs planning, checkpoints, and multi-agent follow-through.',
           cta: 'Open goals',
+          prompt: 'Turn my next task into a long-running Hermes goal. Ask me for the objective, scope boundary, done criteria, stop conditions, token budget, and validation commands before creating it.',
         },
       },
       readiness: {
@@ -2320,6 +2321,7 @@ export default {
     createRoomTitle: 'New Chat Room',
     createRoomDesc: "Create a room and {'@@'}mention workspace roles to collaborate",
     roomNamePlaceholder: 'Enter room name',
+    pendingDraftLabel: 'Task ready to send',
     availableRolesLabel: 'Available roles:',
     cancel: 'Cancel',
     create: 'Create',

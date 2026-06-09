@@ -2,24 +2,16 @@
 import { ref } from 'vue';
 import { NInput } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import ControlCenterIcon from '@/components/shared/ControlCenterIcon.vue';
 
 type LaunchTarget = 'chat' | 'room';
 type ExampleKey = 'debug' | 'build' | 'explain';
 
 const { t } = useI18n();
-const router = useRouter();
+const { openChatDraft, openPendingTask } = useTaskDraft();
 const draft = ref('');
 const examples: ExampleKey[] = ['debug', 'build', 'explain'];
-
-function persistDraft(prompt: string): void {
-  try {
-    localStorage.setItem('panel.chat.draft.new', prompt);
-  } catch {
-    /* route still works when storage is unavailable */
-  }
-}
 
 function useExample(key: ExampleKey): void {
   draft.value = t(`dashboard.workbench.launcher.examples.${key}`);
@@ -27,12 +19,11 @@ function useExample(key: ExampleKey): void {
 
 function launch(target: LaunchTarget): void {
   const prompt = draft.value.trim() || t('dashboard.workbench.launcher.defaultPrompt');
-  persistDraft(prompt);
   if (target === 'room') {
-    void router.push('/chat-room');
+    void openPendingTask('room', prompt);
     return;
   }
-  void router.push({ path: '/chat', query: { new: String(Date.now()) } });
+  void openChatDraft(prompt);
 }
 
 function onInputKeydown(event: KeyboardEvent): void {

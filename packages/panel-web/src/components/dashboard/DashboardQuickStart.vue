@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import type { HealthStatus } from '@hermes-panel/shared';
+import { useTaskDraft } from '@/composables/useTaskDraft';
 import DashboardFirstRunPath from './DashboardFirstRunPath.vue';
 
 type StepState = 'recommended' | 'ready' | 'attention';
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const { openChatDraft } = useTaskDraft();
 
 const hermesReady = computed(() => !!props.health?.hermes.running);
 const needsSetup = computed(() => !props.loading && !hermesReady.value);
@@ -77,11 +79,8 @@ const summaryKey = computed(() => {
 
 function go(route: string, draftKey?: string): void {
   if (draftKey) {
-    try {
-      localStorage.setItem('panel.chat.draft.new', t(draftKey));
-    } catch {
-      /* ignore storage failures; navigation still works */
-    }
+    void openChatDraft(t(draftKey));
+    return;
   }
   void router.push(route);
 }

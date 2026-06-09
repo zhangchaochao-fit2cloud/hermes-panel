@@ -18,8 +18,9 @@ describe('feature task bridge UX', () => {
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
-    expect(bridge).toContain("localStorage.setItem('panel.chat.draft.new', props.prompt)");
-    expect(bridge).toContain("router.push({ path: '/chat'");
+    expect(bridge).toContain("import { useTaskDraft }");
+    expect(bridge).toContain('openChatDraft(props.prompt)');
+    expect(bridge).toContain('openRoute(props.secondaryTo)');
     expect(bridge).toContain('ControlCenterIcon');
     expect(bridge).toContain('bridge-command');
     expect(bridge).toContain('bridge-action is-primary');

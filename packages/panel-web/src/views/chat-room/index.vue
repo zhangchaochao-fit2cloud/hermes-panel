@@ -37,9 +37,13 @@ async function initializeRoomFromPendingPrompt(): Promise<void> {
     pending = sessionStorage.getItem('panel.pendingRoomPrompt') ?? '';
     if (pending) sessionStorage.removeItem('panel.pendingRoomPrompt');
   } catch { /* ignore */ }
-  await store.fetchRooms();
+  if (pending) input.value = pending;
+  try {
+    await store.fetchRooms();
+  } catch (err) {
+    msg.error((err as Error).message);
+  }
   if (!pending) return;
-  input.value = pending;
   if (store.rooms.length > 0) {
     await store.fetchMessages(store.rooms[0].id);
     return;
@@ -374,6 +378,10 @@ function selectRoom(id: string): void {
         <h3>{{ t('chatRoom.createRoomTitle') }}</h3>
         <p class="create-modal-desc">{{ t('chatRoom.createRoomDesc') }}</p>
         <NInput v-model:value="newRoomName" :placeholder="t('chatRoom.roomNamePlaceholder')" size="large" @keydown.enter="handleCreate" />
+        <div v-if="input.trim()" class="create-modal-draft">
+          <span>{{ t('chatRoom.pendingDraftLabel') }}</span>
+          <p>{{ input }}</p>
+        </div>
         <div class="create-modal-roles" v-if="roles.length">
           {{ t('chatRoom.availableRolesLabel') }}<span v-for="r in roles" :key="r.id" class="create-modal-role-tag">{{ r.icon }} {{ r.name }}</span>
         </div>
@@ -548,6 +556,28 @@ function selectRoom(id: string): void {
 .create-modal h3 { font-size: 16px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
 .create-modal-desc { font-size: 12px; color: var(--text-3); margin-bottom: 16px; }
 .create-modal .n-input { margin-bottom: 12px; }
+.create-modal-draft {
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand-500) 24%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-500) 5%, var(--bg-elevate));
+  padding: 10px 12px;
+}
+.create-modal-draft span {
+  display: block;
+  color: var(--brand-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+.create-modal-draft p {
+  margin-top: 4px;
+  max-height: 92px;
+  overflow-y: auto;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
 .create-modal-roles { font-size: 12px; color: var(--text-3); margin-bottom: 16px; }
 .create-modal-role-tag { color: var(--brand-600); font-weight: 500; margin-left: 4px; }
 .create-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }

@@ -1296,6 +1296,7 @@ export default {
           title: '用 Agent 执行目标',
           desc: '较长任务进入目标引擎，获得计划、检查点和多 Agent 跟进。',
           cta: '打开目标',
+          prompt: '请把我的下一个任务转成长线 Hermes 目标。创建前先询问目标、范围边界、完成标准、停止条件、token 预算和验证命令。',
         },
       },
       readiness: {
@@ -2305,6 +2306,7 @@ export default {
     createRoomTitle: '新建群聊房间',
     createRoomDesc: "创建房间，{'@@'}mention 邀请 Workspace 角色协作讨论",
     roomNamePlaceholder: '输入房间名称',
+    pendingDraftLabel: '待发送任务',
     availableRolesLabel: '可用角色：',
     cancel: '取消',
     create: '创建',

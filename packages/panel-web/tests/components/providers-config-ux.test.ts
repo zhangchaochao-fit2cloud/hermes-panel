@@ -69,8 +69,8 @@ describe('providers config UX', () => {
     expect(onboarding).toContain('store.discoverModels');
     expect(onboarding).toContain('navigator.clipboard.writeText(command.value)');
     expect(onboarding).toContain("hermes config set model.default");
-    expect(onboarding).toContain("localStorage.setItem('panel.chat.draft.new'");
-    expect(onboarding).toContain("router.push({ path: '/chat'");
+    expect(onboarding).toContain("import { useTaskDraft }");
+    expect(onboarding).toContain("openChatDraft(t('settings.providers.onboarding.testPrompt'))");
     expect(en).toContain('First usable model');
     expect(en).toContain('Use free local first');
     expect(en).toContain('Official handoff');
@@ -92,8 +92,8 @@ describe('providers config UX', () => {
     expect(readiness).toContain("baseUrl: 'http://localhost:11434/v1'");
     expect(readiness).toContain("emit('add-credential', 'openrouter')");
     expect(readiness).toContain('hermes config set model.default');
-    expect(readiness).toContain("localStorage.setItem('panel.chat.draft.new'");
-    expect(readiness).toContain("router.push({ path: '/chat'");
+    expect(readiness).toContain("import { useTaskDraft }");
+    expect(readiness).toContain("openChatDraft(t('settings.providers.readiness.testPrompt'))");
     expect(en).toContain('Model readiness');
     expect(en).toContain('Use Ollama free preset');
     expect(en).toContain('Add free cloud key');
