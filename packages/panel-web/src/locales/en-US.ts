@@ -1273,6 +1273,8 @@ export default {
       copyReport: 'Copy report',
       copiedReport: 'CLI parity report copied',
       reportEmpty: 'No commands to copy',
+      copyBacklogPlan: 'Copy gap plan',
+      copiedBacklogPlan: 'CLI parity gap plan copied',
       loading: 'Reading Hermes CLI...',
       lastUpdated: 'Updated {time}',
       error: 'CLI inventory failed: {error}',

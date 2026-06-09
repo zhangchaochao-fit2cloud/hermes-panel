@@ -1273,6 +1273,8 @@ export default {
       copyReport: '复制报告',
       copiedReport: 'CLI 对齐报告已复制',
       reportEmpty: '没有可复制的命令',
+      copyBacklogPlan: '复制缺口计划',
+      copiedBacklogPlan: 'CLI 对齐缺口计划已复制',
       loading: '正在读取 Hermes CLI...',
       lastUpdated: '更新于 {time}',
       error: 'CLI inventory 读取失败：{error}',

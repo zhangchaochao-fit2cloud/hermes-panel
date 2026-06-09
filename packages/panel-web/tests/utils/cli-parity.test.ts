@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
+import { formatCliParityBacklogPlan, formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
 
 const generatedAt = new Date('2026-06-08T10:00:00.000Z');
 
@@ -78,5 +78,41 @@ describe('selectCliParityBacklog', () => {
         example: 'hermes completion zsh',
       },
     ], 2).map(cmd => cmd.command)).toEqual(['setup', 'update']);
+  });
+});
+
+describe('formatCliParityBacklogPlan', () => {
+  it('turns incomplete commands into a source-of-truth implementation plan', () => {
+    const plan = formatCliParityBacklogPlan([
+      {
+        command: 'chat',
+        description: 'Chat',
+        group: 'core',
+        coverage: 'ready',
+        route: '/chat',
+        example: 'hermes chat',
+      },
+      {
+        command: 'update',
+        description: 'Update Hermes',
+        displayDescription: 'Localized update note',
+        group: 'ops',
+        coverage: 'missing',
+        example: 'hermes update',
+      },
+    ], generatedAt);
+
+    expect(plan).toContain('# Hermes CLI Parity Backlog Plan');
+    expect(plan).toContain('Generated: 2026-06-08T10:00:00.000Z');
+    expect(plan).toContain('1. hermes update');
+    expect(plan).toContain('Coverage: missing');
+    expect(plan).toContain('UI target: No UI');
+    expect(plan).toContain('inspect `hermes update --help`');
+    expect(plan).toContain('Localized update note');
+    expect(plan).not.toContain('hermes chat');
+  });
+
+  it('formats an empty backlog plan', () => {
+    expect(formatCliParityBacklogPlan([], generatedAt)).toContain('No open CLI parity gaps');
   });
 });

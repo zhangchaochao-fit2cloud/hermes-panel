@@ -2,30 +2,18 @@
 import { computed, onMounted, ref } from 'vue';
 import { useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import type {
-  CliCommandCoverage,
-  CliCommandGroup,
-  CliCommandGroupSummary,
-  CliCommandInventoryItem,
-  CliCommandInventoryResponse,
-  CliCommandInventorySummary,
-} from '@hermes-panel/shared';
+import type { CliCommandCoverage, CliCommandGroup, CliCommandGroupSummary, CliCommandInventoryItem, CliCommandInventoryResponse, CliCommandInventorySummary } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
-import { formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
-import CodeBlock from '@/components/shared/CodeBlock.vue';
+import { formatCliParityBacklogPlan, formatCliParityReport, selectCliParityBacklog } from '@/utils/cli-parity';
+import CliCompletionPanel from './CliCompletionPanel.vue';
+import CliParityBacklogPanel from './CliParityBacklogPanel.vue';
 import CliParityCommandCard from './CliParityCommandCard.vue';
 import CliParityFilters from './CliParityFilters.vue';
+import CliParityHeader from './CliParityHeader.vue';
 
 type CompletionShell = 'zsh' | 'bash' | 'fish' | 'powershell';
 
-interface CliCompletionResponse {
-  shell: string;
-  source: string;
-  generatedAt: number;
-  stdout: string;
-  stderr?: string;
-  error?: string;
-}
+interface CliCompletionResponse { shell: string; source: string; generatedAt: number; stdout: string; stderr?: string; error?: string }
 
 const { t, te, locale } = useI18n();
 const message = useMessage();
@@ -108,6 +96,10 @@ const reportCommands = computed(() =>
 );
 
 const backlogCommands = computed(() => selectCliParityBacklog(commands.value, 3));
+const backlogItems = computed(() => backlogCommands.value.map(cmd => ({
+  ...cmd,
+  displayDescription: descriptionFor(cmd),
+})));
 const backlogCount = computed(() => inventoryTotals.value.partial + inventoryTotals.value.missing);
 
 function descriptionFor(cmd: CliCommandInventoryItem): string {
@@ -125,6 +117,19 @@ async function copyBacklogExample(cmd: CliCommandInventoryItem): Promise<void> {
   try {
     await navigator.clipboard.writeText(cmd.example);
     message.success(t('developer.cliParity.copiedExample'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
+}
+
+async function copyBacklogPlan(): Promise<void> {
+  if (backlogItems.value.length === 0) {
+    message.warning(t('developer.cliParity.reportEmpty'));
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(formatCliParityBacklogPlan(backlogItems.value));
+    message.success(t('developer.cliParity.copiedBacklogPlan'));
   } catch {
     message.error(t('common.copyFailed'));
   }
@@ -186,196 +191,35 @@ onMounted(() => {
 
 <template>
   <div class="cli-parity flex flex-col gap-4">
-    <section class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="max-w-3xl">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
-            {{ t('developer.cliParity.eyebrow') }}
-          </p>
-          <h2 class="mt-1 text-base font-semibold text-[var(--text-1)]">
-            {{ t('developer.cliParity.title') }}
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-[var(--text-3)]">
-            {{ t('developer.cliParity.desc') }}
-          </p>
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <pre class="inline-flex rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1 text-xs text-[var(--text-2)]">{{ source }}</pre>
-            <span v-if="generatedAtLabel" class="text-xs text-[var(--text-3)]">
-              {{ t('developer.cliParity.lastUpdated', { time: generatedAtLabel }) }}
-            </span>
-            <button
-              type="button"
-              class="reload-button"
-              :disabled="loading"
-              @click="loadInventory"
-            >
-              {{ loading ? t('developer.cliParity.loading') : t('developer.cliParity.reload') }}
-            </button>
-            <button
-              type="button"
-              class="reload-button"
-              :disabled="filtered.length === 0"
-              @click="copyReport"
-            >
-              {{ t('developer.cliParity.copyReport') }}
-            </button>
-          </div>
-        </div>
+    <CliParityHeader
+      :source="source"
+      :generated-at-label="generatedAtLabel"
+      :loading="loading"
+      :totals="inventoryTotals"
+      :copy-disabled="filtered.length === 0"
+      @copy-report="copyReport"
+      @filter-coverage="coverageFilter = $event"
+      @reload="loadInventory"
+    />
 
-        <div class="grid grid-cols-4 gap-2 text-center">
-          <button class="cli-count" type="button" @click="coverageFilter = 'all'">
-            <strong>{{ inventoryTotals.all }}</strong>
-            <span>{{ t('developer.cliParity.coverage.all') }}</span>
-          </button>
-          <button class="cli-count" type="button" @click="coverageFilter = 'ready'">
-            <strong>{{ inventoryTotals.ready }}</strong>
-            <span>{{ t('developer.cliParity.coverage.ready') }}</span>
-          </button>
-          <button class="cli-count" type="button" @click="coverageFilter = 'partial'">
-            <strong>{{ inventoryTotals.partial }}</strong>
-            <span>{{ t('developer.cliParity.coverage.partial') }}</span>
-          </button>
-          <button class="cli-count" type="button" @click="coverageFilter = 'missing'">
-            <strong>{{ inventoryTotals.missing }}</strong>
-            <span>{{ t('developer.cliParity.coverage.missing') }}</span>
-          </button>
-        </div>
-      </div>
-    </section>
+    <CliCompletionPanel
+      v-model:completion-shell="completionShell"
+      :completion-error="completionError"
+      :completion-loading="completionLoading"
+      :completion-script="completionScript"
+      :completion-shells="completionShells"
+      @generate="loadCompletionScript"
+    />
 
-    <section class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
-            {{ t('developer.cliParity.completionEyebrow') }}
-          </p>
-          <h3 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
-            {{ t('developer.cliParity.completionTitle') }}
-          </h3>
-          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
-            {{ t('developer.cliParity.completionDesc') }}
-          </p>
-        </div>
-        <div class="completion-controls">
-          <label>
-            <span class="sr-only">{{ t('developer.cliParity.completionShell') }}</span>
-            <select v-model="completionShell" class="completion-select">
-              <option
-                v-for="shell in completionShells"
-                :key="shell"
-                :value="shell"
-              >
-                {{ shell }}
-              </option>
-            </select>
-          </label>
-          <button
-            type="button"
-            class="reload-button"
-            :disabled="completionLoading"
-            @click="loadCompletionScript"
-          >
-            {{ completionLoading ? t('developer.cliParity.completionLoading') : t('developer.cliParity.completionGenerate') }}
-          </button>
-        </div>
-      </div>
-
-      <div
-        v-if="completionError"
-        class="mt-3 rounded border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2 text-xs text-[var(--color-warning)]"
-      >
-        {{ t('developer.cliParity.completionError', { error: completionError }) }}
-      </div>
-      <CodeBlock
-        v-if="completionScript?.stdout"
-        class="mt-3"
-        :code="completionScript.stdout.trimEnd()"
-        :lang="completionScript.source"
-        max-height="260px"
-      />
-      <CodeBlock
-        v-if="completionScript?.stderr"
-        class="mt-3"
-        :code="completionScript.stderr.trimEnd()"
-        :lang="t('developer.cliParity.stderr')"
-        max-height="120px"
-        tone="warning"
-      />
-    </section>
-
-    <section
+    <CliParityBacklogPanel
       v-if="commands.length > 0"
-      class="cli-backlog rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4"
-    >
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
-            {{ t('developer.cliParity.backlogEyebrow', { n: backlogCount }) }}
-          </p>
-          <h3 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
-            {{ backlogCommands.length > 0 ? t('developer.cliParity.backlogTitle') : t('developer.cliParity.backlogEmptyTitle') }}
-          </h3>
-          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
-            {{ backlogCommands.length > 0 ? t('developer.cliParity.backlogDesc') : t('developer.cliParity.backlogEmptyDesc') }}
-          </p>
-        </div>
-        <div
-          v-if="backlogCommands.length > 0"
-          class="backlog-actions"
-        >
-          <button
-            type="button"
-            class="reload-button"
-            @click="coverageFilter = 'partial'"
-          >
-            {{ t('developer.cliParity.coverage.partial') }}
-          </button>
-          <button
-            type="button"
-            class="reload-button"
-            @click="coverageFilter = 'missing'"
-          >
-            {{ t('developer.cliParity.coverage.missing') }}
-          </button>
-        </div>
-      </div>
-
-      <div
-        v-if="backlogCommands.length > 0"
-        class="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3"
-      >
-        <article
-          v-for="cmd in backlogCommands"
-          :key="cmd.command"
-          class="backlog-item"
-        >
-          <div class="flex flex-wrap items-center gap-2">
-            <code>hermes {{ cmd.command }}</code>
-            <span>{{ t(`developer.cliParity.coverage.${cmd.coverage}`) }}</span>
-          </div>
-          <p class="mt-2 text-xs leading-5 text-[var(--text-3)]">
-            {{ descriptionFor(cmd) }}
-          </p>
-          <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
-          <div class="backlog-card-actions">
-            <button
-              type="button"
-              class="backlog-action"
-              @click="copyBacklogExample(cmd)"
-            >
-              {{ t('developer.cliParity.copyExample') }}
-            </button>
-            <button
-              type="button"
-              class="backlog-action"
-              @click="focusCommand(cmd)"
-            >
-              {{ t('developer.cliParity.focusCommand') }}
-            </button>
-          </div>
-        </article>
-      </div>
-    </section>
+      :commands="backlogItems"
+      :backlog-count="backlogCount"
+      @copy-example="copyBacklogExample"
+      @copy-plan="copyBacklogPlan"
+      @filter-coverage="coverageFilter = $event"
+      @focus-command="focusCommand"
+    />
 
     <CliParityFilters
       v-model:query="query"
@@ -398,7 +242,7 @@ onMounted(() => {
       </p>
       <div class="mt-2 grid gap-1 text-xs leading-5">
         <p>{{ t('developer.cliParity.errorHintTitle') }}</p>
-        <code class="error-command">hermes --help</code>
+        <code class="error-command w-fit rounded border border-[color-mix(in_srgb,var(--color-warning)_36%,var(--border))] bg-[var(--bg-card)] px-[7px] py-0.5 text-[var(--text-1)]">hermes --help</code>
         <p>{{ t('developer.cliParity.errorHintShell') }}</p>
         <p>{{ t('developer.cliParity.errorHintBin') }}</p>
       </div>
@@ -445,125 +289,3 @@ onMounted(() => {
     </section>
   </div>
 </template>
-
-<style scoped>
-.cli-count {
-  min-width: 72px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  padding: 9px 10px;
-}
-
-.cli-count strong,
-.cli-count span {
-  display: block;
-}
-
-.cli-count strong {
-  color: var(--text-1);
-  font-size: 18px;
-  line-height: 1.1;
-}
-
-.cli-count span {
-  margin-top: 4px;
-  color: var(--text-3);
-  font-size: 11px;
-}
-
-.reload-button {
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--brand-500) 36%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
-  color: var(--brand-600);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 4px 8px;
-}
-
-.reload-button:disabled {
-  opacity: 0.62;
-  cursor: wait;
-}
-
-.completion-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.completion-select {
-  min-width: 132px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  color: var(--text-1);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 4px 8px;
-}
-
-.backlog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.backlog-item {
-  min-width: 0;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  padding: 10px;
-}
-
-.backlog-item code {
-  border-radius: 6px;
-  background: var(--bg-card);
-  color: var(--text-1);
-  font-size: 12px;
-  padding: 3px 7px;
-}
-
-.backlog-item span {
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--brand-500) 36%, var(--border));
-  color: var(--brand-600);
-  font-size: 11px;
-  line-height: 16px;
-  padding: 2px 7px;
-}
-
-.backlog-card-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.backlog-action {
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--brand-500) 34%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 7%, var(--bg-card));
-  color: var(--brand-600);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 5px 8px;
-}
-
-.backlog-action:hover {
-  background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-card));
-}
-
-.error-command {
-  width: fit-content;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--color-warning) 36%, var(--border));
-  background: var(--bg-card);
-  color: var(--text-1);
-  padding: 2px 7px;
-}
-
-</style>

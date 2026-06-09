@@ -63,6 +63,35 @@ export function formatCliParityReport(
   return lines.join('\n');
 }
 
+export function formatCliParityBacklogPlan(
+  commands: CliParityReportItem[],
+  generatedAt: Date = new Date(),
+): string {
+  const backlog = commands.filter(cmd => cmd.coverage !== 'ready');
+  const lines = [
+    '# Hermes CLI Parity Backlog Plan',
+    '',
+    `Generated: ${generatedAt.toISOString()}`,
+    '',
+  ];
+
+  if (backlog.length === 0) {
+    lines.push('No open CLI parity gaps in the selected backlog.');
+    return lines.join('\n');
+  }
+
+  for (const [index, cmd] of backlog.entries()) {
+    lines.push(`${index + 1}. hermes ${cmd.command}`);
+    lines.push(`   - Coverage: ${cmd.coverage}`);
+    lines.push(`   - UI target: ${cmd.route ?? 'No UI'}`);
+    lines.push(`   - Example: ${cmd.example}`);
+    lines.push(`   - Next action: inspect \`hermes ${cmd.command} --help\`, preserve CLI semantics, then add or improve the UI entry.`);
+    lines.push(`   - Notes: ${cmd.displayDescription ?? cmd.description}`);
+  }
+
+  return lines.join('\n');
+}
+
 function escapeMarkdownTableCell(value: string): string {
   return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
