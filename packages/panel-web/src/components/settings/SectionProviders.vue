@@ -10,6 +10,7 @@ import { useProvidersStore, type ProviderInfo } from '@/stores/providers';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import ProviderAuthCommands from './ProviderAuthCommands.vue';
+import ProviderModelDiscovery from './ProviderModelDiscovery.vue';
 import ProviderSetupWizard from './ProviderSetupWizard.vue';
 
 const { t } = useI18n();
@@ -140,6 +141,7 @@ function isCurrentProvider(p: ProviderInfo): boolean {
 
     <template v-else>
       <ProviderSetupWizard class="mt-4" @add-credential="startAddFor" />
+      <ProviderModelDiscovery class="mt-4" />
 
       <section class="mt-4 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
