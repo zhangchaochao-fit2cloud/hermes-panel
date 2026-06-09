@@ -1100,6 +1100,23 @@ export default {
     loading: 'Loading...',
     empty: 'No data',
     status: { healthy: 'Healthy', offline: 'Offline', connecting: 'Connecting' },
+    sections: {
+      operations: {
+        eyebrow: 'Run insights',
+        title: 'What happened after the AI work started',
+        desc: 'Usage, cost, cache, model mix, and tool activity live below the action area so they inform the next run without becoming the starting point.',
+      },
+      capabilities: {
+        eyebrow: 'Capability map',
+        title: 'Choose the right Hermes surface',
+        desc: 'Compare direct chat, role rooms, automations, channels, developer diagnostics, and CLI parity from one lower-priority directory.',
+      },
+      history: {
+        eyebrow: 'Recent work',
+        title: 'Resume where you left off',
+        desc: 'The latest sessions stay available after setup and insight cards, keeping resume flow close without competing with the first task.',
+      },
+    },
     workbench: {
       eyebrow: 'AI command center',
       title: 'Start with the AI task, not the setup page',

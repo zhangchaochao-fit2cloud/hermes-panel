@@ -1100,6 +1100,23 @@ export default {
     loading: '加载中...',
     empty: '暂无数据',
     status: { healthy: '健康', offline: '离线', connecting: '连接中' },
+    sections: {
+      operations: {
+        eyebrow: '运行洞察',
+        title: 'AI 任务开始后发生了什么',
+        desc: '用量、成本、缓存、模型占比和工具事件下沉到操作区之后，辅助下一次执行，不再抢占首页起点。',
+      },
+      capabilities: {
+        eyebrow: '能力地图',
+        title: '选择合适的 Hermes 使用面',
+        desc: '把直接对话、角色房间、自动任务、渠道、开发诊断和 CLI 覆盖集中在较低优先级目录里对比。',
+      },
+      history: {
+        eyebrow: '最近工作',
+        title: '从上次停下的位置继续',
+        desc: '最近会话放在初始化和洞察之后，保留恢复入口，但不和第一次任务竞争。',
+      },
+    },
     workbench: {
       eyebrow: 'AI 指令中心',
       title: '先开始 AI 任务，而不是停在初始化页',

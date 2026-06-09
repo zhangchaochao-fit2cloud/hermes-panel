@@ -54,7 +54,7 @@
 }
 
 .workbench-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .workbench-action,
@@ -81,8 +81,11 @@
 }
 
 .workbench-action.is-primary {
+  grid-column: span 2;
   border-color: color-mix(in srgb, var(--brand-500) 52%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-elevate));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-500) 16%, transparent), transparent 54%),
+    color-mix(in srgb, var(--brand-500) 10%, var(--bg-elevate));
 }
 
 .workbench-action.is-agent {
@@ -222,5 +225,9 @@
   .workbench-lower,
   .mode-grid {
     grid-template-columns: 1fr;
+  }
+
+  .workbench-action.is-primary {
+    grid-column: auto;
   }
 }

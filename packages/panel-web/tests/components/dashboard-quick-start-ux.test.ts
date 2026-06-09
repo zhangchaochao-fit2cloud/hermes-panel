@@ -19,7 +19,12 @@ describe('Dashboard quick start UX', () => {
     const zh = readFileSync(zhPath, 'utf8');
 
     expect(dashboard).toContain('DashboardWorkbenchHub');
+    expect(dashboard).toContain('DashboardQuickStart');
     expect(dashboard.indexOf('<DashboardWorkbenchHub')).toBeLessThan(dashboard.indexOf('<StatCard'));
+    expect(dashboard.indexOf('<DashboardQuickStart')).toBeLessThan(dashboard.indexOf('<StatCard'));
+    expect(dashboard).toContain("dashboard.sections.operations.title");
+    expect(dashboard).toContain("dashboard.sections.capabilities.title");
+    expect(dashboard).toContain("dashboard.sections.history.title");
     expect(dashboard.indexOf('<CapabilityMap')).toBeGreaterThan(dashboard.indexOf('<OrchestrationCompareCard'));
     expect(workbench).toContain("route: '/chat'");
     expect(workbench).toContain("route: '/settings#providers'");
@@ -46,6 +51,9 @@ describe('Dashboard quick start UX', () => {
     expect(quickStart).toContain('summaryKey');
     expect(en).toContain('AI command center');
     expect(en).toContain('Start with the AI task');
+    expect(en).toContain('Run insights');
+    expect(en).toContain('Choose the right Hermes surface');
+    expect(en).toContain('Resume where you left off');
     expect(en).toContain('Configure free/local model');
     expect(en).toContain('Official CLI parity');
     expect(en).toContain('Fastest path to the first reply');
@@ -55,6 +63,9 @@ describe('Dashboard quick start UX', () => {
     expect(en).toContain('Choose the next action');
     expect(zh).toContain('AI 指令中心');
     expect(zh).toContain('先开始 AI 任务');
+    expect(zh).toContain('运行洞察');
+    expect(zh).toContain('选择合适的 Hermes 使用面');
+    expect(zh).toContain('从上次停下的位置继续');
     expect(zh).toContain('配置免费/本地模型');
     expect(zh).toContain('官方 CLI 覆盖');
     expect(zh).toContain('最快获得第一条回复');

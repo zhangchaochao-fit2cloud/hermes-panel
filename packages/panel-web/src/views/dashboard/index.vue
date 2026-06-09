@@ -19,6 +19,7 @@ import ToolUsageCard from '@/components/dashboard/ToolUsageCard.vue';
 import OrchestrationCompareCard from '@/components/dashboard/OrchestrationCompareCard.vue';
 import CapabilityMap from '@/components/dashboard/CapabilityMap.vue';
 import DashboardWorkbenchHub from '@/components/dashboard/DashboardWorkbenchHub.vue';
+import DashboardQuickStart from '@/components/dashboard/DashboardQuickStart.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
@@ -138,72 +139,148 @@ const todayUsdLabel = computed(() => {
 
 <template>
   <div class="min-h-full bg-[var(--bg-page)]">
-    <div class="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
+    <div class="dashboard-shell mx-auto flex max-w-[1320px] flex-col gap-5 px-4 py-4 sm:gap-7 sm:px-6 sm:py-6">
       <DashboardWorkbenchHub :health="healthTyped" :loading="healthLoading" />
 
-      <!-- Stat cards: 2x2 on mobile (avoid 4 ultra-thin columns), 4x1 from md up. -->
-      <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard
-          :label="t('dashboard.stats.totalSessions')"
-          :value="overall.total_sessions"
-          :loading="overallLoading"
-          accent="#6366f1"
-        />
-        <StatCard
-          :label="t('dashboard.stats.todayTokens')"
-          :value="overall.today_tokens"
-          :loading="overallLoading"
-          :trend="todayUsdLabel"
-          accent="#22d3ee"
-        />
-        <StatCard
-          :label="t('dashboard.stats.totalTokens')"
-          :value="overall.total_tokens"
-          :loading="overallLoading"
-          accent="#a78bfa"
-        />
-        <StatCard
-          :label="t('dashboard.stats.totalMessages')"
-          :value="overall.total_messages"
-          :loading="overallLoading"
-          accent="#34d399"
-        />
-      </section>
+      <DashboardQuickStart :health="healthTyped" :loading="healthLoading" />
 
-      <!-- Persistent usage ledger (today / this month / all time) -->
-      <UsageCard />
+      <section class="dashboard-section" aria-labelledby="dashboard-operations-title">
+        <header class="dashboard-section-header">
+          <p class="dashboard-section-kicker">{{ t('dashboard.sections.operations.eyebrow') }}</p>
+          <h2 id="dashboard-operations-title" class="dashboard-section-title">
+            {{ t('dashboard.sections.operations.title') }}
+          </h2>
+          <p class="dashboard-section-desc">
+            {{ t('dashboard.sections.operations.desc') }}
+          </p>
+        </header>
 
-      <!-- Cost intelligence (proactive savings suggestions) -->
-      <CostIntelligenceCard />
-
-      <!-- Token optimization row (spec §11) + at-a-glance system health -->
-      <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <CacheCard />
-        <MonthlyPaceCard />
-        <SystemHealthCard />
-      </section>
-
-      <!-- Charts: 2:1 on lg, stacked on md -->
-      <section class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div class="lg:col-span-2">
-          <UsageChart :data="daily" :dark="dark" :loading="dailyLoading" />
+        <!-- Stat cards: 2x2 on mobile (avoid 4 ultra-thin columns), 4x1 from md up. -->
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatCard
+            :label="t('dashboard.stats.totalSessions')"
+            :value="overall.total_sessions"
+            :loading="overallLoading"
+            accent="#6366f1"
+          />
+          <StatCard
+            :label="t('dashboard.stats.todayTokens')"
+            :value="overall.today_tokens"
+            :loading="overallLoading"
+            :trend="todayUsdLabel"
+            accent="#22d3ee"
+          />
+          <StatCard
+            :label="t('dashboard.stats.totalTokens')"
+            :value="overall.total_tokens"
+            :loading="overallLoading"
+            accent="#a78bfa"
+          />
+          <StatCard
+            :label="t('dashboard.stats.totalMessages')"
+            :value="overall.total_messages"
+            :loading="overallLoading"
+            accent="#34d399"
+          />
         </div>
-        <div class="lg:col-span-1">
-          <ModelPieChart :data="models" :dark="dark" :loading="modelsLoading" />
+
+        <div class="dashboard-operations-grid">
+          <UsageCard />
+          <CostIntelligenceCard />
         </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <CacheCard />
+          <MonthlyPaceCard />
+          <SystemHealthCard />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div class="lg:col-span-2">
+            <UsageChart :data="daily" :dark="dark" :loading="dailyLoading" />
+          </div>
+          <div class="lg:col-span-1">
+            <ModelPieChart :data="models" :dark="dark" :loading="modelsLoading" />
+          </div>
+        </div>
+
+        <ToolUsageCard />
       </section>
 
-      <!-- Tool usage heatmap -->
-      <ToolUsageCard />
+      <section class="dashboard-section" aria-labelledby="dashboard-capabilities-title">
+        <header class="dashboard-section-header">
+          <p class="dashboard-section-kicker">{{ t('dashboard.sections.capabilities.eyebrow') }}</p>
+          <h2 id="dashboard-capabilities-title" class="dashboard-section-title">
+            {{ t('dashboard.sections.capabilities.title') }}
+          </h2>
+          <p class="dashboard-section-desc">
+            {{ t('dashboard.sections.capabilities.desc') }}
+          </p>
+        </header>
+        <OrchestrationCompareCard />
+        <CapabilityMap />
+      </section>
 
-      <!-- Orchestration comparison -->
-      <OrchestrationCompareCard />
-
-      <!-- Capability directory moved below live operations so the first screen stays action-oriented. -->
-      <CapabilityMap />
-
-      <!-- Recent sessions -->
-      <RecentSessions :sessions="sessions" :loading="sessionsLoading" />
+      <section class="dashboard-section" aria-labelledby="dashboard-history-title">
+        <header class="dashboard-section-header">
+          <p class="dashboard-section-kicker">{{ t('dashboard.sections.history.eyebrow') }}</p>
+          <h2 id="dashboard-history-title" class="dashboard-section-title">
+            {{ t('dashboard.sections.history.title') }}
+          </h2>
+          <p class="dashboard-section-desc">
+            {{ t('dashboard.sections.history.desc') }}
+          </p>
+        </header>
+        <RecentSessions :sessions="sessions" :loading="sessionsLoading" />
+      </section>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-shell {
+  contain: layout style;
+}
+
+.dashboard-section {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-section-header {
+  max-width: 760px;
+}
+
+.dashboard-section-kicker {
+  color: var(--brand-600);
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.dashboard-section-title {
+  margin-top: 4px;
+  color: var(--text-1);
+  font-size: 20px;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.dashboard-section-desc {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dashboard-operations-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-operations-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  }
+}
+</style>
