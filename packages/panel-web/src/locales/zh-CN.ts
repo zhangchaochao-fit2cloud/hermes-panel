@@ -1151,6 +1151,7 @@ export default {
         tools: { title: 'Tools / Skills / MCP', desc: '查看 CLI 暴露的技能、工具和 MCP 服务器。', example: '示例：检查某个 MCP 是否已安装。' },
         models: { title: '模型与供应商', desc: '管理 Hermes 推理供应商和本地凭据。', example: '示例：添加 OpenRouter key 后切换模型。' },
         gateway: { title: '网关与健康检查', desc: '查看 Hermes API、BFF、CLI 和 API key 状态。', example: '示例：网关停止时一键启动并重测。' },
+        cliParity: { title: 'CLI 覆盖清单', desc: '打开从本机 hermes --help 读取的实时命令清单。', example: '示例：查找缺失 UI 入口，并复制官方命令回退提示词。' },
         memory: { title: 'Memory 知识管理', desc: '浏览 Hermes memory 文件并编辑上下文资料。', example: '示例：维护项目偏好和长期记忆。' },
         cron: { title: 'Cron 定时任务', desc: '创建和查看 Hermes 定时任务运行记录。', example: '示例：每天 9 点生成项目日报。' },
         files: { title: 'Files 文件工作台', desc: '用 Monaco 浏览和编辑本地工作区文件。', example: '示例：打开配置文件并保存修改。' },

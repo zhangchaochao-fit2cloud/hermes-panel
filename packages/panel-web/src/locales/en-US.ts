@@ -1151,6 +1151,7 @@ export default {
         tools: { title: 'Tools / Skills / MCP', desc: 'Inspect CLI-exposed skills, tools, and MCP servers.', example: 'Example: check whether a specific MCP server is installed.' },
         models: { title: 'Models & Providers', desc: 'Manage Hermes inference providers and local credentials.', example: 'Example: add an OpenRouter key and switch models.' },
         gateway: { title: 'Gateway & Health', desc: 'Check Hermes API, BFF, CLI, and API key status.', example: 'Example: start the gateway and rerun checks when offline.' },
+        cliParity: { title: 'CLI Coverage Backlog', desc: 'Open the live inventory read from local hermes --help.', example: 'Example: find missing UI targets and copy the official fallback prompt.' },
         memory: { title: 'Memory', desc: 'Browse Hermes memory files and edit durable context.', example: 'Example: maintain project preferences and long-term memory.' },
         cron: { title: 'Cron Jobs', desc: 'Create and review scheduled Hermes task runs.', example: 'Example: generate a project report every day at 9.' },
         files: { title: 'Files Workbench', desc: 'Browse and edit local workspace files with Monaco.', example: 'Example: open a config file and save a small change.' },

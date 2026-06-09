@@ -28,6 +28,7 @@ const sections: CapabilitySection[] = [
       { key: 'tools', state: 'ready', route: '/tools' },
       { key: 'models', state: 'ready', route: '/settings#providers' },
       { key: 'gateway', state: 'ready', route: '/settings#system-health' },
+      { key: 'cliParity', state: 'ready', route: '/developer#cli-parity' },
       { key: 'memory', state: 'ready', route: '/memory' },
       { key: 'cron', state: 'ready', route: '/cron' },
       { key: 'files', state: 'ready', route: '/files' },
