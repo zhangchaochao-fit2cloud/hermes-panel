@@ -1056,6 +1056,71 @@ export default {
     loading: '加载中...',
     empty: '暂无数据',
     status: { healthy: '健康', offline: '离线', connecting: '连接中' },
+    workbench: {
+      eyebrow: 'AI 指令中心',
+      title: '先开始 AI 任务，而不是停在初始化页',
+      desc: 'Hermes Panel 默认展示工作台：先选择对话方式，需要时配置免费/本地模型，同时让官方 CLI 覆盖状态始终可见，初始化不再占满整个 Dashboard。',
+      state: {
+        ready: '就绪',
+        action: '处理',
+        checking: '检查中',
+      },
+      actions: {
+        chat: {
+          title: '开始 AI 对话',
+          desc: '打开新的 Hermes run，模型、工具和执行模式控制都在输入区附近。',
+          cta: '新建对话',
+          prompt: '使用当前 Hermes 模型，帮我用一条简短实用的回复验证这个面板配置是否可用。',
+        },
+        freeModel: {
+          title: '配置免费/本地模型',
+          desc: '先设置供应商、发现运行时模型并选择 model.default，再决定是否消耗云端额度。',
+          cta: '打开模型配置',
+        },
+        goal: {
+          title: '用 Agent 执行目标',
+          desc: '较长任务进入目标引擎，获得计划、检查点和多 Agent 跟进。',
+          cta: '打开目标',
+        },
+      },
+      readiness: {
+        title: '初始化保持可发现',
+        subtitle: '面板镜像 Hermes CLI 状态，不把配置入口藏在图表后面。',
+        cli: {
+          title: 'Hermes 运行时',
+          desc: '开始任务前检查 API、网关和 CLI 健康。',
+        },
+        model: {
+          title: '模型选择',
+          desc: '配置供应商凭据、免费/本地端点和运行时发现。',
+        },
+        parity: {
+          title: '官方 CLI 覆盖',
+          desc: '查看已支持、受保护和仍缺失的 Hermes 命令。',
+        },
+      },
+      modes: {
+        title: '选择和 AI 对话的方式',
+        subtitle: '大部分工作从这四个入口开始。',
+        direct: {
+          title: '直接对话',
+          desc: '单任务、单流式响应，工具事件可见。',
+          prompt: '开始一个直接 Hermes 对话。先总结当前启用的模型和工具，然后等待我的任务。',
+        },
+        team: {
+          title: '角色群聊',
+          desc: '让架构、前端、后端和审查角色一起协作。',
+        },
+        automation: {
+          title: '定时运行',
+          desc: '让 Hermes 通过 Cron 重复执行提示词，并查看运行历史。',
+        },
+        developer: {
+          title: 'CLI 覆盖',
+          desc: '打开命令清单，复制官方回退交接命令。',
+        },
+      },
+    },
     quickStart: {
       eyebrow: '快速开始',
       title: '选择下一步操作',

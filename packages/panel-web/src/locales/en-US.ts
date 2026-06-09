@@ -1056,6 +1056,71 @@ export default {
     loading: 'Loading...',
     empty: 'No data',
     status: { healthy: 'Healthy', offline: 'Offline', connecting: 'Connecting' },
+    workbench: {
+      eyebrow: 'AI command center',
+      title: 'Start with the AI task, not the setup page',
+      desc: 'Hermes Panel now opens as a workbench: pick a conversation style, configure a free/local model when needed, and keep official CLI parity visible without turning onboarding into the whole dashboard.',
+      state: {
+        ready: 'Ready',
+        action: 'Action',
+        checking: 'Checking',
+      },
+      actions: {
+        chat: {
+          title: 'Start AI chat',
+          desc: 'Open a fresh Hermes run with the model, tools, and execution mode controls already in the composer.',
+          cta: 'New chat',
+          prompt: 'Use the current Hermes model and help me validate this panel setup with one short, practical reply.',
+        },
+        freeModel: {
+          title: 'Configure free/local model',
+          desc: 'Set the provider, discover runtime models, and choose model.default before spending cloud credits.',
+          cta: 'Open model setup',
+        },
+        goal: {
+          title: 'Run a goal with agents',
+          desc: 'Use the goal engine for longer work that needs planning, checkpoints, and multi-agent follow-through.',
+          cta: 'Open goals',
+        },
+      },
+      readiness: {
+        title: 'Setup stays discoverable',
+        subtitle: 'The panel mirrors Hermes CLI status instead of hiding setup behind charts.',
+        cli: {
+          title: 'Hermes runtime',
+          desc: 'Check API, gateway, and CLI health before a run.',
+        },
+        model: {
+          title: 'Model selection',
+          desc: 'Configure provider credentials, free/local endpoints, and runtime discovery.',
+        },
+        parity: {
+          title: 'Official CLI parity',
+          desc: 'Review supported, guarded, and missing Hermes commands.',
+        },
+      },
+      modes: {
+        title: 'Choose how to talk to AI',
+        subtitle: 'Most work starts in one of these four routes.',
+        direct: {
+          title: 'Direct chat',
+          desc: 'One task, one stream, with tool events visible.',
+          prompt: 'Start a direct Hermes chat. First summarize what model and tools are active, then wait for my task.',
+        },
+        team: {
+          title: 'Role room',
+          desc: 'Bring architect, frontend, backend, and review roles together.',
+        },
+        automation: {
+          title: 'Scheduled run',
+          desc: 'Let Hermes repeat a prompt through Cron and review the run history.',
+        },
+        developer: {
+          title: 'CLI coverage',
+          desc: 'Open the command inventory and copy official fallback handoffs.',
+        },
+      },
+    },
     quickStart: {
       eyebrow: 'Quick start',
       title: 'Choose the next action',

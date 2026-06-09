@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n';
 import type { HealthStatus, SessionSummary } from '@hermes-panel/shared';
 import { useSystemStore } from '@/stores/system';
 import { bffFetch, BffApiError } from '@/api/bff';
-import WelcomeHeader from '@/components/dashboard/WelcomeHeader.vue';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import UsageChart, { type DailyTokenPoint } from '@/components/dashboard/UsageChart.vue';
 import ModelPieChart, { type ModelStatPoint } from '@/components/dashboard/ModelPieChart.vue';
@@ -19,7 +18,7 @@ import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
 import ToolUsageCard from '@/components/dashboard/ToolUsageCard.vue';
 import OrchestrationCompareCard from '@/components/dashboard/OrchestrationCompareCard.vue';
 import CapabilityMap from '@/components/dashboard/CapabilityMap.vue';
-import DashboardQuickStart from '@/components/dashboard/DashboardQuickStart.vue';
+import DashboardWorkbenchHub from '@/components/dashboard/DashboardWorkbenchHub.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
@@ -140,11 +139,7 @@ const todayUsdLabel = computed(() => {
 <template>
   <div class="min-h-full bg-[var(--bg-page)]">
     <div class="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
-      <WelcomeHeader :health="healthTyped" :loading="healthLoading" />
-
-      <DashboardQuickStart :health="healthTyped" :loading="healthLoading" />
-
-      <CapabilityMap />
+      <DashboardWorkbenchHub :health="healthTyped" :loading="healthLoading" />
 
       <!-- Stat cards: 2x2 on mobile (avoid 4 ultra-thin columns), 4x1 from md up. -->
       <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -203,6 +198,9 @@ const todayUsdLabel = computed(() => {
 
       <!-- Orchestration comparison -->
       <OrchestrationCompareCard />
+
+      <!-- Capability directory moved below live operations so the first screen stays action-oriented. -->
+      <CapabilityMap />
 
       <!-- Recent sessions -->
       <RecentSessions :sessions="sessions" :loading="sessionsLoading" />

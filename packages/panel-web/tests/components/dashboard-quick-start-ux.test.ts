@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const dashboardPath = join(process.cwd(), 'src/views/dashboard/index.vue');
 const quickStartPath = join(process.cwd(), 'src/components/dashboard/DashboardQuickStart.vue');
+const workbenchHubPath = join(process.cwd(), 'src/components/dashboard/DashboardWorkbenchHub.vue');
 const firstRunPath = join(process.cwd(), 'src/components/dashboard/DashboardFirstRunPath.vue');
 const enPath = join(process.cwd(), 'src/locales/en-US.ts');
 const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
@@ -12,12 +13,23 @@ describe('Dashboard quick start UX', () => {
   it('puts task-oriented next actions at the top of the dashboard', () => {
     const dashboard = readFileSync(dashboardPath, 'utf8');
     const quickStart = readFileSync(quickStartPath, 'utf8');
+    const workbench = readFileSync(workbenchHubPath, 'utf8');
     const firstRun = readFileSync(firstRunPath, 'utf8');
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
-    expect(dashboard).toContain('DashboardQuickStart');
-    expect(dashboard.indexOf('<DashboardQuickStart')).toBeLessThan(dashboard.indexOf('<CapabilityMap'));
+    expect(dashboard).toContain('DashboardWorkbenchHub');
+    expect(dashboard.indexOf('<DashboardWorkbenchHub')).toBeLessThan(dashboard.indexOf('<StatCard'));
+    expect(dashboard.indexOf('<CapabilityMap')).toBeGreaterThan(dashboard.indexOf('<OrchestrationCompareCard'));
+    expect(workbench).toContain("route: '/chat'");
+    expect(workbench).toContain("route: '/settings#providers'");
+    expect(workbench).toContain("route: '/goals'");
+    expect(workbench).toContain("route: '/chat-room'");
+    expect(workbench).toContain("route: '/cron'");
+    expect(workbench).toContain("route: '/developer#cli-parity'");
+    expect(workbench).toContain("localStorage.setItem('panel.chat.draft.new'");
+    expect(workbench).toContain("draftKey: 'dashboard.workbench.actions.chat.prompt'");
+    expect(workbench).toContain("draftKey: 'dashboard.workbench.modes.direct.prompt'");
     expect(quickStart).toContain("route: '/settings#providers'");
     expect(quickStart).toContain("route: '/chat'");
     expect(quickStart).toContain("route: '/chat-room'");
@@ -32,11 +44,19 @@ describe('Dashboard quick start UX', () => {
     expect(firstRun).toContain('first-run-path');
     expect(firstRun).toContain('select: [action: FirstRunAction]');
     expect(quickStart).toContain('summaryKey');
+    expect(en).toContain('AI command center');
+    expect(en).toContain('Start with the AI task');
+    expect(en).toContain('Configure free/local model');
+    expect(en).toContain('Official CLI parity');
     expect(en).toContain('Fastest path to the first reply');
     expect(en).toContain('Try free local');
     expect(en).toContain('Configure cloud model');
     expect(en).toContain('Choose conversation');
     expect(en).toContain('Choose the next action');
+    expect(zh).toContain('AI 指令中心');
+    expect(zh).toContain('先开始 AI 任务');
+    expect(zh).toContain('配置免费/本地模型');
+    expect(zh).toContain('官方 CLI 覆盖');
     expect(zh).toContain('最快获得第一条回复');
     expect(zh).toContain('试用免费本地');
     expect(zh).toContain('配置云端模型');
