@@ -284,6 +284,22 @@ export default {
       modelCheckPrompt: 'Check whether my Hermes model setup is ready. First verify the active model and provider, then suggest the fastest free/local fallback if credentials are missing, and end with one safe test prompt.',
       pathTitle: 'Fastest path to first reply',
       pathDesc: 'Start free/local when possible, configure only when needed, then run one safe model check.',
+      conversationTitle: 'Choose how to talk',
+      conversationDesc: 'Use direct Chat for one agent, Chat Room for role collaboration, or Channels for external apps.',
+      conversation: {
+        direct: {
+          title: 'Direct Chat',
+          desc: 'One agent, current model, fastest for setup checks and focused tasks.',
+        },
+        room: {
+          title: 'Chat Room',
+          desc: 'Mention roles and let multiple agents collaborate in one room.',
+        },
+        channel: {
+          title: 'External channel',
+          desc: 'Bind WhatsApp, WeChat, Slack, Feishu, or another gateway channel.',
+        },
+      },
       runtimeTitle: 'Available from current gateway',
       runtimeLoading: 'Reading runtime models from Hermes...',
       runtimeReady: '{n} runtime models are available. Pick one to set model.default without changing provider credentials.',

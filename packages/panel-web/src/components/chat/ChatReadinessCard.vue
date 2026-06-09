@@ -6,16 +6,23 @@ import { storeToRefs } from 'pinia';
 import { NButton, NTag, useMessage } from 'naive-ui';
 import { useProvidersStore, type DiscoveredModel } from '@/stores/providers';
 import { useExecutionMode } from '@/composables/useExecutionMode';
+import ChatConversationGuide from './ChatConversationGuide.vue';
 
 const props = defineProps<{ chatModel: string }>();
 const emit = defineEmits<{ (e: 'pick-prompt', prompt: string): void }>();
+
+interface ConversationGuideAction {
+  key: string;
+  route?: string;
+  promptKey?: string;
+}
 
 const { t } = useI18n();
 const router = useRouter();
 const message = useMessage();
 const providersStore = useProvidersStore();
 const {
-  model, providers, initialized, loading, error, activeCredentialLabel,
+  model, providers, initialized, activeCredentialLabel,
   discoveredModels, discoveryLoading, discoveryError,
 } = storeToRefs(providersStore);
 const { modeLabel } = useExecutionMode();
@@ -25,7 +32,6 @@ onMounted(() => {
   void providersStore.discoverModels();
 });
 
-const configuredProviderCount = computed(() => providers.value.length);
 const currentModelName = computed(() => model.value?.default || props.chatModel || t('model.switcher.unset'));
 const currentProviderName = computed(() => model.value?.provider || t('chat.readiness.providerUnset'));
 const currentModelDiscovered = computed(() => !!model.value?.default && discoveredModels.value.some(item => item.id === model.value?.default));
@@ -95,6 +101,12 @@ const steps = computed(() => [
   },
 ]);
 
+const conversationActions: ConversationGuideAction[] = [
+  { key: 'direct', promptKey: 'chat.readiness.modelCheckPrompt' },
+  { key: 'room', route: '/chat-room' },
+  { key: 'channel', route: '/channels' },
+];
+
 function openProviders(): void {
   void router.push({ path: '/settings', hash: '#providers' });
 }
@@ -105,6 +117,14 @@ function useLocalPrompt(): void {
 
 function useModelCheckPrompt(): void {
   emit('pick-prompt', t('chat.readiness.modelCheckPrompt'));
+}
+
+function selectConversation(action: ConversationGuideAction): void {
+  if (action.promptKey) {
+    emit('pick-prompt', t(action.promptKey));
+    return;
+  }
+  if (action.route) void router.push(action.route);
 }
 
 async function useRuntimeModel(item: DiscoveredModel): Promise<void> {
@@ -155,6 +175,8 @@ async function useRuntimeModel(item: DiscoveredModel): Promise<void> {
         </p>
       </div>
     </div>
+
+    <ChatConversationGuide :actions="conversationActions" @select="selectConversation" />
 
     <div class="mt-4 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] p-3">
       <div class="flex items-center justify-between gap-3">
@@ -214,22 +236,6 @@ async function useRuntimeModel(item: DiscoveredModel): Promise<void> {
       <p v-else class="mt-3 text-[11px] leading-4 text-[var(--text-3)]">{{ t('chat.readiness.runtimeHint') }}</p>
     </div>
 
-    <div class="readiness-actions mt-4 flex flex-wrap items-center gap-2">
-      <NButton class="readiness-action" size="small" type="primary" ghost @click="openProviders">
-        {{ t('chat.readiness.configureModel') }}
-      </NButton>
-      <NButton class="readiness-action" size="small" quaternary @click="useLocalPrompt">
-        {{ t('chat.readiness.tryLocal') }}
-      </NButton>
-      <span v-if="loading" class="text-xs text-[var(--text-3)]">{{ t('common.loading') }}</span>
-      <span v-else-if="error" class="readiness-warning text-xs text-[var(--color-warning)]">
-        {{ t('chat.readiness.stateWarning', { error }) }}
-      </span>
-      <span v-else class="text-xs text-[var(--text-3)]">
-        {{ t('chat.readiness.providersSeen', { n: configuredProviderCount }) }}
-      </span>
-    </div>
-
     <p v-if="activeCredentialLabel" class="mt-3 truncate text-[11px] text-[var(--text-3)]">
       {{ t('chat.readiness.credential', { credential: activeCredentialLabel }) }}
     </p>
@@ -279,19 +285,6 @@ async function useRuntimeModel(item: DiscoveredModel): Promise<void> {
 }
 
 @media (max-width: 520px) {
-  .readiness-actions {
-    align-items: stretch;
-  }
-
-  .readiness-action {
-    max-width: 100%;
-  }
-
-  .readiness-warning {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
   .readiness-path-step {
     gap: 8px;
   }

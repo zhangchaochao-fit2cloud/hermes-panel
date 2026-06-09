@@ -284,6 +284,22 @@ export default {
       modelCheckPrompt: '请检查我的 Hermes 模型配置是否就绪。先确认当前模型和供应商；如果缺少凭据，请建议最快的免费/本地回退方案；最后给我一条安全的测试提示词。',
       pathTitle: '最快开始回复路径',
       pathDesc: '能用免费/本地就先开始，需要时再配置供应商，最后用一条安全提示词检查模型。',
+      conversationTitle: '选择对话方式',
+      conversationDesc: '单 Agent 用普通 Chat，多角色协作用群聊房间，外部应用用渠道入口。',
+      conversation: {
+        direct: {
+          title: '普通 Chat',
+          desc: '单 Agent、当前模型，最适合配置检查和聚焦任务。',
+        },
+        room: {
+          title: '群聊房间',
+          desc: '用 @ 召唤角色，让多个 Agent 在同一房间协作。',
+        },
+        channel: {
+          title: '外部渠道',
+          desc: '绑定 WhatsApp、微信、Slack、飞书或其他 Gateway 渠道。',
+        },
+      },
       runtimeTitle: '当前网关可用模型',
       runtimeLoading: '正在从 Hermes 读取运行时模型...',
       runtimeReady: '当前可用 {n} 个运行时模型。选择后只设置 model.default，不改供应商凭据。',
