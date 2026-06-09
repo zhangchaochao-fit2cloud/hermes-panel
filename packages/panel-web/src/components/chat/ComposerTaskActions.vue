@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import {
+  composerTaskActionGroups,
+  composerTaskActions,
+  isInlineComposerTaskAction,
+  type ComposerTaskAction,
+  type ComposerTaskActionGroup,
+} from '@/data/task-capability-actions';
 
-export type ComposerTaskAction = 'goal' | 'cron' | 'room' | 'tools' | 'model';
+export type { ComposerTaskAction };
 
 export interface ComposerTaskActionPayload {
   action: ComposerTaskAction;
   prompt: string;
-}
-
-interface ActionItem {
-  key: ComposerTaskAction;
-  icon: string;
 }
 
 const props = defineProps<{
@@ -26,20 +28,20 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const open = ref(false);
 
-const actions: ActionItem[] = [
-  { key: 'goal', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z' },
-  { key: 'cron', icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2' },
-  { key: 'room', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 10v-2a4 4 0 0 0-3-3.87' },
-  { key: 'tools', icon: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z' },
-  { key: 'model', icon: 'M12 3v18M3 8h18M5 16h14M7 3l-2 5 2 5m10-10 2 5-2 5' },
-];
-
 const hasDraft = computed(() => props.draft.trim().length > 0);
+const groupedActions = computed(() =>
+  composerTaskActionGroups
+    .map((group: ComposerTaskActionGroup) => ({
+      group,
+      actions: composerTaskActions.filter(action => action.group === group),
+    }))
+    .filter(section => section.actions.length > 0),
+);
 
 function promptFor(action: ComposerTaskAction): string {
   const base = props.draft.trim() || t(`chat.composer.taskActions.examples.${action}`);
-  if (action === 'tools') {
-    return t('chat.composer.taskActions.toolPrompt', { prompt: base });
+  if (isInlineComposerTaskAction(action)) {
+    return t(`chat.composer.taskActions.prompts.${action}`, { prompt: base });
   }
   return base;
 }
@@ -69,25 +71,36 @@ function select(action: ComposerTaskAction): void {
     </button>
 
     <div v-if="open" class="task-actions-menu" role="menu">
-      <p class="task-actions-heading">{{ t('chat.composer.taskActions.heading') }}</p>
-      <button
-        v-for="action in actions"
-        :key="action.key"
-        type="button"
-        class="task-action-row"
-        role="menuitem"
-        @click="select(action.key)"
+      <header class="task-actions-header">
+        <p class="task-actions-heading">{{ t('chat.composer.taskActions.heading') }}</p>
+        <p class="task-actions-intro">{{ t('chat.composer.taskActions.intro') }}</p>
+      </header>
+
+      <section
+        v-for="section in groupedActions"
+        :key="section.group"
+        class="task-actions-section"
       >
-        <span class="task-action-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path :d="action.icon" />
-          </svg>
-        </span>
-        <span class="min-w-0">
-          <span class="task-action-title">{{ t(`chat.composer.taskActions.${action.key}.title`) }}</span>
-          <span class="task-action-desc">{{ t(`chat.composer.taskActions.${action.key}.desc`) }}</span>
-        </span>
-      </button>
+        <p class="task-actions-group">{{ t(`chat.composer.taskActions.groups.${section.group}`) }}</p>
+        <button
+          v-for="action in section.actions"
+          :key="action.key"
+          type="button"
+          class="task-action-row"
+          role="menuitem"
+          @click="select(action.key)"
+        >
+          <span class="task-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path :d="action.icon" />
+            </svg>
+          </span>
+          <span class="min-w-0">
+            <span class="task-action-title">{{ t(`chat.composer.taskActions.${action.key}.title`) }}</span>
+            <span class="task-action-desc">{{ t(`chat.composer.taskActions.${action.key}.desc`) }}</span>
+          </span>
+        </button>
+      </section>
     </div>
   </div>
 </template>
@@ -129,7 +142,9 @@ function select(action: ComposerTaskAction): void {
   bottom: calc(100% + 8px);
   left: 0;
   z-index: 30;
-  width: min(330px, 86vw);
+  width: min(420px, 90vw);
+  max-height: min(620px, 72vh);
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-card);
@@ -137,11 +152,34 @@ function select(action: ComposerTaskAction): void {
   padding: 8px;
 }
 
+.task-actions-header {
+  padding: 3px 7px 8px;
+}
+
 .task-actions-heading {
-  padding: 4px 7px 7px;
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.task-actions-intro {
+  margin-top: 3px;
   color: var(--text-3);
   font-size: 11px;
-  font-weight: 700;
+  line-height: 1.45;
+}
+
+.task-actions-section + .task-actions-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.task-actions-group {
+  padding: 0 7px 6px;
+  color: var(--brand-600);
+  font-size: 11px;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
@@ -194,5 +232,16 @@ function select(action: ComposerTaskAction): void {
   color: var(--text-3);
   font-size: 12px;
   line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .task-actions-menu {
+    position: fixed;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+    left: 12px;
+    width: auto;
+    max-height: min(620px, calc(100vh - 136px));
+  }
 }
 </style>

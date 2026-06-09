@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const taskActionsPath = join(process.cwd(), 'src/components/chat/ComposerTaskActions.vue');
 const taskAdvisorPath = join(process.cwd(), 'src/components/chat/ComposerTaskAdvisor.vue');
+const taskCapabilityActionsPath = join(process.cwd(), 'src/data/task-capability-actions.ts');
 const composerPath = join(process.cwd(), 'src/components/chat/Composer.vue');
 const chatPath = join(process.cwd(), 'src/views/chat/index.vue');
 const goalsPath = join(process.cwd(), 'src/views/goals/index.vue');
@@ -16,6 +17,7 @@ describe('composer task actions UX', () => {
   it('moves advanced capabilities into the active chat task flow', () => {
     const taskActions = readFileSync(taskActionsPath, 'utf8');
     const taskAdvisor = readFileSync(taskAdvisorPath, 'utf8');
+    const taskCapabilityActions = readFileSync(taskCapabilityActionsPath, 'utf8');
     const composer = readFileSync(composerPath, 'utf8');
     const chat = readFileSync(chatPath, 'utf8');
     const goals = readFileSync(goalsPath, 'utf8');
@@ -24,25 +26,31 @@ describe('composer task actions UX', () => {
     const en = readFileSync(enPath, 'utf8');
     const zh = readFileSync(zhPath, 'utf8');
 
-    expect(taskActions).toContain("export type ComposerTaskAction = 'goal' | 'cron' | 'room' | 'tools' | 'model'");
-    expect(taskActions).toContain("{ key: 'goal'");
-    expect(taskActions).toContain("{ key: 'cron'");
-    expect(taskActions).toContain("{ key: 'room'");
-    expect(taskActions).toContain("{ key: 'tools'");
-    expect(taskActions).toContain("{ key: 'model'");
+    expect(taskCapabilityActions).toContain("export type ComposerTaskAction =");
+    for (const action of ['goal', 'cron', 'room', 'tools', 'model', 'memory', 'cost', 'lessons', 'sandbox', 'audit', 'proactive', 'intent']) {
+      expect(taskCapabilityActions).toContain(`| '${action}'`);
+      expect(taskCapabilityActions).toContain(`key: '${action}'`);
+      expect(zh).toContain(`${action}:`);
+      expect(en).toContain(`${action}:`);
+    }
+    expect(taskCapabilityActions).toContain("export const composerTaskActionGroups");
+    expect(taskCapabilityActions).toContain("behavior: 'inline'");
+    expect(taskCapabilityActions).toContain("behavior: 'pending'");
+    expect(taskCapabilityActions).toContain("behavior: 'route'");
+    expect(taskCapabilityActions).toContain('isInlineComposerTaskAction');
+    expect(taskActions).toContain('composerTaskActionGroups');
+    expect(taskActions).toContain('groupedActions');
+    expect(taskActions).toContain('chat.composer.taskActions.groups.${section.group}');
+    expect(taskActions).toContain('chat.composer.taskActions.prompts.${action}');
     expect(taskAdvisor).toContain('ComposerTaskActionPayload');
+    expect(taskAdvisor).toContain('composerTaskActions');
+    expect(taskAdvisor).toContain('action.keywords.test(text)');
     expect(taskAdvisor).toContain('task-advisor');
-    expect(taskAdvisor).toContain("add('model', 100)");
-    expect(taskAdvisor).toContain("add('cron', 92)");
-    expect(taskAdvisor).toContain("add('goal', 84)");
-    expect(taskAdvisor).toContain("add('room', 76)");
-    expect(taskAdvisor).toContain("add('tools', 68)");
     expect(taskActions).toContain('chat.composer.taskActions.${action.key}.title');
     expect(taskActions).toContain('chat.composer.taskActions.${action.key}.desc');
-    expect(taskActions).toContain('chat.composer.taskActions.toolPrompt');
     expect(composer).toContain('ComposerTaskActions');
     expect(composer).toContain('ComposerTaskAdvisor');
-    expect(composer).toContain("payload.action === 'tools'");
+    expect(composer).toContain('isInlineComposerTaskAction(payload.action)');
     expect(composer).toContain("emit('taskAction', payload)");
     expect(chat).toContain("import { useTaskDraft }");
     expect(chat).toContain("openPendingTask('goal', payload.prompt)");
@@ -62,19 +70,34 @@ describe('composer task actions UX', () => {
     expect(room).toContain('create-modal-draft');
     expect(room).toContain("t('chatRoom.pendingDraftLabel')");
 
-    expect(zh).toContain('让能力参与当前任务');
+    expect(zh).toContain('这次任务要怎么做');
     expect(zh).toContain('设为长线目标');
     expect(zh).toContain('安排定时执行');
     expect(zh).toContain('交给角色群聊');
-    expect(zh).toContain('使用工具与记忆');
+    expect(zh).toContain('使用工具与 MCP');
     expect(zh).toContain('配置免费或本地模型');
+    expect(zh).toContain('先控制成本');
+    expect(zh).toContain('带上长期记忆');
+    expect(zh).toContain('参考经验库');
+    expect(zh).toContain('按沙箱任务处理');
+    expect(zh).toContain('先做审计检查');
+    expect(zh).toContain('主动发现风险');
+    expect(zh).toContain('判断我该怎么用');
     expect(zh).toContain('建议下一步');
     expect(zh).toContain('待发送任务');
-    expect(en).toContain('Use capabilities in this task');
+    expect(en).toContain('How should Hermes handle this?');
     expect(en).toContain('Set as long-running goal');
     expect(en).toContain('Schedule recurring run');
     expect(en).toContain('Send to role room');
     expect(en).toContain('Configure a free or local model');
+    expect(en).toContain('Use tools and MCP');
+    expect(en).toContain('Control cost first');
+    expect(en).toContain('Include long-term memory');
+    expect(en).toContain('Reference saved lessons');
+    expect(en).toContain('Treat as sandboxed work');
+    expect(en).toContain('Audit before continuing');
+    expect(en).toContain('Find risks proactively');
+    expect(en).toContain('Tell me what to use');
     expect(en).toContain('Suggested next step');
     expect(en).toContain('Task ready to send');
   });

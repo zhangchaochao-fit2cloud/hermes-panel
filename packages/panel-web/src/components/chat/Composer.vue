@@ -10,6 +10,7 @@ import ComposerTaskActions, { type ComposerTaskActionPayload } from './ComposerT
 import ComposerTaskAdvisor from './ComposerTaskAdvisor.vue';
 import { useExecutionMode } from '@/composables/useExecutionMode';
 import { useSmartSuggestion } from '@/composables/useSmartSuggestion';
+import { isInlineComposerTaskAction } from '@/data/task-capability-actions';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
 import { useSessionStore } from '@/stores/session';
 import { useWorkspacesStore } from '@/stores/workspaces';
@@ -324,7 +325,7 @@ function openFilePicker(): void {
 }
 
 function onTaskAction(payload: ComposerTaskActionPayload): void {
-  if (payload.action === 'tools') {
+  if (isInlineComposerTaskAction(payload.action)) {
     text.value = payload.prompt;
     focus();
     return;

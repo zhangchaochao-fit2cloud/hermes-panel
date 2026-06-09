@@ -480,12 +480,27 @@ export default {
       sendHint: 'to send',
       attach: 'Add files',
       taskActions: {
-        title: 'Turn this task into a goal, schedule, or role room',
-        button: 'Task',
-        heading: 'Use capabilities in this task',
+        title: 'Add Hermes capability to this task',
+        button: 'Capability',
+        heading: 'How should Hermes handle this?',
+        intro: 'Pick an option to move the current draft into the right workflow, or add tools, memory, audit, and safety context inside chat.',
+        groups: {
+          setup: 'Set up first',
+          workflow: 'Change workflow',
+          context: 'Add context',
+          review: 'Review and risk',
+        },
         model: {
           title: 'Configure a free or local model',
           desc: 'Open model setup when the task needs a cheaper provider, local runtime, or API key.',
+        },
+        tools: {
+          title: 'Use tools and MCP',
+          desc: 'Ask Hermes to decide whether tools, MCP servers, skills, or plugins should participate.',
+        },
+        cost: {
+          title: 'Control cost first',
+          desc: 'Ask Hermes to estimate tokens, prefer free/local models, then decide if an upgrade is worth it.',
         },
         goal: {
           title: 'Set as long-running goal',
@@ -499,9 +514,29 @@ export default {
           title: 'Send to role room',
           desc: 'Use when frontend, backend, review, or other roles should discuss it.',
         },
-        tools: {
-          title: 'Use tools and memory',
-          desc: 'Stay in chat and ask Hermes to decide whether tools, MCP, or memory should participate.',
+        sandbox: {
+          title: 'Treat as sandboxed work',
+          desc: 'Use for installs, shell commands, deletes, or other high-risk operations.',
+        },
+        memory: {
+          title: 'Include long-term memory',
+          desc: 'Ask Hermes to check project preferences, historical context, and durable memory first.',
+        },
+        lessons: {
+          title: 'Reference saved lessons',
+          desc: 'Ask Hermes to reuse captured lessons and rules before repeating mistakes.',
+        },
+        audit: {
+          title: 'Audit before continuing',
+          desc: 'Use before resuming work that may involve failures, denials, surprises, or security events.',
+        },
+        proactive: {
+          title: 'Find risks proactively',
+          desc: 'Ask Hermes to scan for hidden follow-ups, risks, and the next issue to handle.',
+        },
+        intent: {
+          title: 'Tell me what to use',
+          desc: 'Use when you are unsure which Hermes feature or workflow fits the task.',
         },
         examples: {
           goal: 'Continuously improve the core Hermes Panel experience with verification and rollback boundaries for each step.',
@@ -509,6 +544,23 @@ export default {
           room: 'Ask frontend, backend, and review roles to evaluate the implementation plan for this task.',
           tools: 'Analyze which tools, MCP servers, or memories should participate, then give the shortest execution path.',
           model: 'Set up a free or local model first, then verify Hermes can use it in chat.',
+          memory: 'Check whether Hermes memory contains project preferences, constraints, or prior decisions.',
+          cost: 'Estimate token and model cost before running the task, preferring free or local models.',
+          sandbox: 'This task may need risky commands; explain a sandboxed execution plan first.',
+          lessons: 'Read saved lessons first and decide whether reusable rules affect this task.',
+          audit: 'Before continuing, inspect recent failed, denied, or surprising actions.',
+          proactive: 'Scan the current workspace for likely risks, follow-ups, and priorities.',
+          intent: 'I do not know which Hermes feature to use; classify the intent and recommend the shortest path.',
+        },
+        prompts: {
+          tools: 'First decide whether tools, MCP servers, skills, or plugins should participate, then handle this task. Explain the shortest safe execution path:\n\n{prompt}',
+          memory: 'First check whether Hermes long-term memory, project preferences, or historical context should affect this task. Cite only relevant context, then give the next step:\n\n{prompt}',
+          cost: 'Run a cost-aware check first: estimate token/model cost, prefer free, local, or low-cost models, and suggest upgrading only when the benefit is clear. Task:\n\n{prompt}',
+          sandbox: 'Treat this as high-risk work. If it requires dependency installs, shell commands, deletes/overwrites, or network access, first propose a sandboxed or isolated execution plan with rollback boundaries, then wait for confirmation:\n\n{prompt}',
+          lessons: 'First check Hermes saved lessons and rules. Decide whether any lesson affects this task, list the relevant ones, then give the shortest execution path:\n\n{prompt}',
+          audit: 'First audit recent failures, denials, permission events, or security signals related to this task. Explain the risk and safest way to continue:\n\n{prompt}',
+          proactive: 'Proactively scan this task for hidden risks, follow-ups, dependencies, and priority. Return the 1-3 things to handle first:\n\n{prompt}',
+          intent: 'I am not sure which Hermes feature to use. First classify the real intent in this input, choose the best entry point (Chat, Goal, Cron, Room, Tools, Memory, Audit, etc.), then give a path with no more than 3 steps:\n\n{prompt}',
         },
         toolPrompt: 'First decide whether tools, MCP, memory, or saved lessons should participate, then handle this task:\n\n{prompt}',
       },

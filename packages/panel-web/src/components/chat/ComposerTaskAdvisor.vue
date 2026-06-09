@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { ComposerTaskAction, ComposerTaskActionPayload } from './ComposerTaskActions.vue';
+import {
+  composerTaskActions,
+  isInlineComposerTaskAction,
+  type ComposerTaskAction,
+} from '@/data/task-capability-actions';
+import type { ComposerTaskActionPayload } from './ComposerTaskActions.vue';
 
 interface AdvisorCandidate {
   action: ComposerTaskAction;
@@ -20,55 +25,24 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const icons: Record<ComposerTaskAction, string> = {
-  goal: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z',
-  cron: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
-  room: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 10v-2a4 4 0 0 0-3-3.87',
-  tools: 'M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5L15 12l-3-3 2.7-2.7Z',
-  model: 'M12 3v18M3 8h18M5 16h14M7 3l-2 5 2 5m10-10 2 5-2 5',
-};
-
 const normalizedDraft = computed(() => props.draft.trim().toLowerCase());
 
 const candidates = computed<AdvisorCandidate[]>(() => {
   const text = normalizedDraft.value;
   if (text.length < 8) return [];
 
-  const next: AdvisorCandidate[] = [];
-  function add(action: ComposerTaskAction, score: number): void {
-    next.push({ action, score, icon: icons[action] });
-  }
+  const next: AdvisorCandidate[] = composerTaskActions
+    .filter(action => action.keywords.test(text) || (action.key === 'goal' && text.length > 180))
+    .map(action => ({ action: action.key, score: action.score, icon: action.icon }));
 
-  if (/(免费|本地|模型|渠道|provider|openrouter|ollama|deepseek|api\s*key|apikey|余额|成本|free|local|model|provider|credential)/i.test(text)) {
-    add('model', 100);
-  }
-  if (/(每天|每周|每月|定时|周期|重复|提醒|监控|daily|weekly|monthly|schedule|recurring|every\s+(day|week|month))/i.test(text)) {
-    add('cron', 92);
-  }
-  if (/(长期|持续|分阶段|里程碑|目标|计划|优化|重构|完善|追踪|long[-\s]?running|roadmap|milestone|plan|refactor|optimi[sz]e|improve)/i.test(text) || text.length > 180) {
-    add('goal', 84);
-  }
-  if (/(前端|后端|架构|产品|设计|评审|审查|角色|团队|协作|frontend|backend|architect|product|design|review|team|roles?)/i.test(text)) {
-    add('room', 76);
-  }
-  if (/(工具|记忆|经验|文件|代码|仓库|文档|搜索|读取|mcp|tool|memory|lesson|file|codebase|repo|docs|search|scan|read)/i.test(text)) {
-    add('tools', 68);
-  }
-
-  const seen = new Set<ComposerTaskAction>();
   return next
     .sort((a, b) => b.score - a.score)
-    .filter(item => {
-      if (seen.has(item.action)) return false;
-      seen.add(item.action);
-      return true;
-    })
     .slice(0, 2);
 });
 
 function promptFor(action: ComposerTaskAction): string {
   const base = props.draft.trim() || t(`chat.composer.taskActions.examples.${action}`);
-  if (action === 'tools') return t('chat.composer.taskActions.toolPrompt', { prompt: base });
+  if (isInlineComposerTaskAction(action)) return t(`chat.composer.taskActions.prompts.${action}`, { prompt: base });
   return base;
 }
 
