@@ -83,9 +83,12 @@ export function formatCliParityBacklogPlan(
   for (const [index, cmd] of backlog.entries()) {
     lines.push(`${index + 1}. hermes ${cmd.command}`);
     lines.push(`   - Coverage: ${cmd.coverage}`);
+    lines.push(`   - Risk: ${cmd.risk ?? 'standard'}`);
     lines.push(`   - UI target: ${cmd.route ?? 'No UI'}`);
     lines.push(`   - Example: ${cmd.example}`);
+    lines.push(`   - Official fallback: ${cmd.fallback ?? `hermes ${cmd.command} --help`}`);
     lines.push(`   - Next action: inspect \`hermes ${cmd.command} --help\`, preserve CLI semantics, then add or improve the UI entry.`);
+    lines.push('   - UX benchmark: match desktop/web control panels by keeping the action discoverable, explaining risk before execution, and leaving an official CLI escape hatch.');
     lines.push(`   - Notes: ${cmd.displayDescription ?? cmd.description}`);
   }
 

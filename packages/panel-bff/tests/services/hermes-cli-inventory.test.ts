@@ -237,6 +237,61 @@ EOF
     }
   });
 
+  it('adds risk and official fallback metadata for incomplete commands', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hermes-cli-inventory-'));
+    const bin = join(dir, 'hermes');
+    writeFileSync(bin, `#!/bin/sh
+cat <<'EOF'
+Hermes Agent
+
+Commands:
+  debug       Upload logs and system information
+  update      Update Hermes Agent
+  uninstall   Uninstall Hermes Agent
+  acp         Run as an Agent Client Protocol server
+
+Options:
+  -h, --help  Show help
+EOF
+`, 'utf8');
+    chmodSync(bin, 0o755);
+    process.env.HERMES_BIN = bin;
+
+    try {
+      const inventory = await getCliCommandInventory();
+      expect(inventory.commands).toEqual([
+        expect.objectContaining({
+          command: 'debug',
+          coverage: 'partial',
+          risk: 'support',
+          fallback: 'hermes debug share --help',
+        }),
+        expect.objectContaining({
+          command: 'update',
+          coverage: 'missing',
+          risk: 'guarded',
+          fallback: 'hermes update --help',
+        }),
+        expect.objectContaining({
+          command: 'uninstall',
+          coverage: 'missing',
+          risk: 'destructive',
+          fallback: 'hermes uninstall --help',
+        }),
+        expect.objectContaining({
+          command: 'acp',
+          coverage: 'missing',
+          risk: 'protocol',
+          fallback: 'hermes acp --help',
+        }),
+      ]);
+      expect(inventory.summary.partial).toBe(1);
+      expect(inventory.summary.missing).toBe(3);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns empty commands with an error code when hermes binary is unavailable', async () => {
     process.env.HERMES_BIN = 'does-not-exist-hermes-for-cli-inventory-test';
     const inventory = await getCliCommandInventory();

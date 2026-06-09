@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const cardPath = join(process.cwd(), 'src/components/developer/CliParityCommandCard.vue');
+const gapGuidancePath = join(process.cwd(), 'src/components/developer/CliParityGapGuidance.vue');
 
 describe('CLI parity command card experience', () => {
   it('shows the mapped UI target without requiring users to click Open', () => {
@@ -23,6 +24,20 @@ describe('CLI parity command card experience', () => {
     expect(source).toContain('navigator.clipboard.writeText(fallbackPrompt.value)');
     expect(source).toContain("message.success(t('developer.cliParity.copiedPrompt'))");
     expect(source).toContain('@click="cmd.route ? go(cmd.route) : copyPromptFallback()"');
+  });
+
+  it('explains incomplete command risk and the official CLI fallback', () => {
+    const source = readFileSync(cardPath, 'utf8');
+    const guidance = readFileSync(gapGuidancePath, 'utf8');
+
+    expect(source).toContain('CliParityGapGuidance');
+    expect(source).toContain('<CliParityGapGuidance :cmd="cmd" />');
+    expect(guidance).toContain("cmd.coverage !== 'ready'");
+    expect(guidance).toContain("props.cmd.fallback ?? `hermes ${props.cmd.command} --help`");
+    expect(guidance).toContain('developer.cliParity.risks');
+    expect(guidance).toContain('developer.cliParity.benchmarks');
+    expect(guidance).toContain('developer.cliParity.nextActions');
+    expect(guidance).toContain("t('developer.cliParity.officialFallback')");
   });
 
   it('does not show the empty help state when command help returns an error', () => {

@@ -6,6 +6,7 @@ const panelPath = join(process.cwd(), 'src/components/developer/CliParityPanel.v
 const backlogPath = join(process.cwd(), 'src/components/developer/CliParityBacklogPanel.vue');
 const completionPath = join(process.cwd(), 'src/components/developer/CliCompletionPanel.vue');
 const headerPath = join(process.cwd(), 'src/components/developer/CliParityHeader.vue');
+const gapGuidancePath = join(process.cwd(), 'src/components/developer/CliParityGapGuidance.vue');
 
 describe('CLI parity panel experience', () => {
   it('lets users focus a backlog command without combining filters manually', () => {
@@ -36,6 +37,7 @@ describe('CLI parity panel experience', () => {
   it('extracts backlog guidance and lets users copy a CLI gap plan', () => {
     const source = readFileSync(panelPath, 'utf8');
     const backlog = readFileSync(backlogPath, 'utf8');
+    const guidance = readFileSync(gapGuidancePath, 'utf8');
 
     expect(source).toContain('CliParityBacklogPanel');
     expect(source).toContain('formatCliParityBacklogPlan');
@@ -46,6 +48,8 @@ describe('CLI parity panel experience', () => {
     expect(backlog).toContain("$t('developer.cliParity.copyBacklogPlan')");
     expect(backlog).toContain("filterCoverage: [coverage: CliCommandCoverage]");
     expect(backlog).toContain("focusCommand: [command: BacklogCommand]");
+    expect(backlog).toContain('CliParityGapGuidance');
+    expect(guidance).toContain('benchmark-badge');
   });
 
   it('shows recovery steps when CLI inventory fails', () => {

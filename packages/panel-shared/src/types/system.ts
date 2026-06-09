@@ -18,6 +18,7 @@ export interface HealthStatus {
 export type CliCommandCoverage = 'ready' | 'partial' | 'missing';
 export type CliCommandGroup = 'core' | 'config' | 'extensions' | 'ops' | 'advanced';
 export type CliCommandGroupSummary = Record<CliCommandGroup, number>;
+export type CliCommandRisk = 'standard' | 'support' | 'guarded' | 'destructive' | 'protocol' | 'migration';
 
 export interface CliCommandInventoryItem {
   command: string;
@@ -26,6 +27,8 @@ export interface CliCommandInventoryItem {
   coverage: CliCommandCoverage;
   route?: string;
   example: string;
+  risk?: CliCommandRisk;
+  fallback?: string;
 }
 
 export interface CliCommandInventorySummary {

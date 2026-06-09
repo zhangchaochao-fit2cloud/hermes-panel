@@ -99,6 +99,8 @@ describe('formatCliParityBacklogPlan', () => {
         group: 'ops',
         coverage: 'missing',
         example: 'hermes update',
+        risk: 'guarded',
+        fallback: 'hermes update --help',
       },
     ], generatedAt);
 
@@ -106,8 +108,11 @@ describe('formatCliParityBacklogPlan', () => {
     expect(plan).toContain('Generated: 2026-06-08T10:00:00.000Z');
     expect(plan).toContain('1. hermes update');
     expect(plan).toContain('Coverage: missing');
+    expect(plan).toContain('Risk: guarded');
     expect(plan).toContain('UI target: No UI');
+    expect(plan).toContain('Official fallback: hermes update --help');
     expect(plan).toContain('inspect `hermes update --help`');
+    expect(plan).toContain('UX benchmark: match desktop/web control panels');
     expect(plan).toContain('Localized update note');
     expect(plan).not.toContain('hermes chat');
   });

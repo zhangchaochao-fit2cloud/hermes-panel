@@ -6,6 +6,7 @@ import type {
   CliCommandInventoryItem,
   CliCommandInventoryResponse,
   CliCommandInventorySummary,
+  CliCommandRisk,
 } from '@hermes-panel/shared';
 import { logger } from '../lib/logger.js';
 import { HermesCliError, runHermesCli } from './hermes-cli.js';
@@ -15,6 +16,8 @@ interface CoverageMeta {
   coverage: CliCommandCoverage;
   route?: string;
   example: string;
+  risk?: CliCommandRisk;
+  fallback?: string;
 }
 
 export type CliCompletionShell = 'bash' | 'zsh' | 'fish' | 'powershell';
@@ -42,7 +45,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   webhook: { group: 'ops', coverage: 'ready', route: '/developer#webhook', example: 'hermes webhook list' },
   doctor: { group: 'ops', coverage: 'ready', route: '/developer#doctor', example: 'hermes doctor' },
   dump: { group: 'ops', coverage: 'ready', route: '/developer#doctor', example: 'hermes dump' },
-  debug: { group: 'ops', coverage: 'partial', route: '/developer#logs', example: 'hermes debug share' },
+  debug: { group: 'ops', coverage: 'partial', route: '/developer#logs', example: 'hermes debug share', risk: 'support', fallback: 'hermes debug share --help' },
   backup: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes backup' },
   import: { group: 'ops', coverage: 'ready', route: '/settings#backup', example: 'hermes import backup.zip' },
   config: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes config set model.default gpt-4' },
@@ -54,11 +57,11 @@ const COVERAGE: Record<string, CoverageMeta> = {
   mcp: { group: 'extensions', coverage: 'ready', route: '/tools', example: 'hermes mcp list' },
   sessions: { group: 'core', coverage: 'ready', route: '/sessions', example: 'hermes sessions list' },
   insights: { group: 'advanced', coverage: 'ready', route: '/cost', example: 'hermes insights' },
-  claw: { group: 'advanced', coverage: 'missing', example: 'hermes claw --help' },
+  claw: { group: 'advanced', coverage: 'missing', example: 'hermes claw --help', risk: 'migration', fallback: 'hermes claw --help' },
   version: { group: 'ops', coverage: 'ready', route: '/settings#about', example: 'hermes version' },
-  update: { group: 'ops', coverage: 'missing', example: 'hermes update' },
-  uninstall: { group: 'ops', coverage: 'missing', example: 'hermes uninstall' },
-  acp: { group: 'advanced', coverage: 'missing', example: 'hermes acp' },
+  update: { group: 'ops', coverage: 'missing', example: 'hermes update', risk: 'guarded', fallback: 'hermes update --help' },
+  uninstall: { group: 'ops', coverage: 'missing', example: 'hermes uninstall', risk: 'destructive', fallback: 'hermes uninstall --help' },
+  acp: { group: 'advanced', coverage: 'missing', example: 'hermes acp', risk: 'protocol', fallback: 'hermes acp --help' },
   profile: { group: 'config', coverage: 'ready', route: '/workspaces', example: 'hermes profile list' },
   completion: { group: 'advanced', coverage: 'ready', route: '/developer#cli-parity', example: 'hermes completion zsh' },
   logs: { group: 'ops', coverage: 'ready', route: '/developer#logs', example: 'hermes logs --since 1h' },
@@ -69,6 +72,8 @@ const DEFAULT_META: CoverageMeta = {
   group: 'advanced',
   coverage: 'missing',
   example: 'hermes <command> --help',
+  risk: 'standard',
+  fallback: 'hermes <command> --help',
 };
 
 const CLI_COMMAND_GROUPS: CliCommandGroup[] = ['core', 'config', 'extensions', 'ops', 'advanced'];
@@ -157,6 +162,7 @@ export async function getCliCommandInventory(): Promise<CliCommandInventoryRespo
       const meta = COVERAGE[cmd.command] ?? {
         ...DEFAULT_META,
         example: DEFAULT_META.example.replace('<command>', cmd.command),
+        fallback: DEFAULT_META.fallback?.replace('<command>', cmd.command),
       };
       return {
         ...cmd,

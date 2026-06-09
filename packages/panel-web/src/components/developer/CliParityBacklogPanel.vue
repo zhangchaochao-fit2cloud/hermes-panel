@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CliCommandCoverage, CliCommandGroup } from '@hermes-panel/shared';
+import CliParityGapGuidance from './CliParityGapGuidance.vue';
 
 interface BacklogCommand {
   command: string;
@@ -85,6 +86,7 @@ defineEmits<{
           {{ cmd.displayDescription || cmd.description }}
         </p>
         <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
+        <CliParityGapGuidance :cmd="cmd" />
         <div class="backlog-card-actions">
           <button
             type="button"

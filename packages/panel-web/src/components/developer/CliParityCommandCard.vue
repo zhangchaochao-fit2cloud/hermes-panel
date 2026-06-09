@@ -10,6 +10,7 @@ import type {
 } from '@hermes-panel/shared';
 import { bffFetch } from '@/api/bff';
 import CodeBlock from '@/components/shared/CodeBlock.vue';
+import CliParityGapGuidance from './CliParityGapGuidance.vue';
 
 const props = defineProps<{
   cmd: CliCommandInventoryItem;
@@ -113,6 +114,7 @@ async function loadCommandHelp(): Promise<void> {
         <code>{{ cmd.route ?? t('developer.cliParity.noUi') }}</code>
       </p>
       <pre class="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-1.5 text-xs text-[var(--text-2)]">{{ cmd.example }}</pre>
+      <CliParityGapGuidance :cmd="cmd" />
     </div>
 
     <div class="command-actions">
