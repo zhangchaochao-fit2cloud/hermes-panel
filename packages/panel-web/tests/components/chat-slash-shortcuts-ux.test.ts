@@ -16,13 +16,18 @@ describe('chat slash prompt shortcuts', () => {
     expect(composer).toContain("value.startsWith('/')");
   });
 
-  it('keeps shortcuts as prompt fill-ins instead of pretending to execute CLI commands', () => {
+  it('discovers CLI commands through the BFF inventory without executing them', () => {
     const shortcuts = readFileSync(shortcutsPath, 'utf8');
 
+    expect(shortcuts).toContain("bffFetch<CliCommandInventoryResponse>('/api/cli/commands'");
+    expect(shortcuts).toContain("t('chat.slash.cliTitle')");
     expect(shortcuts).toContain("t('chat.slash.title')");
+    expect(shortcuts).toContain("t('chat.slash.loadingCli')");
+    expect(shortcuts).toContain("t('chat.slash.cliError', { error })");
+    expect(shortcuts).toContain("t('chat.slash.empty')");
     expect(shortcuts).toContain("'help', 'model', 'local', 'tools', 'review', 'plan'");
     expect(shortcuts).toContain("emit('pick', item.prompt)");
-    expect(shortcuts).not.toContain('bffFetch');
     expect(shortcuts).not.toContain('runHermes');
+    expect(shortcuts).not.toContain('/api/cli/commands/');
   });
 });

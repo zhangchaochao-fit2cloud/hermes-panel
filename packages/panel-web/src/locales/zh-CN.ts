@@ -285,8 +285,13 @@ export default {
       credential: '当前凭据：{credential}',
     },
     slash: {
+      cliTitle: 'Hermes CLI 命令',
       title: '提示词快捷项',
       hint: '输入 / 过滤',
+      loadingCli: '正在读取 Hermes CLI 命令...',
+      cliError: 'CLI 命令暂不可用：{error}。仍可使用提示词快捷项。',
+      empty: '没有匹配的 CLI 命令或提示词快捷项',
+      cliPrompt: '请以 Hermes CLI 命令“{command}”为准。示例：`{example}`。说明什么时候使用它、如果已有 UI 入口应对应到哪里，以及最安全的下一步操作。',
       help: {
         label: '解释对话控件',
         desc: '模型、模式、文件、工具和审批',

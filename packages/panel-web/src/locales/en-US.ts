@@ -285,8 +285,13 @@ export default {
       credential: 'Active credential: {credential}',
     },
     slash: {
+      cliTitle: 'Hermes CLI commands',
       title: 'Prompt shortcuts',
       hint: 'type / to filter',
+      loadingCli: 'Reading Hermes CLI commands...',
+      cliError: 'CLI commands unavailable: {error}. Prompt shortcuts are still available.',
+      empty: 'No matching CLI command or prompt shortcut',
+      cliPrompt: 'Use Hermes CLI command "{command}" as the source of truth. Example: `{example}`. Explain when to use it, what UI entry maps to it if available, and the safest next action.',
       help: {
         label: 'Explain chat controls',
         desc: 'Model, mode, files, tools, and approvals',
