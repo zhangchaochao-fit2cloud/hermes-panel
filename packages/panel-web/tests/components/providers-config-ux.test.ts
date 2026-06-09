@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const providersPath = join(process.cwd(), 'src/components/settings/SectionProviders.vue');
+const providerOnboardingPath = join(process.cwd(), 'src/components/settings/ProviderOnboardingPath.vue');
 const providerReadinessPath = join(process.cwd(), 'src/components/settings/ProviderReadinessSummary.vue');
 const providerSetupWizardPath = join(process.cwd(), 'src/components/settings/ProviderSetupWizard.vue');
 const providerAuthCommandsPath = join(process.cwd(), 'src/components/settings/ProviderAuthCommands.vue');
@@ -35,8 +36,10 @@ describe('providers config UX', () => {
     const source = readFileSync(providersPath, 'utf8');
     const wizard = readFileSync(providerSetupWizardPath, 'utf8');
 
+    expect(source).toContain('ProviderOnboardingPath');
+    expect(source.indexOf('<ProviderOnboardingPath')).toBeLessThan(source.indexOf('<ProviderReadinessSummary'));
     expect(source).toContain('ProviderReadinessSummary');
-    expect(source.indexOf('ProviderReadinessSummary')).toBeLessThan(source.indexOf('ProviderSetupWizard'));
+    expect(source.indexOf('<ProviderReadinessSummary')).toBeLessThan(source.indexOf('<ProviderSetupWizard'));
     expect(source).toContain('ProviderSetupWizard');
     expect(source).toContain('@add-credential="startAddFor"');
     expect(wizard).toContain("id: 'portal'");
@@ -51,6 +54,29 @@ describe('providers config UX', () => {
     expect(wizard).toContain('store.setModel');
     expect(wizard).toContain("emit('add-credential'");
     expect(wizard).toContain("router.push('/chat')");
+  });
+
+  it('puts a first-usable-model path above detailed provider setup', () => {
+    const source = readFileSync(providersPath, 'utf8');
+    const onboarding = readFileSync(providerOnboardingPath, 'utf8');
+    const en = readFileSync(enPath, 'utf8');
+    const zh = readFileSync(zhPath, 'utf8');
+
+    expect(source).toContain('@add-credential="startAddFor"');
+    expect(onboarding).toContain('primaryAction');
+    expect(onboarding).toContain("baseUrl: 'http://localhost:11434/v1'");
+    expect(onboarding).toContain("emit('add-credential', 'openrouter')");
+    expect(onboarding).toContain('store.discoverModels');
+    expect(onboarding).toContain('navigator.clipboard.writeText(command.value)');
+    expect(onboarding).toContain("hermes config set model.default");
+    expect(onboarding).toContain("localStorage.setItem('panel.chat.draft.new'");
+    expect(onboarding).toContain("router.push({ path: '/chat'");
+    expect(en).toContain('First usable model');
+    expect(en).toContain('Use free local first');
+    expect(en).toContain('Official handoff');
+    expect(zh).toContain('第一个可用模型');
+    expect(zh).toContain('优先用免费本地');
+    expect(zh).toContain('官方交接命令');
   });
 
   it('summarizes active model readiness and free model next steps', () => {

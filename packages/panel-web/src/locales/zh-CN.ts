@@ -854,6 +854,48 @@ export default {
       logoutConfirmTitle: '退出供应商？',
       logoutConfirmDesc: '将执行 `hermes logout {provider}`，可能移除 Hermes 当前使用的供应商凭据。',
       confirmLogout: '退出',
+      onboarding: {
+        eyebrow: '第一个可用模型',
+        title: '从零配置走到第一条测试回复',
+        desc: '先选择最低成本路径，确认运行时能看到模型，然后去 Chat 测试。所有快捷动作仍然映射到 Hermes CLI config 或 auth 命令。',
+        fallback: 'CLI 回退',
+        ready: '模型已就绪',
+        needsAction: '需要下一步',
+        runtimeCount: '{n} 个运行时模型',
+        localApplied: '已选择免费本地预设',
+        testPrompt: '使用当前 Hermes 模型。回答前先确认 model.default、供应商、凭据或本地端点，以及这条路径是免费/本地还是付费云。',
+        primary: {
+          checking: '刷新状态',
+          useLocal: '优先用免费本地',
+          addCloud: '添加免费云 Key',
+          discover: '发现运行时模型',
+          testChat: '去 Chat 测试',
+        },
+        state: {
+          ready: '就绪',
+          recommended: '推荐',
+          action: '可用',
+          checking: '检查中',
+        },
+        steps: {
+          local: {
+            title: '免费/本地优先',
+            desc: '先用 Ollama 或本地 OpenAI-compatible 端点，避免消耗云端额度。',
+          },
+          cloud: {
+            title: '需要时添加云 Key',
+            desc: '通过 Hermes auth 添加 OpenRouter、Google、OpenAI、Anthropic 或其他供应商 Key。',
+          },
+          runtime: {
+            title: '运行时发现',
+            desc: '从当前 Hermes 网关读取 /v1/models，让 Chat 能安全切换模型。',
+          },
+          cli: {
+            title: '官方交接命令',
+            desc: '当初始化需要离开面板继续时，复制准确的 config 命令。',
+          },
+        },
+      },
       readiness: {
         eyebrow: '模型就绪',
         title: '第一次运行前，先确认当前模型可用',

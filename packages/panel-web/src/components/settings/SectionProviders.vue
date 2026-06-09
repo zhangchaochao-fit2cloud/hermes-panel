@@ -13,6 +13,7 @@ import ProviderAuthCommands from './ProviderAuthCommands.vue';
 import ProviderModelDiscovery from './ProviderModelDiscovery.vue';
 import ProviderReadinessSummary from './ProviderReadinessSummary.vue';
 import ProviderSetupWizard from './ProviderSetupWizard.vue';
+import ProviderOnboardingPath from './ProviderOnboardingPath.vue';
 
 const { t } = useI18n();
 const store = useProvidersStore();
@@ -55,11 +56,6 @@ const configExamples = computed(() => {
   if (current.baseUrl) examples.push(`hermes config set model.base_url ${current.baseUrl}`);
   return examples;
 });
-const selectedProvider = computed({
-  get: () => addingFor.value,
-  set: v => { addingFor.value = v; },
-});
-
 onMounted(() => {
   if (!initialized.value) void store.load({ initial: true });
 });
@@ -141,6 +137,7 @@ function isCurrentProvider(p: ProviderInfo): boolean {
     </div>
 
     <template v-else>
+      <ProviderOnboardingPath class="mt-4" @add-credential="startAddFor" />
       <ProviderReadinessSummary class="mt-4" @add-credential="startAddFor" />
       <ProviderSetupWizard class="mt-4" @add-credential="startAddFor" />
       <ProviderModelDiscovery class="mt-4" />
@@ -258,7 +255,7 @@ function isCurrentProvider(p: ProviderInfo): boolean {
             />
           </NFormItem>
           <NFormItem v-else :label="t('settings.providers.providerLabel')">
-            <NInput :value="selectedProvider ?? ''" disabled />
+            <NInput :value="addingFor ?? ''" disabled />
           </NFormItem>
 
           <NFormItem :label="t('settings.providers.apiKeyLabel')" required>

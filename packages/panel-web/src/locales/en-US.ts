@@ -854,6 +854,48 @@ export default {
       logoutConfirmTitle: 'Log out provider?',
       logoutConfirmDesc: 'This runs `hermes logout {provider}` and may remove the provider credential used by Hermes.',
       confirmLogout: 'Log out',
+      onboarding: {
+        eyebrow: 'First usable model',
+        title: 'Get from zero setup to a test reply',
+        desc: 'Start with the lowest-cost path, confirm the runtime sees a model, then test in Chat. Every shortcut still maps back to Hermes CLI config or auth commands.',
+        fallback: 'CLI fallback',
+        ready: 'Model ready',
+        needsAction: 'Next step needed',
+        runtimeCount: '{n} runtime models',
+        localApplied: 'Free local preset selected',
+        testPrompt: 'Use the active Hermes model and confirm model.default, provider, credential or local endpoint, and whether this path is free/local or paid cloud before answering.',
+        primary: {
+          checking: 'Refresh status',
+          useLocal: 'Use free local first',
+          addCloud: 'Add free cloud key',
+          discover: 'Discover runtime models',
+          testChat: 'Test in Chat',
+        },
+        state: {
+          ready: 'Ready',
+          recommended: 'Recommended',
+          action: 'Available',
+          checking: 'Checking',
+        },
+        steps: {
+          local: {
+            title: 'Free/local first',
+            desc: 'Use Ollama or a local OpenAI-compatible endpoint before spending cloud quota.',
+          },
+          cloud: {
+            title: 'Cloud key when needed',
+            desc: 'Add OpenRouter, Google, OpenAI, Anthropic, or another provider key through Hermes auth.',
+          },
+          runtime: {
+            title: 'Runtime discovery',
+            desc: 'Read /v1/models from the active Hermes gateway so Chat can switch models safely.',
+          },
+          cli: {
+            title: 'Official handoff',
+            desc: 'Copy the exact config command when setup needs to continue outside the panel.',
+          },
+        },
+      },
       readiness: {
         eyebrow: 'Model readiness',
         title: 'Make the active model usable before the first run',
