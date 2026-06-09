@@ -24,6 +24,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   delete process.env.OPENROUTER_API_KEY;
+  delete process.env.HERMES_API_BASE;
   process.env.HERMES_BIN = 'does-not-exist-xxx';
   vi.restoreAllMocks();
 });
@@ -38,6 +39,38 @@ afterAll(() => {
 });
 
 describe('provider model inspection routes', () => {
+  it('GET /api/models/discover returns models from the configured Hermes API', async () => {
+    process.env.HERMES_API_BASE = 'http://127.0.0.1:18642';
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { id: 'hermes-agent', object: 'model' },
+          { id: 'nous/hermes-4' },
+          { id: 'hermes-agent' },
+        ],
+      }),
+    } as Response);
+
+    const res = await request
+      .get('/api/models/discover')
+      .set('X-Panel-Token', token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      source: 'http://127.0.0.1:18642/v1/models',
+      models: [
+        { id: 'hermes-agent', label: 'hermes-agent', source: 'hermes-api' },
+        { id: 'nous/hermes-4', label: 'nous/hermes-4', source: 'hermes-api' },
+      ],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:18642/v1/models',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
   it('POST /api/models/inspect returns credential and pricing metadata for candidates', async () => {
     const res = await request
       .post('/api/models/inspect')

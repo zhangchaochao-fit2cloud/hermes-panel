@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { NButton, NInput, NPopover, NSpin, useMessage } from 'naive-ui';
 import { useProvidersStore, type InspectedModel, type ProviderBalance } from '@/stores/providers';
-import { KNOWN_MODEL_GROUPS, findKnownModel, type KnownModel } from '@/data/known-models';
+import { KNOWN_MODEL_GROUPS, KNOWN_MODELS, findKnownModel, type KnownModel, type KnownModelGroup } from '@/data/known-models';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -13,14 +13,44 @@ const store = useProvidersStore();
 const message = useMessage();
 const {
   model, providers, loading, initialized, settingModel, inspectionLoading,
-  balanceLoading, activeCredentialLabel,
+  discoveryLoading, balanceLoading, activeCredentialLabel, discoveredModels,
 } = storeToRefs(store);
 
 const popoverOpen = ref(false);
 const customInput = ref('');
 const search = ref('');
+const RUNTIME_PROVIDER = '__hermes_runtime__';
 
-const allCandidates = computed(() => KNOWN_MODEL_GROUPS.flatMap(group =>
+type SwitcherModel = KnownModel & { source?: 'static' | 'hermes-api' };
+type SwitcherGroup = Omit<KnownModelGroup, 'models'> & { models: SwitcherModel[] };
+
+const discoveredGroups = computed<SwitcherGroup[]>(() => {
+  if (discoveredModels.value.length === 0) return [];
+  const knownIds = new Set(KNOWN_MODELS.map(m => m.id));
+  const models = discoveredModels.value
+    .filter(item => item.id && !knownIds.has(item.id))
+    .map(item => ({
+      id: item.id,
+      label: item.label || item.id,
+      provider: item.provider || RUNTIME_PROVIDER,
+      source: item.source,
+    }));
+  return models.length > 0
+    ? [{ provider: RUNTIME_PROVIDER, label: t('model.switcher.discoveredGroup'), models }]
+    : [];
+});
+
+const modelGroups = computed<SwitcherGroup[]>(() => [
+  ...discoveredGroups.value,
+  ...KNOWN_MODEL_GROUPS.map(group => ({
+    ...group,
+    models: group.models.map(m => ({ ...m, source: 'static' as const })),
+  })),
+]);
+
+const allCandidates = computed(() => modelGroups.value
+  .filter(group => group.provider !== RUNTIME_PROVIDER)
+  .flatMap(group =>
   group.models.map(m => ({
     id: m.id, label: m.label, provider: m.provider,
     baseUrl: m.baseUrl, requiresCredential: m.requiresCredential,
@@ -53,7 +83,9 @@ const currentBalance = computed(() => model.value?.provider ? store.balanceFor(m
 
 const filteredGroups = computed(() => {
   const q = search.value.trim().toLowerCase();
-  const sorted = [...KNOWN_MODEL_GROUPS].sort((a, b) => {
+  const sorted = [...modelGroups.value].sort((a, b) => {
+    if (a.provider === RUNTIME_PROVIDER) return -1;
+    if (b.provider === RUNTIME_PROVIDER) return 1;
     const aHas = configuredFamilies.value.has(a.provider) ? 0 : 1;
     const bHas = configuredFamilies.value.has(b.provider) ? 0 : 1;
     return aHas - bHas;
@@ -88,35 +120,43 @@ const compactGroups = computed(() => {
 });
 
 const hasResults = computed(() => compactGroups.value.some(g => g.models.length > 0));
-const busy = computed(() => loading.value || settingModel.value || inspectionLoading.value);
+const busy = computed(() => loading.value || settingModel.value || inspectionLoading.value || discoveryLoading.value);
 
-function isCurrent(m: KnownModel): boolean {
-  return model.value?.default === m.id && (!model.value.provider || model.value.provider === m.provider);
+function isRuntimeModel(m: SwitcherModel): boolean {
+  return m.provider === RUNTIME_PROVIDER || m.source === 'hermes-api';
 }
 
-function inspectionOf(m: KnownModel): InspectedModel | undefined {
+function isCurrent(m: SwitcherModel): boolean {
+  return model.value?.default === m.id && (isRuntimeModel(m) || !model.value.provider || model.value.provider === m.provider);
+}
+
+function inspectionOf(m: SwitcherModel): InspectedModel | undefined {
   return store.inspectionFor(m.provider, m.id);
 }
 
-function isBlocked(m: KnownModel): boolean {
+function isBlocked(m: SwitcherModel): boolean {
+  if (isRuntimeModel(m)) return false;
   return inspectionOf(m)?.availability === 'missing_credentials';
 }
 
-function statusLabel(m: KnownModel): string {
+function statusLabel(m: SwitcherModel): string {
+  if (isRuntimeModel(m)) return t('model.switcher.discoveredReady');
   const status = inspectionOf(m)?.availability;
   if (status === 'ready') return t('model.switcher.ready');
   if (status === 'missing_credentials') return t('model.switcher.missingCredential');
   return t('model.switcher.unknownAvailability');
 }
 
-function statusClass(m: KnownModel): string {
+function statusClass(m: SwitcherModel): string {
+  if (isRuntimeModel(m)) return 'border-sky-500/30 bg-sky-500/10 text-sky-600';
   const status = inspectionOf(m)?.availability;
   if (status === 'ready') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600';
   if (status === 'missing_credentials') return 'border-amber-500/30 bg-amber-500/10 text-amber-600';
   return 'border-[var(--border)] bg-[var(--bg-elevate)] text-[var(--text-3)]';
 }
 
-function priceLabel(m: KnownModel): string {
+function priceLabel(m: SwitcherModel): string {
+  if (isRuntimeModel(m)) return t('model.switcher.runtimeSource');
   if (m.requiresCredential === false) return t('model.switcher.freeLocal');
   const pricing = inspectionOf(m)?.pricing;
   if (!pricing) return t('model.switcher.priceUnknown');
@@ -139,6 +179,7 @@ function balanceText(balance?: ProviderBalance): string {
 async function refreshModelChecks(): Promise<void> {
   if (initialized.value) await store.load();
   else await store.load({ initial: true });
+  await store.discoverModels();
   await Promise.all([
     store.inspectModels(allCandidates.value),
     model.value?.provider ? store.loadProviderBalance(model.value.provider) : Promise.resolve(),
@@ -158,7 +199,7 @@ function notifyResult(
   else if (r.restartError) message.warning(t('model.switcher.gatewayRestartFailed'), { duration: 6000, closable: true });
 }
 
-async function pickModel(m: KnownModel): Promise<void> {
+async function pickModel(m: SwitcherModel): Promise<void> {
   if (isCurrent(m)) {
     popoverOpen.value = false;
     return;
@@ -167,7 +208,9 @@ async function pickModel(m: KnownModel): Promise<void> {
     addCredentialForBlockedModel();
     return;
   }
-  const r = await store.setModel({ name: m.id, provider: m.provider, baseUrl: m.baseUrl });
+  const r = isRuntimeModel(m)
+    ? await store.setModel({ name: m.id })
+    : await store.setModel({ name: m.id, provider: m.provider, baseUrl: m.baseUrl });
   notifyResult(r, m.label);
   if (r.ok) popoverOpen.value = false;
 }

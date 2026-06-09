@@ -33,8 +33,8 @@ export async function bffFetch<T>(path: string, init: BffFetchOptions = {}): Pro
   headers.set('Content-Type', 'application/json');
   headers.set(HEADERS.PANEL_TOKEN, token);
 
-  // Forward the active Hermes endpoint when calling proxied hermes routes.
-  if (path.startsWith('/api/hermes')) {
+  // Forward the active Hermes endpoint when calling routes that reach Hermes.
+  if (path.startsWith('/api/hermes') || path.startsWith('/api/models/discover')) {
     try {
       const ep = useHermesEndpointStore();
       if (ep.active?.baseUrl) headers.set(HEADERS.HERMES_ENDPOINT, ep.active.baseUrl);

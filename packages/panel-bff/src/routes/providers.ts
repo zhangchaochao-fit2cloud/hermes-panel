@@ -10,6 +10,7 @@ import {
   unsupportedBalance,
   type CandidateModel,
 } from '../services/model-inspector.js';
+import { discoverHermesModels, HERMES_ENDPOINT_HEADER } from '../services/model-discovery.js';
 
 export const providersRouter = new Router();
 
@@ -46,6 +47,10 @@ providersRouter.post('/models/inspect', async ctx => {
     model: state.model,
     openRouterModels,
   });
+});
+
+providersRouter.get('/models/discover', async ctx => {
+  ctx.body = await discoverHermesModels(ctx.headers[HERMES_ENDPOINT_HEADER]);
 });
 
 providersRouter.get('/providers/balance', async ctx => {

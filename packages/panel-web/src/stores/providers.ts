@@ -88,6 +88,20 @@ export interface ProviderBalance {
   reason?: string;
 }
 
+export interface DiscoveredModel {
+  id: string;
+  label?: string;
+  provider?: string;
+  source: 'hermes-api';
+}
+
+export interface ModelDiscoveryResult {
+  checkedAt: number;
+  source: string;
+  models: DiscoveredModel[];
+  error?: string;
+}
+
 export interface ProviderCliCommandResult {
   ok: boolean;
   source: string;
@@ -106,9 +120,13 @@ export const useProvidersStore = defineStore('providers', () => {
   const providerLoginLoading = ref(false);
   const providerLogoutLoading = ref(false);
   const inspectionLoading = ref(false);
+  const discoveryLoading = ref(false);
   const balanceLoading = ref(false);
   const inspectionCheckedAt = ref<number | null>(null);
+  const discoveryCheckedAt = ref<number | null>(null);
   const inspectedModels = ref<Record<string, InspectedModel>>({});
+  const discoveredModels = ref<DiscoveredModel[]>([]);
+  const discoveryError = ref<string | null>(null);
   const providerBalances = ref<Record<string, ProviderBalance>>({});
   const error = ref<string | null>(null);
 
@@ -277,6 +295,22 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
+  async function discoverModels(): Promise<void> {
+    discoveryLoading.value = true;
+    discoveryError.value = null;
+    try {
+      const r = await bffFetch<ModelDiscoveryResult>('/api/models/discover', { silent: true });
+      discoveredModels.value = r.models;
+      discoveryCheckedAt.value = r.checkedAt;
+      discoveryError.value = r.error ?? null;
+    } catch (err) {
+      discoveredModels.value = [];
+      discoveryError.value = (err as Error).message ?? 'failed to discover models';
+    } finally {
+      discoveryLoading.value = false;
+    }
+  }
+
   async function loadProviderBalance(provider: string): Promise<void> {
     if (!provider) return;
     balanceLoading.value = true;
@@ -306,9 +340,11 @@ export const useProvidersStore = defineStore('providers', () => {
   return {
     model, providers, loading, initialized, settingModel, addingCredential,
     providerLoginLoading, providerLogoutLoading,
-    inspectionLoading, balanceLoading, inspectionCheckedAt, error,
+    inspectionLoading, discoveryLoading, balanceLoading, inspectionCheckedAt,
+    discoveryCheckedAt, discoveredModels, discoveryError, error,
     currentModelId, currentProvider, activeCredentialLabel,
     inspectionFor, balanceFor,
-    load, setModel, addCredential, loginProvider, logoutProvider, inspectModels, loadProviderBalance,
+    load, setModel, addCredential, loginProvider, logoutProvider,
+    inspectModels, discoverModels, loadProviderBalance,
   };
 });

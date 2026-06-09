@@ -9,6 +9,7 @@ describe('model switcher experience', () => {
     const source = readFileSync(modelSwitcherPath, 'utf8');
 
     expect(source).toContain('refreshModelChecks');
+    expect(source).toContain('store.discoverModels');
     expect(source).toContain('store.inspectModels');
     expect(source).toContain('store.loadProviderBalance');
     expect(source).toContain('model-health-chip');
@@ -26,6 +27,18 @@ describe('model switcher experience', () => {
     expect(source).toContain("router.push({ path: '/settings', hash: '#providers' })");
     expect(source).toContain(':disabled="settingModel"');
     expect(source).not.toContain(':disabled="settingModel || isBlocked(m)"');
+  });
+
+  it('shows runtime-discovered Hermes models without overwriting provider config', () => {
+    const source = readFileSync(modelSwitcherPath, 'utf8');
+
+    expect(source).toContain('discoveredGroups');
+    expect(source).toContain('RUNTIME_PROVIDER');
+    expect(source).toContain("t('model.switcher.discoveredGroup')");
+    expect(source).toContain("t('model.switcher.discoveredReady')");
+    expect(source).toContain("t('model.switcher.runtimeSource')");
+    expect(source).toContain('await store.setModel({ name: m.id })');
+    expect(source).toContain("provider: item.provider || RUNTIME_PROVIDER");
   });
 
   it('keeps the default picker compact until the user searches', () => {

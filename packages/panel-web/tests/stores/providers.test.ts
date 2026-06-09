@@ -162,6 +162,26 @@ describe('providers login/logout commands', () => {
 });
 
 describe('providers model inspection', () => {
+  it('loads models discovered from the running Hermes API without replacing static fallback', async () => {
+    mockedBffFetch.mockResolvedValueOnce({
+      checkedAt: 456,
+      source: 'http://127.0.0.1:8642/v1/models',
+      models: [
+        { id: 'hermes-agent', label: 'hermes-agent', source: 'hermes-api' },
+        { id: 'nous/hermes-4', label: 'nous/hermes-4', source: 'hermes-api' },
+      ],
+    });
+    const store = useProvidersStore();
+
+    await store.discoverModels();
+
+    expect(store.discoveryLoading).toBe(false);
+    expect(store.discoveryCheckedAt).toBe(456);
+    expect(store.discoveredModels.map(m => m.id)).toEqual(['hermes-agent', 'nous/hermes-4']);
+    expect(store.discoveryError).toBeNull();
+    expect(mockedBffFetch).toHaveBeenCalledWith('/api/models/discover', { silent: true });
+  });
+
   it('loads candidate model inspection metadata from the BFF', async () => {
     mockedBffFetch.mockResolvedValueOnce({
       checkedAt: 123,
