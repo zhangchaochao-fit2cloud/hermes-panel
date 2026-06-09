@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
+import DebugShareHandoffPanel from './DebugShareHandoffPanel.vue';
 import { useLogsStore, type LogLevelFilter, type LogLine } from '@/stores/logs';
 
 const { t } = useI18n();
@@ -133,6 +134,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col gap-3">
+    <DebugShareHandoffPanel />
+
     <!-- Filter bar -->
     <div class="flex flex-wrap items-center gap-2">
       <NSelect
