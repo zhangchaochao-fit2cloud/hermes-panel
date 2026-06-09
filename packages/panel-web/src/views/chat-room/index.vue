@@ -27,9 +27,26 @@ const isMobile = ref(window.innerWidth < 768);
 const roles = computed<RoleDef[]>(() => workspaces.activeId ? teamFor(workspaces.activeId) : []);
 
 onMounted(() => {
-  store.fetchRooms();
+  void initializeRoomFromPendingPrompt();
   window.addEventListener('resize', () => { isMobile.value = window.innerWidth < 768; });
 });
+
+async function initializeRoomFromPendingPrompt(): Promise<void> {
+  let pending = '';
+  try {
+    pending = sessionStorage.getItem('panel.pendingRoomPrompt') ?? '';
+    if (pending) sessionStorage.removeItem('panel.pendingRoomPrompt');
+  } catch { /* ignore */ }
+  await store.fetchRooms();
+  if (!pending) return;
+  input.value = pending;
+  if (store.rooms.length > 0) {
+    await store.fetchMessages(store.rooms[0].id);
+    return;
+  }
+  newRoomName.value = t('chatRoom.pendingRoomName');
+  showCreate.value = true;
+}
 
 watch(() => store.messages.length, () => {
   nextTick(() => { if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight; });

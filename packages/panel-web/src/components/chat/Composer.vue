@@ -6,6 +6,8 @@ import ContextRing from './ContextRing.vue';
 import ThinkingStrategyPicker from './ThinkingStrategyPicker.vue';
 import ExecutionModePicker from './ExecutionModePicker.vue';
 import SlashPromptShortcuts from './SlashPromptShortcuts.vue';
+import ComposerTaskActions, { type ComposerTaskActionPayload } from './ComposerTaskActions.vue';
+import ComposerTaskAdvisor from './ComposerTaskAdvisor.vue';
 import { useExecutionMode } from '@/composables/useExecutionMode';
 import { useSmartSuggestion } from '@/composables/useSmartSuggestion';
 import { useHotkeysStore, chordToDisplayTokens } from '@/stores/hotkeys';
@@ -34,6 +36,7 @@ const emit = defineEmits<{
   (e: 'update:model', v: string): void;
   (e: 'update:thinkingSpeed', v: 'fast' | 'extended' | 'auto' | 'route'): void;
   (e: 'restoreText', text: string): void;
+  (e: 'taskAction', payload: ComposerTaskActionPayload): void;
 }>();
 
 // Suppress "unused" warning for `model` — kept on the prop signature for
@@ -320,6 +323,15 @@ function openFilePicker(): void {
   fileInputRef.value?.click();
 }
 
+function onTaskAction(payload: ComposerTaskActionPayload): void {
+  if (payload.action === 'tools') {
+    text.value = payload.prompt;
+    focus();
+    return;
+  }
+  emit('taskAction', payload);
+}
+
 async function onFilesSelected(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const files = Array.from(input.files ?? []);
@@ -516,15 +528,28 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
       style="background: color-mix(in srgb, var(--brand-500) 8%, transparent); color: var(--brand-600);"
       role="status"
     >
-      <span aria-hidden="true">💡</span>
+      <svg class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M8 1.8a4.7 4.7 0 0 0-2.7 8.5c.5.36.7.73.7 1.24V12h4v-.46c0-.5.22-.88.7-1.24A4.7 4.7 0 0 0 8 1.8Z" />
+        <path d="M6.5 14h3M6.9 12h2.2" />
+      </svg>
       <span class="flex-1">{{ t(suggestion.messageKey) }}</span>
       <button
         type="button"
         class="opacity-60 hover:opacity-100 transition-opacity"
         @click="dismissSuggestion"
         :aria-label="t('common.dismiss')"
-      >✕</button>
+      >
+        <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M1.5 1.5l6 6m0-6-6 6" />
+        </svg>
+      </button>
     </div>
+
+    <ComposerTaskAdvisor
+      :draft="text"
+      :disabled="sending"
+      @select="onTaskAction"
+    />
 
     <!-- Textarea -->
     <div class="composer-textarea-wrap px-5 pt-4 pb-1">
@@ -565,6 +590,12 @@ defineExpose<ComposerExposed>({ prependMention, setText, appendText, focus });
             <path d="M8 3v10M3 8h10" />
           </svg>
         </button>
+
+        <ComposerTaskActions
+          :draft="text"
+          :disabled="sending"
+          @select="onTaskAction"
+        />
 
         <NDropdown
           :options="permissionOptions"

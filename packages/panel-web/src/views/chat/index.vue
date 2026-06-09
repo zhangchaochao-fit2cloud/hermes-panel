@@ -15,6 +15,7 @@ import MessageBubble from '@/components/chat/MessageBubble.vue';
 import ChatNavigator from '@/components/chat/ChatNavigator.vue';
 import ChatFindBar from '@/components/chat/ChatFindBar.vue';
 import Composer from '@/components/chat/Composer.vue';
+import type { ComposerTaskActionPayload } from '@/components/chat/ComposerTaskActions.vue';
 import TaskProgressPanel from '@/components/chat/TaskProgressPanel.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
@@ -181,6 +182,35 @@ function onModeRailRoute(payload: { route: string; prompt?: string; storage?: 'c
     composerRef.value?.setText(payload.prompt);
   }
   void router.push(payload.route);
+}
+
+function storePendingTask(key: string, prompt: string): void {
+  try {
+    sessionStorage.setItem(key, prompt);
+  } catch {
+    /* route still works when session storage is unavailable */
+  }
+}
+
+function onComposerTaskAction(payload: ComposerTaskActionPayload): void {
+  if (payload.action === 'goal') {
+    storePendingTask('panel.pendingGoalObjective', payload.prompt);
+    void router.push('/goals');
+    return;
+  }
+  if (payload.action === 'cron') {
+    storePendingTask('panel.pendingCronPrompt', payload.prompt);
+    void router.push('/cron');
+    return;
+  }
+  if (payload.action === 'room') {
+    storePendingTask('panel.pendingRoomPrompt', payload.prompt);
+    void router.push('/chat-room');
+    return;
+  }
+  if (payload.action === 'model') {
+    void router.push({ path: '/settings', hash: '#providers' });
+  }
 }
 
 // 会话分支 fork — 见 session.branchAt + onMessageBranch handler（行 391）
@@ -773,6 +803,7 @@ async function onExportSelect(key: string | number): Promise<void> {
             :last-sent-text="lastSentText"
             @send="onSend"
             @stop="onStop"
+            @task-action="onComposerTaskAction"
           />
           <div v-if="routedModel" class="routed-indicator text-xs text-[var(--text-3)] text-center mt-1">
             🎯 {{ t('chat.routed', { model: routedModel, amount: routedSavings.toFixed(4) }) }}

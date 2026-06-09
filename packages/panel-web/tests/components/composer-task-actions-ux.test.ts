@@ -1,0 +1,70 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const taskActionsPath = join(process.cwd(), 'src/components/chat/ComposerTaskActions.vue');
+const taskAdvisorPath = join(process.cwd(), 'src/components/chat/ComposerTaskAdvisor.vue');
+const composerPath = join(process.cwd(), 'src/components/chat/Composer.vue');
+const chatPath = join(process.cwd(), 'src/views/chat/index.vue');
+const goalsPath = join(process.cwd(), 'src/views/goals/index.vue');
+const roomPath = join(process.cwd(), 'src/views/chat-room/index.vue');
+const enPath = join(process.cwd(), 'src/locales/en-US.ts');
+const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
+
+describe('composer task actions UX', () => {
+  it('moves advanced capabilities into the active chat task flow', () => {
+    const taskActions = readFileSync(taskActionsPath, 'utf8');
+    const taskAdvisor = readFileSync(taskAdvisorPath, 'utf8');
+    const composer = readFileSync(composerPath, 'utf8');
+    const chat = readFileSync(chatPath, 'utf8');
+    const goals = readFileSync(goalsPath, 'utf8');
+    const room = readFileSync(roomPath, 'utf8');
+    const en = readFileSync(enPath, 'utf8');
+    const zh = readFileSync(zhPath, 'utf8');
+
+    expect(taskActions).toContain("export type ComposerTaskAction = 'goal' | 'cron' | 'room' | 'tools' | 'model'");
+    expect(taskActions).toContain("{ key: 'goal'");
+    expect(taskActions).toContain("{ key: 'cron'");
+    expect(taskActions).toContain("{ key: 'room'");
+    expect(taskActions).toContain("{ key: 'tools'");
+    expect(taskActions).toContain("{ key: 'model'");
+    expect(taskAdvisor).toContain('ComposerTaskActionPayload');
+    expect(taskAdvisor).toContain('task-advisor');
+    expect(taskAdvisor).toContain("add('model', 100)");
+    expect(taskAdvisor).toContain("add('cron', 92)");
+    expect(taskAdvisor).toContain("add('goal', 84)");
+    expect(taskAdvisor).toContain("add('room', 76)");
+    expect(taskAdvisor).toContain("add('tools', 68)");
+    expect(taskActions).toContain('chat.composer.taskActions.${action.key}.title');
+    expect(taskActions).toContain('chat.composer.taskActions.${action.key}.desc');
+    expect(taskActions).toContain('chat.composer.taskActions.toolPrompt');
+    expect(composer).toContain('ComposerTaskActions');
+    expect(composer).toContain('ComposerTaskAdvisor');
+    expect(composer).toContain("payload.action === 'tools'");
+    expect(composer).toContain("emit('taskAction', payload)");
+    expect(chat).toContain("sessionStorage.setItem(key, prompt)");
+    expect(chat).toContain("'panel.pendingGoalObjective'");
+    expect(chat).toContain("'panel.pendingCronPrompt'");
+    expect(chat).toContain("'panel.pendingRoomPrompt'");
+    expect(chat).toContain("payload.action === 'model'");
+    expect(chat).toContain("hash: '#providers'");
+    expect(goals).toContain('applyPendingGoalObjective');
+    expect(goals).toContain("sessionStorage.getItem('panel.pendingGoalObjective')");
+    expect(room).toContain('initializeRoomFromPendingPrompt');
+    expect(room).toContain("sessionStorage.getItem('panel.pendingRoomPrompt')");
+
+    expect(zh).toContain('让能力参与当前任务');
+    expect(zh).toContain('设为长线目标');
+    expect(zh).toContain('安排定时执行');
+    expect(zh).toContain('交给角色群聊');
+    expect(zh).toContain('使用工具与记忆');
+    expect(zh).toContain('配置免费或本地模型');
+    expect(zh).toContain('建议下一步');
+    expect(en).toContain('Use capabilities in this task');
+    expect(en).toContain('Set as long-running goal');
+    expect(en).toContain('Schedule recurring run');
+    expect(en).toContain('Send to role room');
+    expect(en).toContain('Configure a free or local model');
+    expect(en).toContain('Suggested next step');
+  });
+});

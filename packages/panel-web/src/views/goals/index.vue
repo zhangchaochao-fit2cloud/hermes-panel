@@ -42,7 +42,22 @@ const form = ref({
 const roles = computed(() => workspaces.activeId ? teamFor(workspaces.activeId) : []);
 const goalTemplates = computed<GoalTemplate[]>(() => buildGoalTemplates(t));
 
-onMounted(async () => { await fetchGoals(); });
+onMounted(async () => {
+  applyPendingGoalObjective();
+  await fetchGoals();
+});
+
+function applyPendingGoalObjective(): void {
+  try {
+    const pending = sessionStorage.getItem('panel.pendingGoalObjective');
+    if (!pending) return;
+    form.value.objective = pending;
+    showCreate.value = true;
+    sessionStorage.removeItem('panel.pendingGoalObjective');
+  } catch {
+    /* ignore storage failures */
+  }
+}
 
 async function fetchGoals(): Promise<void> {
   loading.value = true;
