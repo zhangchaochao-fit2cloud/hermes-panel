@@ -279,7 +279,25 @@ export default {
       promptReady: '可以输入、添加文件、使用模板，或选择示例提示词。',
       configureModel: '配置模型',
       tryLocal: '试用本地提示词',
+      testPrompt: '检查就绪状态',
       localPrompt: '如果本地免费模型可用，请先使用它，然后说明你能在当前工作区做什么；在改动前先问我一个澄清问题。',
+      modelCheckPrompt: '请检查我的 Hermes 模型配置是否就绪。先确认当前模型和供应商；如果缺少凭据，请建议最快的免费/本地回退方案；最后给我一条安全的测试提示词。',
+      pathTitle: '最快开始回复路径',
+      pathDesc: '能用免费/本地就先开始，需要时再配置供应商，最后用一条安全提示词检查模型。',
+      path: {
+        local: {
+          title: '试用免费本地',
+          body: '优先使用 Ollama 或本地 OpenAI-compatible 端点。',
+        },
+        provider: {
+          title: '配置供应商',
+          body: '添加凭据，或选择带试用额度的云端供应商。',
+        },
+        test: {
+          title: '发送配置检查',
+          body: '先让 Hermes 确认模型可用，再开始编辑。',
+        },
+      },
       providersSeen: '检测到 {n} 个供应商',
       stateWarning: '供应商状态警告：{error}',
       credential: '当前凭据：{credential}',

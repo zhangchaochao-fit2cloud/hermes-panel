@@ -26,6 +26,22 @@ describe('chat readiness onboarding', () => {
     expect(card).toContain("emit('pick-prompt', t('chat.readiness.localPrompt'))");
     expect(card).toContain("t('chat.readiness.configureModel')");
     expect(card).toContain("t('chat.readiness.tryLocal')");
+    expect(card).toContain("t('chat.readiness.testPrompt')");
     expect(card).toContain('providersStore.load({ initial: true })');
+  });
+
+  it('shows a first-reply path with free local, provider, and setup-check options', () => {
+    const card = readFileSync(readinessPath, 'utf8');
+
+    expect(card).toContain('setupPath');
+    expect(card).toContain("id: 'local'");
+    expect(card).toContain("id: 'provider'");
+    expect(card).toContain("id: 'test'");
+    expect(card).toContain("t('chat.readiness.pathTitle')");
+    expect(card).toContain("t('chat.readiness.path.local.title')");
+    expect(card).toContain("t('chat.readiness.path.provider.title')");
+    expect(card).toContain("t('chat.readiness.path.test.title')");
+    expect(card).toContain("emit('pick-prompt', t('chat.readiness.modelCheckPrompt'))");
+    expect(card).not.toContain('runHermes');
   });
 });

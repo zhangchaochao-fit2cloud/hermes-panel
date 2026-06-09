@@ -31,6 +31,33 @@ const modelReady = computed(() =>
   )
 );
 
+const setupPath = computed(() => [
+  {
+    id: 'local',
+    status: modelReady.value ? 'ok' : 'action',
+    title: t('chat.readiness.path.local.title'),
+    body: t('chat.readiness.path.local.body'),
+    action: t('chat.readiness.tryLocal'),
+    handler: useLocalPrompt,
+  },
+  {
+    id: 'provider',
+    status: modelReady.value ? 'ok' : 'action',
+    title: t('chat.readiness.path.provider.title'),
+    body: t('chat.readiness.path.provider.body'),
+    action: t('chat.readiness.configureModel'),
+    handler: openProviders,
+  },
+  {
+    id: 'test',
+    status: 'ok',
+    title: t('chat.readiness.path.test.title'),
+    body: t('chat.readiness.path.test.body'),
+    action: t('chat.readiness.testPrompt'),
+    handler: useModelCheckPrompt,
+  },
+]);
+
 const steps = computed(() => [
   {
     id: 'model',
@@ -60,6 +87,10 @@ function openProviders(): void {
 
 function useLocalPrompt(): void {
   emit('pick-prompt', t('chat.readiness.localPrompt'));
+}
+
+function useModelCheckPrompt(): void {
+  emit('pick-prompt', t('chat.readiness.modelCheckPrompt'));
 }
 </script>
 
@@ -102,15 +133,49 @@ function useLocalPrompt(): void {
       </div>
     </div>
 
-    <div class="mt-4 flex flex-wrap items-center gap-2">
-      <NButton size="small" type="primary" ghost @click="openProviders">
+    <div class="mt-4 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] p-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-[var(--text-1)]">
+            {{ t('chat.readiness.pathTitle') }}
+          </p>
+          <p class="mt-0.5 text-[11px] leading-4 text-[var(--text-3)]">
+            {{ t('chat.readiness.pathDesc') }}
+          </p>
+        </div>
+      </div>
+      <div class="mt-3 grid gap-2 md:grid-cols-3">
+        <button
+          v-for="(item, index) in setupPath"
+          :key="item.id"
+          type="button"
+          class="readiness-path-step"
+          @click="item.handler"
+        >
+          <span
+            class="readiness-path-index"
+            :class="item.status === 'ok' ? 'is-ok' : 'is-action'"
+          >
+            {{ index + 1 }}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-xs font-semibold text-[var(--text-1)]">{{ item.title }}</span>
+            <span class="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-[var(--text-3)]">{{ item.body }}</span>
+            <span class="mt-1 block text-[11px] font-medium text-[var(--brand-600)]">{{ item.action }}</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="readiness-actions mt-4 flex flex-wrap items-center gap-2">
+      <NButton class="readiness-action" size="small" type="primary" ghost @click="openProviders">
         {{ t('chat.readiness.configureModel') }}
       </NButton>
-      <NButton size="small" quaternary @click="useLocalPrompt">
+      <NButton class="readiness-action" size="small" quaternary @click="useLocalPrompt">
         {{ t('chat.readiness.tryLocal') }}
       </NButton>
       <span v-if="loading" class="text-xs text-[var(--text-3)]">{{ t('common.loading') }}</span>
-      <span v-else-if="error" class="text-xs text-[var(--color-warning)]">
+      <span v-else-if="error" class="readiness-warning text-xs text-[var(--color-warning)]">
         {{ t('chat.readiness.stateWarning', { error }) }}
       </span>
       <span v-else class="text-xs text-[var(--text-3)]">
@@ -123,3 +188,65 @@ function useLocalPrompt(): void {
     </p>
   </section>
 </template>
+
+<style scoped>
+.readiness-path-step {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  padding: 10px;
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.readiness-path-step:hover {
+  border-color: var(--brand-500);
+  background: var(--bg-elevate);
+}
+
+.readiness-path-index {
+  display: inline-flex;
+  height: 22px;
+  width: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.readiness-path-index.is-ok {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--bg-card));
+  color: var(--color-success);
+}
+
+.readiness-path-index.is-action {
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--bg-card));
+  color: var(--color-warning);
+}
+
+@media (max-width: 520px) {
+  .readiness-actions {
+    align-items: stretch;
+  }
+
+  .readiness-action {
+    max-width: 100%;
+  }
+
+  .readiness-warning {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .readiness-path-step {
+    gap: 8px;
+  }
+}
+</style>

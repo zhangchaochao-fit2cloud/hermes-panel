@@ -279,7 +279,25 @@ export default {
       promptReady: 'Type, add files, use templates, or choose a sample prompt.',
       configureModel: 'Configure model',
       tryLocal: 'Try local prompt',
+      testPrompt: 'Check readiness',
       localPrompt: 'Use my local free model if available, then explain what you can do in this workspace and ask one clarifying question before making changes.',
+      modelCheckPrompt: 'Check whether my Hermes model setup is ready. First verify the active model and provider, then suggest the fastest free/local fallback if credentials are missing, and end with one safe test prompt.',
+      pathTitle: 'Fastest path to first reply',
+      pathDesc: 'Start free/local when possible, configure only when needed, then run one safe model check.',
+      path: {
+        local: {
+          title: 'Try free local',
+          body: 'Use Ollama or a local OpenAI-compatible endpoint first.',
+        },
+        provider: {
+          title: 'Configure provider',
+          body: 'Add a credential or choose a cloud trial provider.',
+        },
+        test: {
+          title: 'Send a setup check',
+          body: 'Ask Hermes to verify model readiness before editing.',
+        },
+      },
       providersSeen: '{n} providers detected',
       stateWarning: 'Provider state warning: {error}',
       credential: 'Active credential: {credential}',
