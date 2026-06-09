@@ -36,6 +36,11 @@ const commandHelpGeneratedAtLabel = computed(() => {
 });
 
 const commandHelpOutput = computed(() => commandHelp.value?.stdout.trimEnd() ?? '');
+const fallbackPrompt = computed(() => t('developer.cliParity.promptFallbackText', {
+  command: props.cmd.command,
+  example: props.cmd.example,
+  description: props.description,
+}));
 
 function coverageClass(coverage: CliCommandCoverage): string {
   if (coverage === 'ready') return 'is-ready';
@@ -56,6 +61,15 @@ async function copyExample(): Promise<void> {
   try {
     await navigator.clipboard.writeText(props.cmd.example);
     message.success(t('developer.cliParity.copiedExample'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
+}
+
+async function copyPromptFallback(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(fallbackPrompt.value);
+    message.success(t('developer.cliParity.copiedPrompt'));
   } catch {
     message.error(t('common.copyFailed'));
   }
@@ -120,10 +134,9 @@ async function loadCommandHelp(): Promise<void> {
       <button
         type="button"
         class="open-button"
-        :disabled="!cmd.route"
-        @click="go(cmd.route)"
+        @click="cmd.route ? go(cmd.route) : copyPromptFallback()"
       >
-        {{ cmd.route ? t('developer.cliParity.open') : t('developer.cliParity.noUi') }}
+        {{ cmd.route ? t('developer.cliParity.open') : t('developer.cliParity.copyPrompt') }}
       </button>
     </div>
 
@@ -189,128 +202,70 @@ async function loadCommandHelp(): Promise<void> {
 
 <style scoped>
 .cli-command {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  min-height: 126px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-elevate);
-  padding: 12px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; min-height: 126px;
+  border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevate); padding: 12px;
 }
 
 .command-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
 }
 
 .command-help {
-  grid-column: 1 / -1;
-  min-width: 0;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
+  grid-column: 1 / -1; min-width: 0; border-top: 1px solid var(--border); padding-top: 12px;
 }
 
 .command-help-close {
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-2);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 5px 8px;
+  flex: 0 0 auto; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-2); font-size: 12px; line-height: 18px; padding: 5px 8px;
 }
 
 .command-help-close:hover {
-  border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border));
-  color: var(--brand-600);
+  border-color: color-mix(in srgb, var(--brand-500) 34%, var(--border)); color: var(--brand-600);
 }
 
 .command-name {
-  border-radius: 6px;
-  background: var(--bg-card);
-  color: var(--text-1);
-  font-size: 12px;
-  padding: 3px 7px;
+  border-radius: 6px; background: var(--bg-card); color: var(--text-1); font-size: 12px; padding: 3px 7px;
 }
 
 .coverage-badge {
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 11px;
-  line-height: 16px;
-  padding: 2px 7px;
+  border-radius: 999px; border: 1px solid var(--border); color: var(--text-2);
+  font-size: 11px; line-height: 16px; padding: 2px 7px;
 }
 
 .ui-target {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-top: 8px;
-  color: var(--text-3);
-  font-size: 11px;
-  line-height: 16px;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px;
+  color: var(--text-3); font-size: 11px; line-height: 16px;
 }
 
 .ui-target code {
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-2);
-  padding: 2px 6px;
+  border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-2); padding: 2px 6px;
 }
 
 .cli-command.is-ready .coverage-badge {
-  border-color: color-mix(in srgb, var(--color-success) 46%, var(--border));
-  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 46%, var(--border)); color: var(--color-success);
 }
 
 .cli-command.is-partial .coverage-badge {
-  border-color: color-mix(in srgb, var(--color-warning) 46%, var(--border));
-  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 46%, var(--border)); color: var(--color-warning);
 }
 
 .cli-command.is-missing .coverage-badge {
-  border-color: color-mix(in srgb, var(--color-error) 40%, var(--border));
-  color: var(--color-error);
+  border-color: color-mix(in srgb, var(--color-error) 40%, var(--border)); color: var(--color-error);
 }
 
 .open-button {
-  align-self: start;
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--brand-500) 40%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
-  color: var(--brand-600);
-  font-size: 12px;
-  line-height: 18px;
-  padding: 6px 9px;
+  align-self: start; border-radius: var(--radius-md); border: 1px solid color-mix(in srgb, var(--brand-500) 40%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card)); color: var(--brand-600);
+  font-size: 12px; line-height: 18px; padding: 6px 9px;
 }
 
 .open-button:disabled {
-  border-color: var(--border);
-  background: var(--bg-card);
-  color: var(--text-3);
-  cursor: default;
+  border-color: var(--border); background: var(--bg-card); color: var(--text-3); cursor: default;
 }
 
 @media (max-width: 720px) {
-  .cli-command {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .command-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .open-button {
-    flex: 1 1 120px;
-    text-align: center;
-  }
+  .cli-command { grid-template-columns: minmax(0, 1fr); }
+  .command-actions { flex-direction: row; flex-wrap: wrap; }
+  .open-button { flex: 1 1 120px; text-align: center; }
 }
 </style>

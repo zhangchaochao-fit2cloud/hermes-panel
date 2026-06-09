@@ -11,7 +11,18 @@ describe('CLI parity command card experience', () => {
     expect(source).toContain("t('developer.cliParity.uiTarget')");
     expect(source).toContain("cmd.route ?? t('developer.cliParity.noUi')");
     expect(source).toContain('class="ui-target"');
-    expect(source).toContain(':disabled="!cmd.route"');
+    expect(source).toContain("cmd.route ? t('developer.cliParity.open') : t('developer.cliParity.copyPrompt')");
+  });
+
+  it('turns missing UI targets into safe CLI prompt fallbacks', () => {
+    const source = readFileSync(cardPath, 'utf8');
+
+    expect(source).toContain('fallbackPrompt');
+    expect(source).toContain("t('developer.cliParity.promptFallbackText'");
+    expect(source).toContain('async function copyPromptFallback(): Promise<void>');
+    expect(source).toContain('navigator.clipboard.writeText(fallbackPrompt.value)');
+    expect(source).toContain("message.success(t('developer.cliParity.copiedPrompt'))");
+    expect(source).toContain('@click="cmd.route ? go(cmd.route) : copyPromptFallback()"');
   });
 
   it('does not show the empty help state when command help returns an error', () => {
