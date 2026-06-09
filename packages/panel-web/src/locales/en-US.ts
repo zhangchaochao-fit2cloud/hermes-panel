@@ -1060,7 +1060,7 @@ export default {
         backup: 'Back up the Hermes home directory. Covered by Backup & Restore.',
         import: 'Restore from a Hermes backup. Covered by Backup & Restore.',
         config: 'View and edit model configuration through Settings Providers; writes use `hermes config set model.*`.',
-        pairing: 'Manage DM pairing codes. Channels partially covers authorization and binding flows.',
+        pairing: 'Manage DM pairing codes. Covered by Channels pairing list and auto-pair after QR binding.',
         skills: 'Search, install, configure, and manage skills. Covered by Tools.',
         plugins: 'Install, update, remove, and list plugins. Covered by Tools.',
         memory: 'Configure external memory provider. Memory file management is covered; provider-level config is partial.',
@@ -1606,6 +1606,14 @@ export default {
     setupHint: {
       title: '👋 No channels configured yet',
       desc: 'Click any channel card below and follow the setup guide to enable it. Remember to restart Gateway after saving.',
+    },
+    pairing: {
+      eyebrow: 'Official CLI command',
+      title: 'Pairing codes',
+      desc: 'Read `hermes pairing list` from the local CLI. QR binding still auto-approves pending codes when Hermes exposes them.',
+      refresh: 'Refresh pairings',
+      empty: 'No pairing output yet. Send a message to a bound bot, then refresh to inspect pending codes.',
+      errorPrefix: 'Pairing list failed:',
     },
     config: {
       drawerTitle: 'Configuration',

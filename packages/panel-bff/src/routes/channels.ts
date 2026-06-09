@@ -9,6 +9,7 @@ import {
   hasAnyChannelEnabled,
 } from '../services/channel-config.js';
 import { startGateway, gatewayStatus } from '../services/hermes-gateway.js';
+import { listPairings } from '../services/hermes-pairing.js';
 import { logger } from '../lib/logger.js';
 
 const VALID_CHANNELS = new Set<string>(Object.keys(CHANNEL_META));
@@ -21,6 +22,10 @@ channelsRouter.get('/channels', async ctx => {
     channels: listChannels(),
     gatewayRunning: gw.running,
   };
+});
+
+channelsRouter.get('/channels/pairing/list', async ctx => {
+  ctx.body = await listPairings();
 });
 
 channelsRouter.get('/channels/:name', async ctx => {

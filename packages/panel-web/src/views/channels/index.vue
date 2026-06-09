@@ -7,6 +7,8 @@ import { useChannelsStore } from '@/stores/channels';
 import ChannelCard from '@/components/channels/ChannelCard.vue';
 import ChannelConfigForm from '@/components/channels/ChannelConfigForm.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import CodeBlock from '@/components/shared/CodeBlock.vue';
 
 const { t } = useI18n();
 const store = useChannelsStore();
@@ -16,6 +18,7 @@ const restartConfirm = ref(false);
 
 onMounted(() => {
   store.fetchAll();
+  store.loadPairingList();
 });
 
 function openConfig(name: ChannelName): void {
@@ -73,6 +76,51 @@ async function handleRestart(): Promise<void> {
       <p class="text-sm font-medium text-[var(--brand-600)] mb-1">{{ t('channels.setupHint.title') }}</p>
       <p class="text-xs text-[var(--text-3)]">{{ t('channels.setupHint.desc') }}</p>
     </div>
+
+    <section
+      v-if="!store.loading"
+      class="mb-6 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3"
+    >
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--brand-600)]">
+            {{ t('channels.pairing.eyebrow') }}
+          </p>
+          <h3 class="mt-1 text-sm font-semibold text-[var(--text-1)]">
+            {{ t('channels.pairing.title') }}
+          </h3>
+          <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">
+            {{ t('channels.pairing.desc') }}
+          </p>
+        </div>
+        <NButton size="small" quaternary :loading="store.pairingLoading" @click="store.loadPairingList()">
+          {{ t('channels.pairing.refresh') }}
+        </NButton>
+      </div>
+
+      <ErrorBanner
+        v-if="store.pairingError"
+        class="mt-3"
+        :message="`${t('channels.pairing.errorPrefix')} ${store.pairingError}`"
+        :retry-label="t('channels.pairing.refresh')"
+        surface="inline"
+        @retry="store.loadPairingList()"
+      />
+
+      <CodeBlock
+        v-if="store.pairingList?.stdout"
+        class="mt-3"
+        :code="store.pairingList.stdout.trimEnd()"
+        :lang="store.pairingList.source"
+        max-height="220px"
+      />
+      <div
+        v-else-if="!store.pairingLoading && !store.pairingError"
+        class="mt-3 rounded border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)]"
+      >
+        {{ t('channels.pairing.empty') }}
+      </div>
+    </section>
 
     <!-- Channel Grid -->
     <div v-if="!store.loading && !store.error" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

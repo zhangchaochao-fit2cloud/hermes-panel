@@ -4,11 +4,22 @@ import type { ChannelName, ChannelConfig, ChannelStatus, AllChannelsState } from
 import { bffFetch } from '@/api/bff';
 
 export const useChannelsStore = defineStore('channels', () => {
+  interface PairingListReport {
+    source: string;
+    generatedAt: number;
+    stdout: string;
+    stderr?: string;
+    error?: string;
+  }
+
   const channels = ref<ChannelStatus[]>([]);
   const gatewayRunning = ref(false);
   const loading = ref(false);
   const saving = ref<string | null>(null);
   const error = ref<string | null>(null);
+  const pairingList = ref<PairingListReport | null>(null);
+  const pairingLoading = ref(false);
+  const pairingError = ref<string | null>(null);
 
   const enabledCount = computed(() => channels.value.filter(c => c.enabled).length);
 
@@ -80,8 +91,23 @@ export const useChannelsStore = defineStore('channels', () => {
     }
   }
 
+  async function loadPairingList(): Promise<void> {
+    pairingLoading.value = true;
+    pairingError.value = null;
+    try {
+      const data = await bffFetch<PairingListReport>('/api/channels/pairing/list');
+      pairingList.value = data;
+      pairingError.value = data.error ?? null;
+    } catch (err) {
+      pairingError.value = (err as Error).message;
+    } finally {
+      pairingLoading.value = false;
+    }
+  }
+
   return {
     channels, gatewayRunning, loading, saving, error, enabledCount,
-    fetchAll, fetchConfig, saveConfig, removeConfig, restartGateway,
+    pairingList, pairingLoading, pairingError,
+    fetchAll, fetchConfig, saveConfig, removeConfig, restartGateway, loadPairingList,
   };
 });

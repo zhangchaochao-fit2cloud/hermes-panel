@@ -1060,7 +1060,7 @@ export default {
         backup: '备份 Hermes home；UI 在备份与恢复中覆盖。',
         import: '从备份恢复；UI 在备份与恢复中覆盖。',
         config: '查看和编辑模型配置；Settings Providers 通过 `hermes config set model.*` 写入。',
-        pairing: '管理 DM pairing code；UI 通过 Channels 部分覆盖授权/绑定体验。',
+        pairing: '管理 DM pairing code；Channels 已覆盖 pairing list，并在扫码绑定后自动配对。',
         skills: '搜索、安装、配置和管理 skills；Tools 页已覆盖。',
         plugins: '插件安装、更新、删除和列表；Tools 页已覆盖。',
         memory: '外部 memory provider 配置；Memory 页覆盖文件管理，provider 级配置仍部分。',
@@ -1591,6 +1591,14 @@ export default {
     setupHint: {
       title: '👋 尚未配置任何渠道',
       desc: '点击下方任意渠道卡片，按照引导步骤填写配置即可启用。启用后记得重启 Gateway。',
+    },
+    pairing: {
+      eyebrow: '官方 CLI 命令',
+      title: '配对码',
+      desc: '从本机 CLI 读取 `hermes pairing list`。扫码绑定后仍会在 Hermes 暴露待配对码时自动 approve。',
+      refresh: '刷新配对',
+      empty: '暂无 pairing 输出。给已绑定 Bot 发一条消息后刷新，可查看待配对码。',
+      errorPrefix: 'Pairing list 执行失败：',
     },
     config: {
       drawerTitle: '配置',
