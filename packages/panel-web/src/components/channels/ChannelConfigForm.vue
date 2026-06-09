@@ -262,15 +262,15 @@ const SETUP_GUIDE_STEPS: Partial<Record<ChannelName, number>> = {
           <!-- Hide test button for QR-bindable channels — they use QR flow instead -->
           <NButton v-if="props.name !== 'wechat' && props.name !== 'whatsapp'" size="tiny" :loading="testing" @click="testConnection">{{ t('channels.test.trigger') }}</NButton>
           <template v-if="(props.name === 'wechat' || props.name === 'whatsapp') && !bindSuccess">
-            <NButton size="tiny" type="primary" :loading="testing" @click="bindQrChannel(props.name)">{{ t('channels.wechat.getQr') }}</NButton>
-            <NButton size="tiny" @click="checkWechatStatus">{{ t('channels.wechat.checkStatus') }}</NButton>
+            <NButton size="tiny" type="primary" :loading="testing" @click="bindQrChannel(props.name)">{{ t('channels.' + props.name + '.getQr') }}</NButton>
+            <NButton size="tiny" @click="checkWechatStatus">{{ t('channels.' + props.name + '.checkStatus') }}</NButton>
           </template>
         </div>
 
         <!-- WeChat status -->
         <div v-if="wechatStatus" class="mt-2 text-xs px-3 py-2 rounded-lg"
           :class="wechatStatus.bound ? 'bg-[color-mix(in_srgb,var(--color-success)_8%,transparent)] text-[var(--color-success)]' : 'bg-[color-mix(in_srgb,var(--text-3)_8%,transparent)] text-[var(--text-3)]'">
-          {{ wechatStatus.bound ? t('channels.wechat.bound') : t('channels.wechat.notBound') }}
+          {{ wechatStatus.bound ? t('channels.' + props.name + '.bound') : t('channels.' + props.name + '.notBound') }}
         </div>
 
         <!-- Test result -->

@@ -1047,7 +1047,7 @@ export default {
         model: '选择默认模型和供应商；UI 入口在模型与供应商设置。',
         gateway: '启动和管理消息网关；UI 已提供状态和启动/停止控制。',
         setup: '交互式初始化向导；System Health 初始化检查点和 CLI 命令交接已覆盖。',
-        whatsapp: 'WhatsApp 集成设置；UI 通过 Channels 做部分渠道配置。',
+        whatsapp: 'WhatsApp 集成设置、二维码绑定、Gateway 重启、配对列表可见性和绑定状态已由 Channels 覆盖。',
         login: '供应商登录；UI 当前更偏向 API key/凭据管理。',
         logout: '清除供应商认证；UI 只覆盖凭据管理的一部分。',
         auth: '管理池化供应商凭据；UI 在 Models & Providers 中覆盖。',

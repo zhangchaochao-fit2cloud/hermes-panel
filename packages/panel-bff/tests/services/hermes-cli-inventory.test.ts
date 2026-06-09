@@ -1,3 +1,6 @@
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, afterEach } from 'vitest';
 import {
   getCliCommandHelp,
@@ -200,6 +203,40 @@ describe('parseHermesHelpCommands', () => {
 });
 
 describe('getCliCommandInventory', () => {
+  it('marks WhatsApp as ready when the official CLI exposes the command', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hermes-cli-inventory-'));
+    const bin = join(dir, 'hermes');
+    writeFileSync(bin, `#!/bin/sh
+cat <<'EOF'
+Hermes Agent
+
+Commands:
+  whatsapp   Manage WhatsApp integration
+
+Options:
+  -h, --help  Show help
+EOF
+`, 'utf8');
+    chmodSync(bin, 0o755);
+    process.env.HERMES_BIN = bin;
+
+    try {
+      const inventory = await getCliCommandInventory();
+      expect(inventory.commands).toEqual([
+        expect.objectContaining({
+          command: 'whatsapp',
+          coverage: 'ready',
+          route: '/channels',
+          example: 'hermes whatsapp',
+        }),
+      ]);
+      expect(inventory.summary.ready).toBe(1);
+      expect(inventory.summary.partial).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns empty commands with an error code when hermes binary is unavailable', async () => {
     process.env.HERMES_BIN = 'does-not-exist-hermes-for-cli-inventory-test';
     const inventory = await getCliCommandInventory();

@@ -33,7 +33,7 @@ const COVERAGE: Record<string, CoverageMeta> = {
   model: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes model' },
   gateway: { group: 'ops', coverage: 'ready', route: '/settings#system-health', example: 'hermes gateway run' },
   setup: { group: 'config', coverage: 'ready', route: '/settings#system-health', example: 'hermes setup' },
-  whatsapp: { group: 'ops', coverage: 'partial', route: '/channels', example: 'hermes whatsapp' },
+  whatsapp: { group: 'ops', coverage: 'ready', route: '/channels', example: 'hermes whatsapp' },
   login: { group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes login openai' },
   logout: { group: 'config', coverage: 'partial', route: '/settings#providers', example: 'hermes logout openai' },
   auth: { group: 'config', coverage: 'ready', route: '/settings#providers', example: 'hermes auth list' },
