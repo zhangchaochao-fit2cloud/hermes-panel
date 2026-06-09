@@ -22,6 +22,7 @@ import PromptTemplatesBar from '@/components/chat/PromptTemplatesBar.vue';
 import ToolsStatusBar from '@/components/chat/ToolsStatusBar.vue';
 import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
 import ChatReadinessCard from '@/components/chat/ChatReadinessCard.vue';
+import ChatModelContextBar from '@/components/chat/ChatModelContextBar.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useSessionsStore } from '@/stores/sessions';
 import { useAssistantOptions } from '@/composables/useAssistantOptions';
@@ -725,6 +726,10 @@ async function onExportSelect(key: string | number): Promise<void> {
               <span class="truncate">{{ opt.content }}</span>
             </button>
           </div>
+          <ChatModelContextBar
+            v-model:model="model"
+            @pick-prompt="onReadinessPrompt"
+          />
           <div class="chat-context-bar">
             <div
               v-if="changedFilesSummary"

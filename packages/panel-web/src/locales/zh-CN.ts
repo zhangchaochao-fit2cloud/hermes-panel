@@ -263,6 +263,23 @@ export default {
       title: '开始对话',
       subtitle: '随便问点什么，{model} 会帮你解决',
     },
+    modelContext: {
+      label: '当前模型',
+      providerFallback: '未设置供应商',
+      runtimeChecking: '正在检查运行时模型...',
+      runtimeReady: 'Hermes 当前可用 {n} 个运行时模型。',
+      runtimeFallback: '运行时发现失败；设置页仍保留官方 CLI 回退命令。',
+      runtimeUnknown: '打开切换器可发现运行时模型并检查凭据。',
+      check: '检查',
+      setup: '配置',
+      checkPrompt: '在回答前检查当前 Hermes 对话模型。确认 model.default、供应商、凭据或本地端点状态，判断这是免费/本地路径还是付费云路径，并说明最安全的下一步。',
+      source: {
+        runtime: '运行时',
+        local: '免费/本地',
+        credential: '有凭据',
+        missing: '需配置',
+      },
+    },
     readiness: {
       eyebrow: '发送前确认',
       title: '对话就绪状态',
@@ -293,7 +310,7 @@ export default {
         },
         room: {
           title: '群聊房间',
-          desc: '用 @ 召唤角色，让多个 Agent 在同一房间协作。',
+          desc: "用 {'@'} 召唤角色，让多个 Agent 在同一房间协作。",
         },
         channel: {
           title: '外部渠道',

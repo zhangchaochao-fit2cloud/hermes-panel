@@ -263,6 +263,23 @@ export default {
       title: 'Start a conversation',
       subtitle: 'Ask anything — {model} will help.',
     },
+    modelContext: {
+      label: 'Active model',
+      providerFallback: 'provider unset',
+      runtimeChecking: 'Checking runtime models...',
+      runtimeReady: '{n} runtime models available from Hermes.',
+      runtimeFallback: 'Runtime discovery failed. Settings still shows the official CLI fallback.',
+      runtimeUnknown: 'Open the switcher to discover runtime models and check credentials.',
+      check: 'Check',
+      setup: 'Setup',
+      checkPrompt: 'Check the active Hermes chat model before answering. Confirm model.default, provider, credential or local endpoint status, whether this looks free/local or paid cloud, and the safest next step.',
+      source: {
+        runtime: 'Runtime',
+        local: 'Free/local',
+        credential: 'Credential',
+        missing: 'Needs setup',
+      },
+    },
     readiness: {
       eyebrow: 'Before you send',
       title: 'Chat readiness',
