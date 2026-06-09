@@ -7,6 +7,7 @@ const backlogPath = join(process.cwd(), 'src/components/developer/CliParityBackl
 const completionPath = join(process.cwd(), 'src/components/developer/CliCompletionPanel.vue');
 const headerPath = join(process.cwd(), 'src/components/developer/CliParityHeader.vue');
 const gapGuidancePath = join(process.cwd(), 'src/components/developer/CliParityGapGuidance.vue');
+const updateReadinessPath = join(process.cwd(), 'src/components/developer/CliUpdateReadinessPanel.vue');
 
 describe('CLI parity panel experience', () => {
   it('lets users focus a backlog command without combining filters manually', () => {
@@ -50,6 +51,20 @@ describe('CLI parity panel experience', () => {
     expect(backlog).toContain("focusCommand: [command: BacklogCommand]");
     expect(backlog).toContain('CliParityGapGuidance');
     expect(guidance).toContain('benchmark-badge');
+  });
+
+  it('surfaces a guarded update readiness entry without auto-running upgrades', () => {
+    const source = readFileSync(panelPath, 'utf8');
+    const updateReadiness = readFileSync(updateReadinessPath, 'utf8');
+
+    expect(source).toContain('CliUpdateReadinessPanel');
+    expect(source).toContain("commands.value.find(cmd => cmd.command === 'update')");
+    expect(source).toContain('@focus-command="focusCommand"');
+    expect(updateReadiness).toContain("bffFetch<HealthStatus>('/api/system/health'");
+    expect(updateReadiness).toContain("props.command.fallback ?? 'hermes update --help'");
+    expect(updateReadiness).toContain("copyCommand(command.example, 'copiedExample')");
+    expect(updateReadiness).toContain("emit('focusCommand', command)");
+    expect(updateReadiness).not.toContain("bffFetch('/api/cli/update");
   });
 
   it('shows recovery steps when CLI inventory fails', () => {

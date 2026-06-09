@@ -268,7 +268,8 @@ EOF
         }),
         expect.objectContaining({
           command: 'update',
-          coverage: 'missing',
+          coverage: 'partial',
+          route: '/developer#cli-parity',
           risk: 'guarded',
           fallback: 'hermes update --help',
         }),
@@ -285,8 +286,8 @@ EOF
           fallback: 'hermes acp --help',
         }),
       ]);
-      expect(inventory.summary.partial).toBe(1);
-      expect(inventory.summary.missing).toBe(3);
+      expect(inventory.summary.partial).toBe(2);
+      expect(inventory.summary.missing).toBe(2);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

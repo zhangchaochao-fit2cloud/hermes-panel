@@ -10,6 +10,7 @@ import CliParityBacklogPanel from './CliParityBacklogPanel.vue';
 import CliParityCommandCard from './CliParityCommandCard.vue';
 import CliParityFilters from './CliParityFilters.vue';
 import CliParityHeader from './CliParityHeader.vue';
+import CliUpdateReadinessPanel from './CliUpdateReadinessPanel.vue';
 
 type CompletionShell = 'zsh' | 'bash' | 'fish' | 'powershell';
 
@@ -101,6 +102,7 @@ const backlogItems = computed(() => backlogCommands.value.map(cmd => ({
   displayDescription: descriptionFor(cmd),
 })));
 const backlogCount = computed(() => inventoryTotals.value.partial + inventoryTotals.value.missing);
+const updateCommand = computed(() => commands.value.find(cmd => cmd.command === 'update') ?? null);
 
 function descriptionFor(cmd: CliCommandInventoryItem): string {
   const key = `developer.cliParity.items.${cmd.command}`;
@@ -218,6 +220,12 @@ onMounted(() => {
       @copy-example="copyBacklogExample"
       @copy-plan="copyBacklogPlan"
       @filter-coverage="coverageFilter = $event"
+      @focus-command="focusCommand"
+    />
+
+    <CliUpdateReadinessPanel
+      v-if="updateCommand"
+      :command="updateCommand"
       @focus-command="focusCommand"
     />
 
