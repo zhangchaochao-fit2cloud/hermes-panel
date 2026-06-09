@@ -21,6 +21,7 @@ import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
 import PromptTemplatesBar from '@/components/chat/PromptTemplatesBar.vue';
 import ToolsStatusBar from '@/components/chat/ToolsStatusBar.vue';
 import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
+import ChatReadinessCard from '@/components/chat/ChatReadinessCard.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useSessionsStore } from '@/stores/sessions';
 import { useAssistantOptions } from '@/composables/useAssistantOptions';
@@ -148,6 +149,10 @@ function onSelectSession(id: string): void {
 }
 
 function onTemplatePick(content: string): void {
+  composerRef.value?.setText(content);
+}
+
+function onReadinessPrompt(content: string): void {
   composerRef.value?.setText(content);
 }
 
@@ -602,6 +607,10 @@ async function onExportSelect(key: string | number): Promise<void> {
                 {{ q }}
               </button>
             </div>
+            <ChatReadinessCard
+              :chat-model="model"
+              @pick-prompt="onReadinessPrompt"
+            />
           </EmptyState>
           <!-- hover toolbar 发现提示 — 仅当有消息且未关闭过 -->
           <div
