@@ -349,6 +349,21 @@ export default {
         prompt: 'Create a short implementation plan with task decomposition, dependency order, validation steps, and acceptance criteria before editing files.',
       },
     },
+    executionMode: {
+      title: 'Conversation mode',
+      suggest: {
+        label: 'Suggest',
+        hint: 'Explains writes and commands before acting. Safest for review-heavy work.',
+      },
+      autoEdit: {
+        label: 'Auto Edit',
+        hint: 'Can read and edit files. Commands still require approval.',
+      },
+      fullAuto: {
+        label: 'Full Auto',
+        hint: 'Can complete scoped work with less interruption. Review the summary before shipping.',
+      },
+    },
     composer: {
       placeholder: "Describe the task, {'@@'}mention a role, or add files. Shift+Enter for newline...",
       placeholderWithWorkspace: "Work in {workspace}: describe the task, {'@@'}mention a role, or add files...",

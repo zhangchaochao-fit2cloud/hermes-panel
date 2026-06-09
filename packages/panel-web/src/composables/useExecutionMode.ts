@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 export type ExecutionMode = 'suggest' | 'auto-edit' | 'full-auto';
 
@@ -7,6 +8,8 @@ const STORAGE_KEY = 'panel.chat.executionMode';
 const mode = ref<ExecutionMode>((localStorage.getItem(STORAGE_KEY) as ExecutionMode) || 'suggest');
 
 export function useExecutionMode() {
+  const { t } = useI18n();
+
   function setMode(m: ExecutionMode): void {
     mode.value = m;
     localStorage.setItem(STORAGE_KEY, m);
@@ -25,9 +28,9 @@ export function useExecutionMode() {
 
   const modeLabel = computed((): string => {
     switch (mode.value) {
-      case 'suggest': return 'Suggest';
-      case 'auto-edit': return 'Auto Edit';
-      case 'full-auto': return 'Full Auto';
+      case 'suggest': return t('chat.executionMode.suggest.label');
+      case 'auto-edit': return t('chat.executionMode.autoEdit.label');
+      case 'full-auto': return t('chat.executionMode.fullAuto.label');
     }
   });
 

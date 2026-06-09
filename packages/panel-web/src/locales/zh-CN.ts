@@ -349,6 +349,21 @@ export default {
         prompt: '请先给出简短实施计划，包含任务拆分、依赖顺序、验证步骤和验收标准，然后再开始编辑文件。',
       },
     },
+    executionMode: {
+      title: '对话方式',
+      suggest: {
+        label: '建议',
+        hint: '执行写入和命令前先说明动作。适合需要审查的工作。',
+      },
+      autoEdit: {
+        label: '自动编辑',
+        hint: '可以读取和编辑文件；运行命令仍需要确认。',
+      },
+      fullAuto: {
+        label: '全自动',
+        hint: '在当前任务范围内减少打断完成工作；交付前仍需检查总结。',
+      },
+    },
     composer: {
       placeholder: "描述任务，或 {'@@'}角色 协作；可添加文件，Shift+Enter 换行...",
       placeholderWithWorkspace: "在 {workspace} 中描述任务，{'@@'}角色 协作，或添加文件...",
