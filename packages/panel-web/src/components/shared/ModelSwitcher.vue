@@ -164,7 +164,7 @@ async function pickModel(m: KnownModel): Promise<void> {
     return;
   }
   if (isBlocked(m)) {
-    message.warning(t('model.switcher.missingCredentialWarning'));
+    addCredentialForBlockedModel();
     return;
   }
   const r = await store.setModel({ name: m.id, provider: m.provider, baseUrl: m.baseUrl });
@@ -186,6 +186,11 @@ async function applyCustom(): Promise<void> {
 function manageProviders(): void {
   popoverOpen.value = false;
   void router.push({ path: '/settings', hash: '#providers' });
+}
+
+function addCredentialForBlockedModel(): void {
+  message.warning(t('model.switcher.missingCredentialWarning'));
+  manageProviders();
 }
 
 function shortHost(url: string): string {
@@ -251,7 +256,7 @@ function shortHost(url: string): string {
             <span v-if="configuredFamilies.has(g.provider)" class="h-1.5 w-1.5 rounded-full status-dot-success flex-shrink-0" :title="t('model.switcher.providerConfigured')" />
             <span class="ml-auto text-[10px] text-[var(--text-3)] tabular-nums">{{ g.models.length }}</span>
           </div>
-          <button v-for="m in g.models" :key="m.id" class="model-row relative w-full pl-3 pr-3 py-2 my-0.5 rounded-lg border flex items-start justify-between gap-3 text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60" :class="isCurrent(m) ? 'bg-[var(--brand-500)]/8 border-[var(--brand-500)]/60' : 'border-transparent hover:bg-[var(--bg-elevate)] hover:border-[var(--border)] hover:shadow-[var(--shadow-1)]'" :disabled="settingModel || isBlocked(m)" @click="pickModel(m)">
+          <button v-for="m in g.models" :key="m.id" class="model-row relative w-full pl-3 pr-3 py-2 my-0.5 rounded-lg border flex items-start justify-between gap-3 text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60" :class="isCurrent(m) ? 'bg-[var(--brand-500)]/8 border-[var(--brand-500)]/60' : 'border-transparent hover:bg-[var(--bg-elevate)] hover:border-[var(--border)] hover:shadow-[var(--shadow-1)]'" :disabled="settingModel" @click="pickModel(m)">
             <span v-if="isCurrent(m)" class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--brand-500)]" aria-hidden="true" />
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">

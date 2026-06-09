@@ -19,6 +19,15 @@ describe('model switcher experience', () => {
     expect(source).toContain("t('model.switcher.missingCredentialWarning')");
   });
 
+  it('routes missing-credential choices into provider setup instead of a dead disabled row', () => {
+    const source = readFileSync(modelSwitcherPath, 'utf8');
+
+    expect(source).toContain('addCredentialForBlockedModel');
+    expect(source).toContain("router.push({ path: '/settings', hash: '#providers' })");
+    expect(source).toContain(':disabled="settingModel"');
+    expect(source).not.toContain(':disabled="settingModel || isBlocked(m)"');
+  });
+
   it('keeps the default picker compact until the user searches', () => {
     const source = readFileSync(modelSwitcherPath, 'utf8');
 

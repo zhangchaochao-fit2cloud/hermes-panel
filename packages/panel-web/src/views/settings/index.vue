@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { NTabs, NTab } from 'naive-ui';
 import SectionAppearance from '@/components/settings/SectionAppearance.vue';
 import SectionProviders from '@/components/settings/SectionProviders.vue';
@@ -19,6 +19,7 @@ import { useBreakpoint } from '@/composables/use-breakpoint';
 const { t } = useI18n();
 const { isMobile } = useBreakpoint();
 const route = useRoute();
+const router = useRouter();
 
 interface AnchorItem { key: string; label: string }
 
@@ -37,15 +38,41 @@ const anchors: AnchorItem[] = [
 ];
 
 const activeKey = ref<string>('system-health');
+const focusedKey = ref<string | null>(null);
 const scrollerRef = ref<HTMLElement | null>(null);
 
 let observer: IntersectionObserver | null = null;
+let focusTimer: ReturnType<typeof setTimeout> | null = null;
 
-function goTo(key: string): void {
+function isAnchorKey(key: string): boolean {
+  return anchors.some(a => a.key === key);
+}
+
+function focusSection(key: string): void {
+  focusedKey.value = key;
+  if (focusTimer) clearTimeout(focusTimer);
+  focusTimer = setTimeout(() => {
+    if (focusedKey.value === key) focusedKey.value = null;
+  }, 1800);
+}
+
+function goTo(key: string, syncHash = true): void {
+  if (!isAnchorKey(key)) return;
   const el = document.getElementById(`settings-section-${key}`);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   activeKey.value = key;
+  focusSection(key);
+  if (syncHash && route.hash !== `#${key}`) {
+    void router.replace({ hash: `#${key}` });
+  }
+}
+
+function sectionClass(key: string): Array<string | Record<string, boolean>> {
+  return [
+    'settings-section scroll-mt-24',
+    { 'settings-section-focus': focusedKey.value === key },
+  ];
 }
 
 onMounted(() => {
@@ -78,14 +105,23 @@ onMounted(() => {
 
   // Jump to anchor if route hash points at a known section, e.g. /settings#providers
   const hash = route.hash.replace(/^#/, '');
-  if (hash && anchors.some(a => a.key === hash)) {
-    void nextTick(() => goTo(hash));
+  if (hash && isAnchorKey(hash)) {
+    void nextTick(() => goTo(hash, false));
+  }
+});
+
+watch(() => route.hash, h => {
+  const key = h.replace(/^#/, '');
+  if (key && isAnchorKey(key)) {
+    void nextTick(() => goTo(key, false));
   }
 });
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   observer = null;
+  if (focusTimer) clearTimeout(focusTimer);
+  focusTimer = null;
 });
 </script>
 
@@ -149,37 +185,37 @@ onBeforeUnmount(() => {
         class="mx-auto space-y-8"
         :class="isMobile ? 'max-w-full px-4 py-6' : 'max-w-[800px] px-8 py-8'"
       >
-        <section id="settings-section-license" class="scroll-mt-24">
+        <section id="settings-section-license" :class="sectionClass('license')">
           <SectionLicense />
         </section>
-        <section id="settings-section-access" class="scroll-mt-24">
+        <section id="settings-section-access" :class="sectionClass('access')">
           <SectionAccess />
         </section>
-        <section id="settings-section-system-health" class="scroll-mt-24">
+        <section id="settings-section-system-health" :class="sectionClass('system-health')">
           <SectionSystemHealth />
         </section>
-        <section id="settings-section-appearance" class="scroll-mt-24">
+        <section id="settings-section-appearance" :class="sectionClass('appearance')">
           <SectionAppearance />
         </section>
-        <section id="settings-section-providers" class="scroll-mt-24">
+        <section id="settings-section-providers" :class="sectionClass('providers')">
           <SectionProviders />
         </section>
-        <section id="settings-section-hermes-endpoints" class="scroll-mt-24">
+        <section id="settings-section-hermes-endpoints" :class="sectionClass('hermes-endpoints')">
           <SectionHermesEndpoints />
         </section>
-        <section id="settings-section-language" class="scroll-mt-24">
+        <section id="settings-section-language" :class="sectionClass('language')">
           <SectionLanguage />
         </section>
-        <section id="settings-section-hotkeys" class="scroll-mt-24">
+        <section id="settings-section-hotkeys" :class="sectionClass('hotkeys')">
           <SectionHotkeys />
         </section>
-        <section id="settings-section-advanced" class="scroll-mt-24">
+        <section id="settings-section-advanced" :class="sectionClass('advanced')">
           <SectionAdvanced />
         </section>
-        <section id="settings-section-backup" class="scroll-mt-24">
+        <section id="settings-section-backup" :class="sectionClass('backup')">
           <SectionBackup />
         </section>
-        <section id="settings-section-about" class="scroll-mt-24">
+        <section id="settings-section-about" :class="sectionClass('about')">
           <SectionAbout />
         </section>
         <!-- bottom padding so the last section can scroll to the top -->
@@ -188,3 +224,22 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.settings-section {
+  border-radius: 8px;
+  margin-inline: -10px;
+  padding: 10px;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    outline-color 180ms ease;
+}
+
+.settings-section-focus {
+  outline: 2px solid color-mix(in srgb, var(--brand-500) 48%, transparent);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--brand-500) 7%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand-500) 9%, transparent);
+}
+</style>
