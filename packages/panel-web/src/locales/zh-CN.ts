@@ -284,6 +284,14 @@ export default {
       modelCheckPrompt: '请检查我的 Hermes 模型配置是否就绪。先确认当前模型和供应商；如果缺少凭据，请建议最快的免费/本地回退方案；最后给我一条安全的测试提示词。',
       pathTitle: '最快开始回复路径',
       pathDesc: '能用免费/本地就先开始，需要时再配置供应商，最后用一条安全提示词检查模型。',
+      runtimeTitle: '当前网关可用模型',
+      runtimeLoading: '正在从 Hermes 读取运行时模型...',
+      runtimeReady: '当前可用 {n} 个运行时模型。选择后只设置 model.default，不改供应商凭据。',
+      runtimeFallback: '运行时发现失败。可以打开设置页，或在切换器里输入自定义模型 ID。',
+      runtimeEmpty: '网关暂未返回运行时模型。',
+      runtimeHint: '仍可先使用本地提示词，或打开模型配置。',
+      runtimeCurrent: '当前',
+      runtimeApplied: '已选择 {model}',
       path: {
         local: {
           title: '试用免费本地',

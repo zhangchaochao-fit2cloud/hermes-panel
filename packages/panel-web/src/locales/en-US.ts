@@ -284,6 +284,14 @@ export default {
       modelCheckPrompt: 'Check whether my Hermes model setup is ready. First verify the active model and provider, then suggest the fastest free/local fallback if credentials are missing, and end with one safe test prompt.',
       pathTitle: 'Fastest path to first reply',
       pathDesc: 'Start free/local when possible, configure only when needed, then run one safe model check.',
+      runtimeTitle: 'Available from current gateway',
+      runtimeLoading: 'Reading runtime models from Hermes...',
+      runtimeReady: '{n} runtime models are available. Pick one to set model.default without changing provider credentials.',
+      runtimeFallback: 'Runtime discovery failed. Use Settings or type a custom model ID in the switcher.',
+      runtimeEmpty: 'No runtime models have been reported by the gateway yet.',
+      runtimeHint: 'You can still start with a local prompt or open model setup.',
+      runtimeCurrent: 'Current',
+      runtimeApplied: '{model} selected',
       path: {
         local: {
           title: 'Try free local',

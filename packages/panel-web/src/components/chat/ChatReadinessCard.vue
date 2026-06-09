@@ -3,8 +3,8 @@ import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { NButton, NTag } from 'naive-ui';
-import { useProvidersStore } from '@/stores/providers';
+import { NButton, NTag, useMessage } from 'naive-ui';
+import { useProvidersStore, type DiscoveredModel } from '@/stores/providers';
 import { useExecutionMode } from '@/composables/useExecutionMode';
 
 const props = defineProps<{ chatModel: string }>();
@@ -12,24 +12,38 @@ const emit = defineEmits<{ (e: 'pick-prompt', prompt: string): void }>();
 
 const { t } = useI18n();
 const router = useRouter();
+const message = useMessage();
 const providersStore = useProvidersStore();
-const { model, providers, initialized, loading, error, activeCredentialLabel } = storeToRefs(providersStore);
+const {
+  model, providers, initialized, loading, error, activeCredentialLabel,
+  discoveredModels, discoveryLoading, discoveryError,
+} = storeToRefs(providersStore);
 const { modeLabel } = useExecutionMode();
 
 onMounted(() => {
   if (!initialized.value) void providersStore.load({ initial: true });
+  void providersStore.discoverModels();
 });
 
 const configuredProviderCount = computed(() => providers.value.length);
 const currentModelName = computed(() => model.value?.default || props.chatModel || t('model.switcher.unset'));
 const currentProviderName = computed(() => model.value?.provider || t('chat.readiness.providerUnset'));
+const currentModelDiscovered = computed(() => !!model.value?.default && discoveredModels.value.some(item => item.id === model.value?.default));
 const modelReady = computed(() =>
   !!model.value?.default && (
-    !!model.value.hasApiKey
+    currentModelDiscovered.value
+    || !!model.value.hasApiKey
     || !!model.value.activeCredential
     || providers.value.some(provider => provider.family === model.value?.provider)
   )
 );
+const runtimeModels = computed(() => discoveredModels.value.slice(0, 3));
+const runtimeStatus = computed(() => {
+  if (discoveryLoading.value) return t('chat.readiness.runtimeLoading');
+  if (runtimeModels.value.length > 0) return t('chat.readiness.runtimeReady', { n: discoveredModels.value.length });
+  if (discoveryError.value) return t('chat.readiness.runtimeFallback');
+  return t('chat.readiness.runtimeEmpty');
+});
 
 const setupPath = computed(() => [
   {
@@ -91,6 +105,15 @@ function useLocalPrompt(): void {
 
 function useModelCheckPrompt(): void {
   emit('pick-prompt', t('chat.readiness.modelCheckPrompt'));
+}
+
+async function useRuntimeModel(item: DiscoveredModel): Promise<void> {
+  const r = await providersStore.setModel({ name: item.id });
+  if (r.ok) {
+    message.success(t('chat.readiness.runtimeApplied', { model: item.label || item.id }));
+    return;
+  }
+  message.error(`${t('model.switcher.failed')}: ${r.error ?? ''}`);
 }
 </script>
 
@@ -165,6 +188,30 @@ function useModelCheckPrompt(): void {
           </span>
         </button>
       </div>
+    </div>
+
+    <div class="mt-4 rounded-md border border-[var(--border)] bg-[var(--bg-elevate)] p-3">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-[var(--text-1)]">{{ t('chat.readiness.runtimeTitle') }}</p>
+          <p class="mt-0.5 text-[11px] leading-4 text-[var(--text-3)]">{{ runtimeStatus }}</p>
+        </div>
+        <NButton size="tiny" quaternary :loading="discoveryLoading" @click="providersStore.discoverModels()">
+          {{ t('common.retry') }}
+        </NButton>
+      </div>
+      <div v-if="runtimeModels.length > 0" class="mt-3 flex flex-wrap gap-2">
+        <NButton
+          v-for="item in runtimeModels"
+          :key="item.id"
+          size="tiny"
+          ghost
+          type="primary"
+          :disabled="model?.default === item.id"
+          @click="useRuntimeModel(item)"
+        >{{ model?.default === item.id ? t('chat.readiness.runtimeCurrent') : item.label || item.id }}</NButton>
+      </div>
+      <p v-else class="mt-3 text-[11px] leading-4 text-[var(--text-3)]">{{ t('chat.readiness.runtimeHint') }}</p>
     </div>
 
     <div class="readiness-actions mt-4 flex flex-wrap items-center gap-2">

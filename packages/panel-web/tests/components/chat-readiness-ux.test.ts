@@ -44,4 +44,16 @@ describe('chat readiness onboarding', () => {
     expect(card).toContain("emit('pick-prompt', t('chat.readiness.modelCheckPrompt'))");
     expect(card).not.toContain('runHermes');
   });
+
+  it('lets users pick runtime-discovered Hermes models from the chat empty state', () => {
+    const card = readFileSync(readinessPath, 'utf8');
+
+    expect(card).toContain('discoveredModels');
+    expect(card).toContain('providersStore.discoverModels');
+    expect(card).toContain('runtimeModels');
+    expect(card).toContain("t('chat.readiness.runtimeTitle')");
+    expect(card).toContain("t('chat.readiness.runtimeFallback')");
+    expect(card).toContain('providersStore.setModel({ name: item.id })');
+    expect(card).toContain('currentModelDiscovered');
+  });
 });
