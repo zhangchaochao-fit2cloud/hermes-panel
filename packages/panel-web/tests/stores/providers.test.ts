@@ -182,6 +182,23 @@ describe('providers model inspection', () => {
     expect(mockedBffFetch).toHaveBeenCalledWith('/api/models/discover', { silent: true });
   });
 
+  it('keeps static model fallback visible when runtime model discovery fails', async () => {
+    mockedBffFetch.mockResolvedValueOnce({
+      checkedAt: 789,
+      source: 'http://127.0.0.1:8642/v1/models',
+      models: [],
+      error: 'ECONNREFUSED',
+    });
+    const store = useProvidersStore();
+
+    await store.discoverModels();
+
+    expect(store.discoveryLoading).toBe(false);
+    expect(store.discoveryCheckedAt).toBe(789);
+    expect(store.discoveredModels).toEqual([]);
+    expect(store.discoveryError).toBe('ECONNREFUSED');
+  });
+
   it('loads candidate model inspection metadata from the BFF', async () => {
     mockedBffFetch.mockResolvedValueOnce({
       checkedAt: 123,

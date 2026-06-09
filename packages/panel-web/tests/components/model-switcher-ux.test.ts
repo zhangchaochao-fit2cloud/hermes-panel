@@ -33,6 +33,11 @@ describe('model switcher experience', () => {
     const source = readFileSync(modelSwitcherPath, 'utf8');
 
     expect(source).toContain('discoveredGroups');
+    expect(source).toContain('model-discovery-status');
+    expect(source).toContain('discoveryStatusText');
+    expect(source).toContain("t('model.switcher.discoveryFound',");
+    expect(source).toContain("t('model.switcher.discoveryKnownOnly',");
+    expect(source).toContain("t('model.switcher.discoveryFallback')");
     expect(source).toContain('RUNTIME_PROVIDER');
     expect(source).toContain("t('model.switcher.discoveredGroup')");
     expect(source).toContain("t('model.switcher.discoveredReady')");

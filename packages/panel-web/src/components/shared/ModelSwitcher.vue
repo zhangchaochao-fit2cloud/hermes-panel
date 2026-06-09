@@ -13,7 +13,8 @@ const store = useProvidersStore();
 const message = useMessage();
 const {
   model, providers, loading, initialized, settingModel, inspectionLoading,
-  discoveryLoading, balanceLoading, activeCredentialLabel, discoveredModels,
+  discoveryLoading, discoveryCheckedAt, balanceLoading, activeCredentialLabel,
+  discoveredModels, discoveryError,
 } = storeToRefs(store);
 
 const popoverOpen = ref(false);
@@ -121,6 +122,29 @@ const compactGroups = computed(() => {
 
 const hasResults = computed(() => compactGroups.value.some(g => g.models.length > 0));
 const busy = computed(() => loading.value || settingModel.value || inspectionLoading.value || discoveryLoading.value);
+const runtimeModelCount = computed(() => discoveredGroups.value.reduce((sum, group) => sum + group.models.length, 0));
+const discoveryStatusKind = computed<'loading' | 'ready' | 'warning' | 'idle'>(() => {
+  if (discoveryLoading.value) return 'loading';
+  if (runtimeModelCount.value > 0 || discoveredModels.value.length > 0) return 'ready';
+  if (discoveryError.value) return 'warning';
+  return 'idle';
+});
+const discoveryStatusClass = computed(() => {
+  if (discoveryStatusKind.value === 'loading') return 'border-sky-500/25 bg-sky-500/10 text-sky-700';
+  if (discoveryStatusKind.value === 'ready') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700';
+  if (discoveryStatusKind.value === 'warning') return 'border-amber-500/25 bg-amber-500/10 text-amber-700';
+  return 'border-[var(--border)] bg-[var(--bg-elevate)] text-[var(--text-3)]';
+});
+const discoveryStatusText = computed(() => {
+  if (discoveryLoading.value) return t('model.switcher.discoveryLoading');
+  if (runtimeModelCount.value > 0) return t('model.switcher.discoveryFound', { n: runtimeModelCount.value });
+  if (discoveredModels.value.length > 0) return t('model.switcher.discoveryKnownOnly', { n: discoveredModels.value.length });
+  if (discoveryError.value) return t('model.switcher.discoveryFallback');
+  return t('model.switcher.discoveryIdle');
+});
+const discoveryCheckedLabel = computed(() => (
+  discoveryCheckedAt.value ? new Date(discoveryCheckedAt.value).toLocaleTimeString() : ''
+));
 
 function isRuntimeModel(m: SwitcherModel): boolean {
   return m.provider === RUNTIME_PROVIDER || m.source === 'hermes-api';
@@ -288,6 +312,15 @@ function shortHost(url: string): string {
             </svg>
           </template>
         </NInput>
+      </div>
+
+      <div class="px-3 py-2 border-b border-[var(--border)]">
+        <div class="model-discovery-status flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px]" :class="discoveryStatusClass">
+          <NSpin v-if="discoveryLoading" :size="12" />
+          <span v-else class="h-1.5 w-1.5 rounded-full flex-shrink-0" :class="discoveryStatusKind === 'warning' ? 'bg-amber-500' : discoveryStatusKind === 'ready' ? 'bg-emerald-500' : 'bg-[var(--text-3)]'" aria-hidden="true" />
+          <span class="min-w-0 flex-1 truncate">{{ discoveryStatusText }}</span>
+          <span v-if="discoveryCheckedLabel" class="flex-shrink-0 font-mono opacity-70">{{ discoveryCheckedLabel }}</span>
+        </div>
       </div>
 
       <div class="max-h-[320px] overflow-auto px-2 py-1.5">
