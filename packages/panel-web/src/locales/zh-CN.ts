@@ -1417,6 +1417,8 @@ export default {
       eyebrow: '能力地图',
       title: '60 秒内找到该用哪个功能',
       desc: '按 CLI 对齐能力、Panel 独有能力和待补齐缺口分组。每个入口都给出用途和示例，目标是 3 次交互内完成常见任务。',
+      open: '打开',
+      use: '用于任务',
       status: {
         ready: '可用',
         partial: '部分',
@@ -1458,6 +1460,14 @@ export default {
         kanban: { title: 'Kanban 任务板', desc: '后端基础存在，前端任务板还未完整落地。', example: '下一步：把 Goal/Run 映射成可拖拽任务。' },
         approvalQueue: { title: '审批队列', desc: '高风险操作需要集中审查和可追溯记录。', example: '下一步：命令、文件写入和外部调用统一审批。' },
         terminalPanels: { title: '场景化终端', desc: 'Sandbox 已有输出，Chat/Files 内嵌终端仍需补齐。', example: '下一步：命令输出跟随当前会话和目录。' },
+      },
+      prompts: {
+        tools: '检查当前任务应该使用哪些 Hermes 工具、技能或 MCP 服务器。使用任何工具前，先说明最短且安全的执行路径。',
+        memory: '判断这个任务是否需要长期记忆或项目上下文，然后总结哪些上下文应该参与。',
+        cron: '把这个提示词创建成 Hermes 定时任务。请包含执行频率、预期输出，以及我该如何检查失败运行。',
+        goals: '把这个任务转成长线 Hermes 目标，包含清晰验收条件、检查点、验证命令和回退边界。',
+        cost: '从成本角度评估这个任务。建议最低成本且安全的模型路径、何时需要升级模型，以及要关注哪些 token 用量。',
+        chatRoom: '为这个任务发起角色房间讨论。请让架构、前端、后端和审查角色一起识别风险和下一步实现。',
       },
     },
     usageChart: { title: '近 7 天 Token 趋势', subtitle: '按日聚合' },

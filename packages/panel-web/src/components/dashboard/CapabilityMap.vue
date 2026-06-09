@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import CapabilityMapItem from './CapabilityMapItem.vue';
 
 type CapabilityState = 'ready' | 'partial' | 'planned';
 
@@ -9,6 +10,9 @@ interface CapabilityItem {
   key: string;
   state: CapabilityState;
   route?: string;
+  useRoute?: string;
+  promptKey?: string;
+  pendingKey?: 'panel.pendingGoalObjective' | 'panel.pendingCronPrompt' | 'panel.pendingRoomPrompt';
 }
 
 interface CapabilitySection {
@@ -25,12 +29,12 @@ const sections: CapabilitySection[] = [
     items: [
       { key: 'chat', state: 'ready', route: '/chat' },
       { key: 'sessions', state: 'ready', route: '/sessions' },
-      { key: 'tools', state: 'ready', route: '/tools' },
-      { key: 'models', state: 'ready', route: '/settings#providers' },
+      { key: 'tools', state: 'ready', route: '/tools', useRoute: '/chat', promptKey: 'dashboard.capabilityMap.prompts.tools' },
+      { key: 'models', state: 'ready', route: '/settings#providers', useRoute: '/settings#providers' },
       { key: 'gateway', state: 'ready', route: '/settings#system-health' },
       { key: 'cliParity', state: 'ready', route: '/developer#cli-parity' },
-      { key: 'memory', state: 'ready', route: '/memory' },
-      { key: 'cron', state: 'ready', route: '/cron' },
+      { key: 'memory', state: 'ready', route: '/memory', useRoute: '/chat', promptKey: 'dashboard.capabilityMap.prompts.memory' },
+      { key: 'cron', state: 'ready', route: '/cron', useRoute: '/cron', promptKey: 'dashboard.capabilityMap.prompts.cron', pendingKey: 'panel.pendingCronPrompt' },
       { key: 'files', state: 'ready', route: '/files' },
     ],
   },
@@ -38,12 +42,12 @@ const sections: CapabilitySection[] = [
     key: 'panel',
     items: [
       { key: 'workspaces', state: 'ready', route: '/workspaces' },
-      { key: 'goals', state: 'ready', route: '/goals' },
-      { key: 'cost', state: 'ready', route: '/cost' },
+      { key: 'goals', state: 'ready', route: '/goals', useRoute: '/goals', promptKey: 'dashboard.capabilityMap.prompts.goals', pendingKey: 'panel.pendingGoalObjective' },
+      { key: 'cost', state: 'ready', route: '/cost', useRoute: '/chat', promptKey: 'dashboard.capabilityMap.prompts.cost' },
       { key: 'developer', state: 'ready', route: '/developer' },
       { key: 'sandbox', state: 'ready', route: '/sandbox' },
       { key: 'channels', state: 'ready', route: '/channels' },
-      { key: 'chatRoom', state: 'ready', route: '/chat-room' },
+      { key: 'chatRoom', state: 'ready', route: '/chat-room', useRoute: '/chat-room', promptKey: 'dashboard.capabilityMap.prompts.chatRoom', pendingKey: 'panel.pendingRoomPrompt' },
       { key: 'intent', state: 'ready', route: '/intent' },
     ],
   },
@@ -53,7 +57,7 @@ const sections: CapabilitySection[] = [
       { key: 'multiAgentControl', state: 'partial', route: '/goals' },
       { key: 'kanban', state: 'partial' },
       { key: 'approvalQueue', state: 'planned' },
-      { key: 'terminalPanels', state: 'planned', route: '/sandbox' },
+      { key: 'terminalPanels', state: 'planned', route: '/sandbox', useRoute: '/sandbox' },
     ],
   },
 ];
@@ -88,6 +92,27 @@ function sectionText(section: CapabilitySection, field: 'title' | 'desc'): strin
 function go(route?: string): void {
   if (!route) return;
   void router.push(route);
+}
+
+function useCapability(item: CapabilityItem): void {
+  if (!item.useRoute) {
+    go(item.route);
+    return;
+  }
+  if (item.promptKey) {
+    const prompt = t(item.promptKey);
+    try {
+      if (item.pendingKey) sessionStorage.setItem(item.pendingKey, prompt);
+      else localStorage.setItem('panel.chat.draft.new', prompt);
+    } catch {
+      /* route still works when storage is unavailable */
+    }
+  }
+  if (item.useRoute === '/chat') {
+    void router.push({ path: '/chat', query: { new: String(Date.now()) } });
+    return;
+  }
+  go(item.useRoute);
 }
 </script>
 
@@ -138,33 +163,22 @@ function go(route?: string): void {
         </div>
 
         <div class="space-y-2">
-          <button
+          <CapabilityMapItem
             v-for="item in section.items"
             :key="item.key"
-            type="button"
-            class="capability-item"
-            :class="[statusClass(item.state), item.route ? 'can-open' : 'is-disabled']"
-            :disabled="!item.route"
-            @click="go(item.route)"
-          >
-            <span class="capability-dot" aria-hidden="true" />
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center justify-between gap-2">
-                <span class="truncate text-sm font-medium text-[var(--text-1)]">
-                  {{ itemText(item, 'title') }}
-                </span>
-                <span class="capability-status">
-                  {{ statusLabel(item.state) }}
-                </span>
-              </span>
-              <span class="mt-1 block text-left text-xs leading-5 text-[var(--text-3)]">
-                {{ itemText(item, 'desc') }}
-              </span>
-              <span class="mt-1 block text-left text-[11px] leading-4 text-[var(--text-2)]">
-                {{ itemText(item, 'example') }}
-              </span>
-            </span>
-          </button>
+            :state="item.state"
+            :title="itemText(item, 'title')"
+            :description="itemText(item, 'desc')"
+            :example="itemText(item, 'example')"
+            :status-label="statusLabel(item.state)"
+            :status-class="statusClass(item.state)"
+            :can-open="Boolean(item.route)"
+            :can-use="Boolean(item.useRoute)"
+            :open-label="t('dashboard.capabilityMap.open')"
+            :use-label="t('dashboard.capabilityMap.use')"
+            @open="go(item.route)"
+            @use="useCapability(item)"
+          />
         </div>
       </article>
     </div>
@@ -208,70 +222,4 @@ function go(route?: string): void {
   padding: 14px;
 }
 
-.capability-item {
-  display: flex;
-  width: 100%;
-  min-height: 92px;
-  align-items: flex-start;
-  gap: 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  padding: 11px;
-  color: inherit;
-  text-align: left;
-  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
-}
-
-.capability-item.can-open:hover {
-  border-color: color-mix(in srgb, var(--brand-500) 44%, var(--border));
-  background: color-mix(in srgb, var(--brand-500) 7%, var(--bg-card));
-  transform: translateY(-1px);
-}
-
-.capability-item.is-disabled {
-  cursor: default;
-  opacity: 0.72;
-}
-
-.capability-dot {
-  margin-top: 5px;
-  height: 9px;
-  width: 9px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--text-3);
-}
-
-.capability-item.is-ready .capability-dot {
-  background: var(--color-success);
-}
-
-.capability-item.is-partial .capability-dot {
-  background: var(--color-warning);
-}
-
-.capability-item.is-planned .capability-dot {
-  background: var(--text-3);
-}
-
-.capability-status {
-  flex: 0 0 auto;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  padding: 2px 7px;
-  color: var(--text-2);
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.capability-item.is-ready .capability-status {
-  border-color: color-mix(in srgb, var(--color-success) 40%, var(--border));
-  color: var(--color-success);
-}
-
-.capability-item.is-partial .capability-status {
-  border-color: color-mix(in srgb, var(--color-warning) 44%, var(--border));
-  color: var(--color-warning);
-}
 </style>

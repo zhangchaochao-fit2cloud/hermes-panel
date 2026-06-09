@@ -1417,6 +1417,8 @@ export default {
       eyebrow: 'Capability map',
       title: 'Find the right feature in 60 seconds',
       desc: 'Grouped by CLI parity, Panel-only enhancements, and known gaps. Every entry includes purpose and example usage, with a target of completing common tasks in three interactions.',
+      open: 'Open',
+      use: 'Use in task',
       status: {
         ready: 'Ready',
         partial: 'Partial',
@@ -1458,6 +1460,14 @@ export default {
         kanban: { title: 'Kanban Board', desc: 'Backend foundation exists; the full frontend board is not complete.', example: 'Next: map Goals and Runs into draggable work items.' },
         approvalQueue: { title: 'Approval Queue', desc: 'Risky operations need centralized review and audit trails.', example: 'Next: unify approvals for commands, file writes, and external calls.' },
         terminalPanels: { title: 'Contextual Terminals', desc: 'Sandbox output exists; embedded Chat/Files terminals still need work.', example: 'Next: command output follows the active session and folder.' },
+      },
+      prompts: {
+        tools: 'Inspect which Hermes tools, skills, or MCP servers should participate in this task. Explain the shortest safe path before using any tool.',
+        memory: 'Check whether long-term memory or saved project context should be used for this task, then summarize what context is relevant.',
+        cron: 'Create a scheduled Hermes task from this prompt. Include cadence, expected output, and how I should review failed runs.',
+        goals: 'Turn this into a long-running Hermes goal with clear done criteria, checkpoints, verification commands, and rollback boundaries.',
+        cost: 'Review this task from a cost perspective. Suggest the cheapest safe model path, when to upgrade, and what token usage to watch.',
+        chatRoom: 'Start a role-room discussion for this task. Ask architecture, frontend, backend, and review roles to identify risks and the next implementation step.',
       },
     },
     usageChart: { title: '7-day Token usage', subtitle: 'Per day' },
