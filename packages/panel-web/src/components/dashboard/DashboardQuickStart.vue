@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import type { HealthStatus } from '@hermes-panel/shared';
+import DashboardFirstRunPath from './DashboardFirstRunPath.vue';
 
 type StepState = 'recommended' | 'ready' | 'attention';
 
@@ -10,6 +11,12 @@ interface QuickStartStep {
   key: string;
   route: string;
   state: StepState;
+}
+
+interface FirstRunAction {
+  key: string;
+  route: string;
+  draftKey?: string;
 }
 
 const props = defineProps<{
@@ -46,14 +53,41 @@ const steps = computed<QuickStartStep[]>(() => [
   },
 ]);
 
+const firstRunActions: FirstRunAction[] = [
+  {
+    key: 'freeLocal',
+    route: '/chat',
+    draftKey: 'dashboard.quickStart.firstRun.freeLocal.prompt',
+  },
+  {
+    key: 'cloudModel',
+    route: '/settings#providers',
+  },
+  {
+    key: 'conversation',
+    route: '/chat-room',
+  },
+];
+
 const summaryKey = computed(() => {
   if (props.loading) return 'checking';
   if (needsSetup.value) return 'needsSetup';
   return 'ready';
 });
 
-function go(route: string): void {
+function go(route: string, draftKey?: string): void {
+  if (draftKey) {
+    try {
+      localStorage.setItem('panel.chat.draft.new', t(draftKey));
+    } catch {
+      /* ignore storage failures; navigation still works */
+    }
+  }
   void router.push(route);
+}
+
+function selectFirstRun(action: FirstRunAction): void {
+  go(action.route, action.draftKey);
 }
 </script>
 
@@ -76,6 +110,8 @@ function go(route: string): void {
         <span>{{ t(`dashboard.quickStart.status.${summaryKey}`) }}</span>
       </div>
     </div>
+
+    <DashboardFirstRunPath :actions="firstRunActions" @select="selectFirstRun" />
 
     <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
       <button

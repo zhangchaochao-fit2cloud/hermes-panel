@@ -1058,15 +1058,32 @@ export default {
         ready: '可用',
         attention: '需处理',
       },
+      firstRun: {
+        title: '最快获得第一条回复',
+        desc: '优先使用免费/本地模型；需要时再配置云端供应商，也可以切到多 Agent 群聊。',
+        freeLocal: {
+          title: '试用免费本地',
+          desc: '带着安全的本地模型测试提示词打开 Chat。',
+          prompt: '如果本地免费模型可用，请优先使用它。先确认预期的本地端点和当前模型，然后给我一条不会消耗云额度的短测试回复。',
+        },
+        cloudModel: {
+          title: '配置云端模型',
+          desc: '添加凭据、发现运行时模型，并设置 model.default。',
+        },
+        conversation: {
+          title: '选择对话方式',
+          desc: '单 Agent 用普通 Chat，多角色协作用群聊房间。',
+        },
+      },
       steps: {
         configure: {
           title: '配置模型',
-          desc: '添加供应商凭据、登录/退出供应商，并确认 model.default。',
+          desc: '添加凭据、发现模型，并在 Hermes 设置中确认 model.default。',
           cta: '打开供应商',
         },
         chat: {
-          title: '开始任务',
-          desc: 'Hermes 可达后进入 Chat，发送第一个任务。',
+          title: '选择模型并对话',
+          desc: '使用模型切换器，选择对话方式，然后发送第一个任务。',
           cta: '打开 Chat',
         },
         channels: {

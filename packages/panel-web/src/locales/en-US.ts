@@ -1058,15 +1058,32 @@ export default {
         ready: 'Ready',
         attention: 'Needs attention',
       },
+      firstRun: {
+        title: 'Fastest path to the first reply',
+        desc: 'Start free/local first, configure a cloud provider only when needed, or switch to a multi-agent room.',
+        freeLocal: {
+          title: 'Try free local',
+          desc: 'Open Chat with a safe local-model test prompt.',
+          prompt: 'Use my free local model if available. First confirm the expected local endpoint and active model, then give me one short test response without spending cloud credits.',
+        },
+        cloudModel: {
+          title: 'Configure cloud model',
+          desc: 'Add credentials, discover runtime models, then set model.default.',
+        },
+        conversation: {
+          title: 'Choose conversation',
+          desc: 'Use normal Chat for one agent or Chat Room for role-based collaboration.',
+        },
+      },
       steps: {
         configure: {
           title: 'Configure model',
-          desc: 'Add provider credentials, login/logout providers, and verify model.default.',
+          desc: 'Add credentials, discover models, and verify model.default from Hermes settings.',
           cta: 'Open providers',
         },
         chat: {
-          title: 'Start a run',
-          desc: 'Open Chat when Hermes is reachable and send the first task.',
+          title: 'Select and chat',
+          desc: 'Use the model switcher, pick a mode, then send the first task.',
           cta: 'Open Chat',
         },
         channels: {
