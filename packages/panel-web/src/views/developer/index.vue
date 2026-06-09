@@ -10,6 +10,7 @@ import WebhookTester from '@/components/developer/WebhookTester.vue';
 import LogsViewer from '@/components/developer/LogsViewer.vue';
 import DoctorPanel from '@/components/developer/DoctorPanel.vue';
 import CliParityPanel from '@/components/developer/CliParityPanel.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -52,6 +53,20 @@ watch(() => route.hash, h => {
         <h1 class="text-xl font-semibold mb-1">{{ t('developer.title') }}</h1>
         <p class="text-sm text-[var(--text-3)]">{{ t('developer.subtitle') }}</p>
       </header>
+
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="developer"
+        :eyebrow="t('developer.taskBridge.eyebrow')"
+        :title="t('developer.taskBridge.title')"
+        :description="t('developer.taskBridge.desc')"
+        :example="t('developer.taskBridge.example')"
+        :prompt="t('developer.taskBridge.prompt')"
+        :action-label="t('developer.taskBridge.action')"
+        :secondary-label="t('developer.taskBridge.secondary')"
+        secondary-to="/developer#doctor"
+        command="hermes doctor"
+      />
 
       <NTabs :value="tab" type="line" animated @update:value="setDeveloperTab">
         <NTabPane name="cli-parity" :tab="t('developer.tabs.cliParity')">

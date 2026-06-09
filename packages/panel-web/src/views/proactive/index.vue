@@ -5,6 +5,8 @@ import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import { useI18n } from 'vue-i18n';
 
 interface Suggestion {
@@ -22,14 +24,18 @@ const msg = useMessage();
 const { t } = useI18n();
 const suggestions = ref<Suggestion[]>([]);
 const scanning = ref(false);
+const error = ref<string | null>(null);
 
 onMounted(async () => { await scan(); });
 
 async function scan(): Promise<void> {
   scanning.value = true;
+  error.value = null;
   try {
     suggestions.value = await bffFetch<Suggestion[]>('/api/proactive/scan');
-  } catch {
+  } catch (err) {
+    suggestions.value = [];
+    error.value = err instanceof Error ? err.message : String(err);
     msg.error(t('common.unknownError'));
   } finally {
     scanning.value = false;
@@ -68,9 +74,28 @@ function severityBorder(severity: string): string {
         </NButton>
       </div>
 
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="proactive"
+        :eyebrow="t('proactive.taskBridge.eyebrow')"
+        :title="t('proactive.taskBridge.title')"
+        :description="t('proactive.taskBridge.desc')"
+        :example="t('proactive.taskBridge.example')"
+        :prompt="t('proactive.taskBridge.prompt')"
+        :action-label="t('proactive.taskBridge.action')"
+        :secondary-label="t('proactive.taskBridge.secondary')"
+        secondary-to="/goals"
+      />
+
       <div v-if="scanning && suggestions.length === 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ThemedSkeleton v-for="i in 4" :key="i" height="120px" rounded="lg" />
       </div>
+      <ErrorBanner
+        v-else-if="error"
+        :message="`${t('proactive.loadFailed')}: ${error}`"
+        :retry-label="t('common.retry')"
+        @retry="scan"
+      />
       <div v-else-if="suggestions.length === 0" class="py-16">
         <EmptyState :title="t('proactive.empty')" icon="🔮" />
       </div>

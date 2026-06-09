@@ -9,6 +9,7 @@ import ChannelConfigForm from '@/components/channels/ChannelConfigForm.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import CodeBlock from '@/components/shared/CodeBlock.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 
 const { t } = useI18n();
 const store = useChannelsStore();
@@ -58,16 +59,32 @@ async function handleRestart(): Promise<void> {
       </div>
     </div>
 
+    <FeatureTaskBridge
+      class="mb-5"
+      icon="channels"
+      :eyebrow="t('channels.taskBridge.eyebrow')"
+      :title="t('channels.taskBridge.title')"
+      :description="t('channels.taskBridge.desc')"
+      :example="t('channels.taskBridge.example')"
+      :prompt="t('channels.taskBridge.prompt')"
+      :action-label="t('channels.taskBridge.action')"
+      :secondary-label="t('channels.taskBridge.secondary')"
+      secondary-to="/developer#logs"
+      command="hermes pairing list"
+    />
+
     <!-- Loading -->
     <div v-if="store.loading" class="flex items-center justify-center py-20">
       <span class="text-sm text-[var(--text-3)]">{{ t('channels.loading') }}</span>
     </div>
 
     <!-- Error -->
-    <div v-else-if="store.error" class="py-20 text-center">
-      <p class="text-sm text-[var(--text-3)] mb-3">{{ store.error }}</p>
-      <NButton size="small" @click="store.fetchAll()">{{ t('channels.retry') }}</NButton>
-    </div>
+    <ErrorBanner
+      v-else-if="store.error"
+      :message="store.error"
+      :retry-label="t('channels.retry')"
+      @retry="store.fetchAll()"
+    />
 
     <!-- First-time setup hint -->
     <div v-if="!store.loading && !store.error && store.channels.length > 0 && store.enabledCount === 0"

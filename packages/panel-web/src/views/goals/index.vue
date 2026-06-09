@@ -7,6 +7,7 @@ import { teamFor } from '@/data/roles';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import GoalTemplatePicker from '@/components/goals/GoalTemplatePicker.vue';
 import { buildGoalTemplates, type GoalTemplate } from '@/data/goalTemplates';
 import { useI18n } from 'vue-i18n';
@@ -157,6 +158,19 @@ function errorMessage(err: unknown): string {
       </div>
       <NButton type="primary" @click="showCreate = true">{{ t('goals.create') }}</NButton>
     </div>
+
+    <FeatureTaskBridge
+      class="mb-5"
+      icon="goals"
+      :eyebrow="t('goals.taskBridge.eyebrow')"
+      :title="t('goals.taskBridge.title')"
+      :description="t('goals.taskBridge.desc')"
+      :example="t('goals.taskBridge.example')"
+      :prompt="t('goals.taskBridge.prompt')"
+      :action-label="t('goals.taskBridge.action')"
+      :secondary-label="t('goals.taskBridge.secondary')"
+      secondary-to="/chat-room"
+    />
 
     <GoalTemplatePicker :templates="goalTemplates" @select="applyTemplate" />
 

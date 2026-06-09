@@ -5,6 +5,8 @@ import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import { useI18n } from 'vue-i18n';
 
 interface Lesson {
@@ -23,12 +25,18 @@ const msg = useMessage();
 const { t } = useI18n();
 const lessons = ref<Lesson[]>([]);
 const loading = ref(false);
+const error = ref<string | null>(null);
 
 onMounted(async () => { await fetchLessons(); });
 
 async function fetchLessons(): Promise<void> {
   loading.value = true;
+  error.value = null;
   try { lessons.value = await bffFetch<Lesson[]>('/api/lessons'); }
+  catch (err) {
+    lessons.value = [];
+    error.value = err instanceof Error ? err.message : String(err);
+  }
   finally { loading.value = false; }
 }
 
@@ -61,9 +69,28 @@ async function handleDelete(id: string): Promise<void> {
       </div>
     </div>
 
+    <FeatureTaskBridge
+      class="mb-5"
+      icon="lessons"
+      :eyebrow="t('lessons.taskBridge.eyebrow')"
+      :title="t('lessons.taskBridge.title')"
+      :description="t('lessons.taskBridge.desc')"
+      :example="t('lessons.taskBridge.example')"
+      :prompt="t('lessons.taskBridge.prompt')"
+      :action-label="t('lessons.taskBridge.action')"
+      :secondary-label="t('lessons.taskBridge.secondary')"
+      secondary-to="/memory"
+    />
+
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <ThemedSkeleton v-for="i in 6" :key="i" height="160px" rounded="lg" />
     </div>
+    <ErrorBanner
+      v-else-if="error"
+      :message="`${t('lessons.loadFailed')}: ${error}`"
+      :retry-label="t('common.retry')"
+      @retry="fetchLessons"
+    />
     <div v-else-if="lessons.length === 0" class="py-16">
       <EmptyState :title="t('lessons.emptyTitle')" :description="t('lessons.emptyDescription')" icon="🧠" />
     </div>

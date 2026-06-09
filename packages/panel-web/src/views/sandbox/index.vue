@@ -4,26 +4,39 @@ import { NButton, NInput, NTag, NSpin } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useSandboxStore } from '@/stores/sandbox';
 import TerminalOutput from '@/components/sandbox/TerminalOutput.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 
 const { t } = useI18n();
 const sandbox = useSandboxStore();
 
 const command = ref('');
 const loading = ref(false);
+const error = ref<string | null>(null);
 
-onMounted(async () => {
+onMounted(() => {
+  void checkSandboxAvailability();
+});
+
+async function checkSandboxAvailability(): Promise<void> {
   loading.value = true;
+  error.value = null;
   try {
     await sandbox.checkAvailable();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
-});
+}
 
 async function handleCreate(): Promise<void> {
   loading.value = true;
+  error.value = null;
   try {
     await sandbox.create();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
@@ -31,8 +44,11 @@ async function handleCreate(): Promise<void> {
 
 async function handleDestroy(): Promise<void> {
   loading.value = true;
+  error.value = null;
   try {
     await sandbox.destroy();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
@@ -86,6 +102,27 @@ function handleKeydown(e: KeyboardEvent): void {
           </NButton>
         </div>
       </header>
+
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="sandbox"
+        :eyebrow="t('sandbox.taskBridge.eyebrow')"
+        :title="t('sandbox.taskBridge.title')"
+        :description="t('sandbox.taskBridge.desc')"
+        :example="t('sandbox.taskBridge.example')"
+        :prompt="t('sandbox.taskBridge.prompt')"
+        :action-label="t('sandbox.taskBridge.action')"
+        :secondary-label="t('sandbox.taskBridge.secondary')"
+        secondary-to="/developer#logs"
+      />
+
+      <ErrorBanner
+        v-if="error"
+        class="mb-4"
+        :message="`${t('sandbox.loadFailed')}: ${error}`"
+        :retry-label="t('common.retry')"
+        @retry="checkSandboxAvailability"
+      />
 
       <!-- Status bar -->
       <div v-if="sandbox.sandboxId" class="mb-3 flex items-center gap-3 text-sm text-[var(--text-3)]">

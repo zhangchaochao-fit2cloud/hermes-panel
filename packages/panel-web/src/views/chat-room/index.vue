@@ -9,6 +9,7 @@ import { useWorkspacesStore } from '@/stores/workspaces';
 import { teamFor, type RoleDef } from '@/data/roles';
 import { getNextSteps, type WorkflowStep } from '@/data/workflows';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 
 const { t } = useI18n();
 
@@ -284,6 +285,19 @@ function selectRoom(id: string): void {
 
     <!-- Main -->
     <main class="room-main">
+      <FeatureTaskBridge
+        class="room-task-bridge"
+        icon="chatRoom"
+        :eyebrow="t('chatRoom.taskBridge.eyebrow')"
+        :title="t('chatRoom.taskBridge.title')"
+        :description="t('chatRoom.taskBridge.desc')"
+        :example="t('chatRoom.taskBridge.example')"
+        :prompt="t('chatRoom.taskBridge.prompt')"
+        :action-label="t('chatRoom.taskBridge.action')"
+        :secondary-label="t('chatRoom.taskBridge.secondary')"
+        secondary-to="/goals"
+      />
+
       <header v-if="activeRoom" class="room-header">
         <div class="room-header-left">
           <span class="room-header-icon">#</span>
@@ -453,6 +467,10 @@ function selectRoom(id: string): void {
 
 /* ─── Main ─── */
 .room-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.room-task-bridge {
+  flex-shrink: 0;
+  margin: 16px 24px 0;
+}
 .room-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 24px; border-bottom: 1px solid var(--border); background: var(--bg-card);

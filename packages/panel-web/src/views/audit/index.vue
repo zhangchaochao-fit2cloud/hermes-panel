@@ -5,6 +5,8 @@ import { bffFetch } from '@/api/bff';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import { useI18n } from 'vue-i18n';
 
 interface AuditEntry {
@@ -30,11 +32,13 @@ const { t } = useI18n();
 const entries = ref<AuditEntry[]>([]);
 const stats = ref<AuditStats | null>(null);
 const loading = ref(true);
+const error = ref<string | null>(null);
 
 onMounted(async () => { await load(); });
 
 async function load(): Promise<void> {
   loading.value = true;
+  error.value = null;
   try {
     const [list, s] = await Promise.all([
       bffFetch<AuditEntry[]>('/api/audit?limit=100'),
@@ -42,7 +46,10 @@ async function load(): Promise<void> {
     ]);
     entries.value = list;
     stats.value = s;
-  } catch {
+  } catch (err) {
+    entries.value = [];
+    stats.value = null;
+    error.value = err instanceof Error ? err.message : String(err);
     msg.error(t('common.unknownError'));
   } finally {
     loading.value = false;
@@ -81,6 +88,19 @@ function formatTime(ts: number): string {
         </NButton>
       </div>
 
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="audit"
+        :eyebrow="t('audit.taskBridge.eyebrow')"
+        :title="t('audit.taskBridge.title')"
+        :description="t('audit.taskBridge.desc')"
+        :example="t('audit.taskBridge.example')"
+        :prompt="t('audit.taskBridge.prompt')"
+        :action-label="t('audit.taskBridge.action')"
+        :secondary-label="t('audit.taskBridge.secondary')"
+        secondary-to="/developer#logs"
+      />
+
       <!-- Loading skeleton -->
       <div v-if="loading">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -90,6 +110,12 @@ function formatTime(ts: number): string {
           <ThemedSkeleton v-for="i in 6" :key="`row-${i}`" height="44px" />
         </div>
       </div>
+      <ErrorBanner
+        v-else-if="error"
+        :message="`${t('audit.loadFailed')}: ${error}`"
+        :retry-label="t('common.retry')"
+        @retry="load"
+      />
       <template v-else>
         <!-- Stat cards -->
         <div v-if="stats" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

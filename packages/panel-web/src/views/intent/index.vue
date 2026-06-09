@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { NButton, NInput, NSpin, NTag, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import { useI18n } from 'vue-i18n';
 
 interface ClassifiedIntent {
@@ -31,6 +33,8 @@ const payload = ref('');
 const result = ref<ClassifiedIntent | null>(null);
 const config = ref<PipelineConfig | null>(null);
 const classifying = ref(false);
+const error = ref<string | null>(null);
+const lastErrorAction = ref<'config' | 'classify'>('config');
 
 const samplePayload = JSON.stringify(
   { event: 'issues', action: 'opened', issue: { title: 'App crashes on login', body: 'Steps to reproduce...' } },
@@ -38,14 +42,20 @@ const samplePayload = JSON.stringify(
   2,
 );
 
-onMounted(async () => {
+onMounted(() => {
   payload.value = samplePayload;
+  void loadConfig();
+});
+
+async function loadConfig(): Promise<void> {
+  error.value = null;
   try {
     config.value = await bffFetch<PipelineConfig>('/api/intent/config');
-  } catch {
-    // config is optional context — fail silently
+  } catch (err) {
+    lastErrorAction.value = 'config';
+    error.value = err instanceof Error ? err.message : String(err);
   }
-});
+}
 
 async function classify(): Promise<void> {
   let body: unknown;
@@ -56,16 +66,27 @@ async function classify(): Promise<void> {
     return;
   }
   classifying.value = true;
+  error.value = null;
   try {
     result.value = await bffFetch<ClassifiedIntent>('/api/intent/classify', {
       method: 'POST',
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (err) {
+    lastErrorAction.value = 'classify';
+    error.value = err instanceof Error ? err.message : String(err);
     msg.error(t('intentPipeline.classifyFailed'));
   } finally {
     classifying.value = false;
   }
+}
+
+function retryLastError(): void {
+  if (lastErrorAction.value === 'classify') {
+    void classify();
+    return;
+  }
+  void loadConfig();
 }
 </script>
 
@@ -76,6 +97,27 @@ async function classify(): Promise<void> {
         <h2 class="text-lg font-bold text-[var(--text-1)] mb-1">{{ t('intentPipeline.title') }}</h2>
         <p class="text-sm text-[var(--text-3)]">{{ t('intentPipeline.subtitle') }}</p>
       </div>
+
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="intent"
+        :eyebrow="t('intentPipeline.taskBridge.eyebrow')"
+        :title="t('intentPipeline.taskBridge.title')"
+        :description="t('intentPipeline.taskBridge.desc')"
+        :example="t('intentPipeline.taskBridge.example')"
+        :prompt="t('intentPipeline.taskBridge.prompt')"
+        :action-label="t('intentPipeline.taskBridge.action')"
+        :secondary-label="t('intentPipeline.taskBridge.secondary')"
+        secondary-to="/goals"
+      />
+
+      <ErrorBanner
+        v-if="error"
+        class="mb-4"
+        :message="`${t('intentPipeline.loadFailed')}: ${error}`"
+        :retry-label="t('common.retry')"
+        @retry="retryLastError"
+      />
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Tester -->
