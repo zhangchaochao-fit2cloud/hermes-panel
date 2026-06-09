@@ -21,11 +21,22 @@ interface CostData {
 
 const data = ref<CostData | null>(null);
 const loading = ref(true);
+const error = ref<string | null>(null);
 
-onMounted(async () => {
-  try { data.value = await bffFetch<CostData>('/api/usage/intelligence'); }
-  finally { loading.value = false; }
-});
+async function load(): Promise<void> {
+  loading.value = true;
+  error.value = null;
+  try {
+    data.value = await bffFetch<CostData>('/api/usage/intelligence', { silent: true });
+  } catch (err) {
+    data.value = null;
+    error.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(load);
 
 function pctClass(pct: number): string {
   if (pct > 80) return 'text-[var(--color-error)]';
@@ -39,6 +50,13 @@ function pctClass(pct: number): string {
     <h3 class="text-sm font-semibold text-[var(--text-1)] mb-4">{{ t('dashboard.costIntelligence.title') }}</h3>
 
     <ThemedSkeleton v-if="loading" height="160px" />
+    <div v-else-if="error" class="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-elevate)] px-3 py-4">
+      <p class="text-sm font-medium text-[var(--text-2)]">{{ t('dashboard.costIntelligence.unavailable') }}</p>
+      <p class="mt-1 text-xs leading-5 text-[var(--text-3)]">{{ error }}</p>
+      <button class="mt-3 text-xs font-medium text-[var(--brand-600)] hover:underline" type="button" @click="load">
+        {{ t('common.retry') }}
+      </button>
+    </div>
     <template v-else-if="data">
       <!-- Budget bar -->
       <div class="mb-4">

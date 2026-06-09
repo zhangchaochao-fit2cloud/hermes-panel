@@ -22,4 +22,13 @@ describe('cost insights UX', () => {
     expect(source).toContain("await loadOptimizations()");
     expect(source).toContain("'/api/cost/optimizations'");
   });
+
+  it('keeps dashboard cost intelligence failures inside the card', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/dashboard/CostIntelligenceCard.vue'), 'utf8');
+
+    expect(source).toContain('const error = ref<string | null>(null)');
+    expect(source).toContain("bffFetch<CostData>('/api/usage/intelligence', { silent: true })");
+    expect(source).toContain("t('dashboard.costIntelligence.unavailable')");
+    expect(source).toContain('@click="load"');
+  });
 });

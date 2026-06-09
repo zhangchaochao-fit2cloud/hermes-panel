@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createI18n } from 'vue-i18n';
 import zhCN from '@/locales/zh-CN';
 import enUS from '@/locales/en-US';
 
@@ -26,5 +27,18 @@ describe('locale message keys', () => {
 
     expect(enKeys.filter((key) => !zhKeys.includes(key))).toEqual([]);
     expect(zhKeys.filter((key) => !enKeys.includes(key))).toEqual([]);
+  });
+
+  it('renders literal @@ mentions without vue-i18n linked-message errors', () => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'zh-CN',
+      messages: { 'zh-CN': zhCN, 'en-US': enUS },
+    });
+    const t = i18n.global.t;
+
+    expect(t('dashboard.capabilityMap.items.chat.example')).toContain('@@角色');
+    expect(t('chatRoom.availableRoles', { count: 3 })).toContain('@@');
+    expect(t('channels.config.fields.atMention')).toContain('@@');
   });
 });

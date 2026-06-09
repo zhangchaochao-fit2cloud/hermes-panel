@@ -19,6 +19,7 @@ import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue';
 import ToolUsageCard from '@/components/dashboard/ToolUsageCard.vue';
 import OrchestrationCompareCard from '@/components/dashboard/OrchestrationCompareCard.vue';
 import CapabilityMap from '@/components/dashboard/CapabilityMap.vue';
+import DashboardQuickStart from '@/components/dashboard/DashboardQuickStart.vue';
 import { useCronStore } from '@/stores/cron';
 import { aggregateCronSessions } from '@/utils/aggregate-cron-sessions';
 
@@ -140,6 +141,8 @@ const todayUsdLabel = computed(() => {
   <div class="min-h-full bg-[var(--bg-page)]">
     <div class="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6">
       <WelcomeHeader :health="healthTyped" :loading="healthLoading" />
+
+      <DashboardQuickStart :health="healthTyped" :loading="healthLoading" />
 
       <CapabilityMap />
 
