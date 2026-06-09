@@ -806,8 +806,14 @@ export default {
         configured: 'Configured',
         usePreset: 'Use preset',
         addCredential: 'Add key',
+        loginProvider: 'Run login',
         configure: 'Configure',
+        copyCommand: 'Copy',
+        commandCopied: 'Setup command copied',
         modelApplied: '{name} selected',
+        portalBullet1: 'Official Hermes first-run path for Nous Portal users.',
+        portalBullet2: 'Keeps OAuth, provider, and model choice inside the Hermes CLI flow.',
+        portalBullet3: 'Best default when you want the supported hosted path before custom keys.',
         localBullet1: 'No cloud account or API key required.',
         localBullet2: 'Works with Ollama or any local OpenAI-compatible server.',
         localBullet3: 'Best first path when you want a free offline smoke test.',
@@ -821,6 +827,11 @@ export default {
         customBullet2: 'Sets model.default, model.provider, and model.base_url together.',
         customBullet3: 'Keeps fallback simple when the official provider is not listed yet.',
         paths: {
+          portal: {
+            title: 'Official Nous Portal',
+            tag: 'Official',
+            desc: 'Use the Hermes Portal setup path, then return here to verify the active model and credentials.',
+          },
           local: {
             title: 'Free local model',
             tag: 'Free',

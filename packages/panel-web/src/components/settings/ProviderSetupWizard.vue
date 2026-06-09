@@ -6,11 +6,12 @@ import { NButton, NTag, useMessage } from 'naive-ui';
 import { useProvidersStore } from '@/stores/providers';
 
 type SetupPath = {
-  id: 'local' | 'free-cloud' | 'api-key' | 'custom';
+  id: 'portal' | 'local' | 'free-cloud' | 'api-key' | 'custom';
   provider: string;
   tone: 'success' | 'info' | 'warning' | 'default';
   command: string;
   bullets: string[];
+  action: 'login' | 'credential' | 'preset';
   model?: { name: string; provider: string; baseUrl: string; label: string };
 };
 
@@ -23,11 +24,20 @@ const store = useProvidersStore();
 
 const setupPaths: SetupPath[] = [
   {
+    id: 'portal',
+    provider: 'nous',
+    tone: 'info',
+    command: 'hermes setup --portal',
+    bullets: ['portalBullet1', 'portalBullet2', 'portalBullet3'],
+    action: 'login',
+  },
+  {
     id: 'local',
     provider: 'custom',
     tone: 'success',
     command: 'ollama pull llama3.1',
     bullets: ['localBullet1', 'localBullet2', 'localBullet3'],
+    action: 'preset',
     model: {
       name: 'llama3.1',
       provider: 'custom',
@@ -41,6 +51,7 @@ const setupPaths: SetupPath[] = [
     tone: 'info',
     command: 'hermes auth add openrouter --type api_key --api-key ...',
     bullets: ['freeCloudBullet1', 'freeCloudBullet2', 'freeCloudBullet3'],
+    action: 'credential',
   },
   {
     id: 'api-key',
@@ -48,6 +59,7 @@ const setupPaths: SetupPath[] = [
     tone: 'warning',
     command: 'hermes auth add openai --type api_key --api-key ...',
     bullets: ['apiKeyBullet1', 'apiKeyBullet2', 'apiKeyBullet3'],
+    action: 'credential',
   },
   {
     id: 'custom',
@@ -55,6 +67,7 @@ const setupPaths: SetupPath[] = [
     tone: 'default',
     command: 'hermes config set model.base_url http://localhost:1234/v1',
     bullets: ['customBullet1', 'customBullet2', 'customBullet3'],
+    action: 'preset',
     model: {
       name: 'local-model',
       provider: 'custom',
@@ -71,7 +84,7 @@ function isConfigured(path: SetupPath): boolean {
     || (path.provider === store.model?.provider && (store.model.hasApiKey || !!store.model.activeCredential));
 }
 
-async function useLocalPreset(path: SetupPath): Promise<void> {
+async function usePreset(path: SetupPath): Promise<void> {
   if (!path.model) return;
   const r = await store.setModel({
     name: path.model.name,
@@ -87,6 +100,24 @@ async function useLocalPreset(path: SetupPath): Promise<void> {
 
 function openCredential(path: SetupPath): void {
   emit('add-credential', path.provider);
+}
+
+async function loginProvider(path: SetupPath): Promise<void> {
+  const r = await store.loginProvider(path.provider);
+  if (r.ok) {
+    message.success(t('settings.providers.loginSuccess'));
+    return;
+  }
+  message.error(`${t('settings.providers.loginFailed')}: ${r.error ?? ''}`);
+}
+
+async function copyCommand(path: SetupPath): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(path.command);
+    message.success(t('settings.providers.setup.commandCopied'));
+  } catch {
+    message.error(t('common.copyFailed'));
+  }
 }
 
 function openChat(): void {
@@ -145,18 +176,26 @@ function openChat(): void {
           </li>
         </ul>
 
-        <code class="mt-3 block truncate rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[11px] text-[var(--text-2)]">
-          {{ path.command }}
-        </code>
+        <div class="mt-3 flex min-w-0 items-center gap-2 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5">
+          <code class="min-w-0 flex-1 truncate text-[11px] text-[var(--text-2)]">
+            {{ path.command }}
+          </code>
+          <NButton size="tiny" quaternary @click="copyCommand(path)">
+            {{ t('settings.providers.setup.copyCommand') }}
+          </NButton>
+        </div>
 
         <div class="mt-3 flex flex-wrap gap-2">
-          <NButton v-if="path.model" size="tiny" type="primary" ghost @click="useLocalPreset(path)">
+          <NButton v-if="path.action === 'preset'" size="tiny" type="primary" ghost @click="usePreset(path)">
             {{ t('settings.providers.setup.usePreset') }}
+          </NButton>
+          <NButton v-else-if="path.action === 'login'" size="tiny" type="primary" ghost :loading="store.providerLoginLoading" @click="loginProvider(path)">
+            {{ t('settings.providers.setup.loginProvider') }}
           </NButton>
           <NButton v-else size="tiny" type="primary" ghost @click="openCredential(path)">
             {{ t('settings.providers.setup.addCredential') }}
           </NButton>
-          <NButton size="tiny" quaternary @click="openCredential(path)">
+          <NButton v-if="path.action !== 'login'" size="tiny" quaternary @click="openCredential(path)">
             {{ t('settings.providers.setup.configure') }}
           </NButton>
         </div>

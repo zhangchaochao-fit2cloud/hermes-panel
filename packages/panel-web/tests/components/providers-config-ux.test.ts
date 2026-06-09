@@ -33,6 +33,11 @@ describe('providers config UX', () => {
 
     expect(source).toContain('ProviderSetupWizard');
     expect(source).toContain('@add-credential="startAddFor"');
+    expect(wizard).toContain("id: 'portal'");
+    expect(wizard).toContain("provider: 'nous'");
+    expect(wizard).toContain('hermes setup --portal');
+    expect(wizard).toContain('store.loginProvider');
+    expect(wizard).toContain('copyCommand');
     expect(wizard).toContain("id: 'local'");
     expect(wizard).toContain("id: 'free-cloud'");
     expect(wizard).toContain("id: 'api-key'");

@@ -806,8 +806,14 @@ export default {
         configured: '已配置',
         usePreset: '使用预设',
         addCredential: '添加 Key',
+        loginProvider: '执行登录',
         configure: '配置',
+        copyCommand: '复制',
+        commandCopied: '初始化命令已复制',
         modelApplied: '已选择 {name}',
+        portalBullet1: 'Hermes 官方推荐的 Nous Portal 首次初始化路径。',
+        portalBullet2: 'OAuth、供应商和模型选择都保留在 Hermes CLI 流程里。',
+        portalBullet3: '想先走官方托管模型，再考虑自定义 Key 时优先选它。',
         localBullet1: '不需要云账号或 API Key。',
         localBullet2: '支持 Ollama 或任意本地 OpenAI-compatible 服务。',
         localBullet3: '适合先做免费离线冒烟测试。',
@@ -821,6 +827,11 @@ export default {
         customBullet2: '会同时设置 model.default、model.provider 和 model.base_url。',
         customBullet3: '官方供应商列表还没覆盖时，可保持回退路径简单。',
         paths: {
+          portal: {
+            title: '官方 Nous Portal',
+            tag: '官方',
+            desc: '使用 Hermes Portal 初始化路径，完成后回到这里确认当前模型和凭据。',
+          },
           local: {
             title: '免费本地模型',
             tag: '免费',
