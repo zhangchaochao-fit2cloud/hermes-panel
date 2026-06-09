@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { readProvidersState, setModel, addCredential } from '../services/hermes-providers.js';
+import { readProvidersState, setModel, addCredential, loginProvider, logoutProvider } from '../services/hermes-providers.js';
 import { startGateway } from '../services/hermes-gateway.js';
 import { logger } from '../lib/logger.js';
 import {
@@ -119,4 +119,24 @@ providersRouter.post('/providers/credentials', async ctx => {
     return;
   }
   ctx.body = { ok: true };
+});
+
+providersRouter.post('/providers/login', async ctx => {
+  const body = ctx.request.body as { provider?: string } | undefined;
+  const r = await loginProvider(body?.provider ?? '');
+  if (!r.ok) {
+    const userErrors = new Set(['PROVIDER_REQUIRED', 'BAD_PROVIDER']);
+    ctx.status = userErrors.has(r.error ?? '') ? 400 : 502;
+  }
+  ctx.body = r;
+});
+
+providersRouter.post('/providers/logout', async ctx => {
+  const body = ctx.request.body as { provider?: string } | undefined;
+  const r = await logoutProvider(body?.provider ?? '');
+  if (!r.ok) {
+    const userErrors = new Set(['PROVIDER_REQUIRED', 'BAD_PROVIDER']);
+    ctx.status = userErrors.has(r.error ?? '') ? 400 : 502;
+  }
+  ctx.body = r;
 });

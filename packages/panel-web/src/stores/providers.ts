@@ -87,6 +87,14 @@ export interface ProviderBalance {
   reason?: string;
 }
 
+export interface ProviderCliCommandResult {
+  ok: boolean;
+  source: string;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
+
 export const useProvidersStore = defineStore('providers', () => {
   const model = ref<ModelState | null>(null);
   const providers = ref<ProviderInfo[]>([]);
@@ -94,6 +102,8 @@ export const useProvidersStore = defineStore('providers', () => {
   const initialized = ref(false);
   const settingModel = ref(false);
   const addingCredential = ref(false);
+  const providerLoginLoading = ref(false);
+  const providerLogoutLoading = ref(false);
   const inspectionLoading = ref(false);
   const balanceLoading = ref(false);
   const inspectionCheckedAt = ref<number | null>(null);
@@ -212,6 +222,40 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
+  async function runProviderAuthCommand(
+    action: 'login' | 'logout',
+    provider: string,
+  ): Promise<ProviderCliCommandResult> {
+    const loadingRef = action === 'login' ? providerLoginLoading : providerLogoutLoading;
+    loadingRef.value = true;
+    try {
+      const r = await bffFetch<ProviderCliCommandResult>(`/api/providers/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ provider }),
+      });
+      if (r.ok) await load();
+      return r;
+    } catch (err) {
+      const e = err as BffApiError;
+      return {
+        ok: false,
+        source: `hermes ${action} ${provider}`,
+        stdout: '',
+        error: e.code ?? e.message ?? 'PROVIDER_AUTH_COMMAND_FAILED',
+      };
+    } finally {
+      loadingRef.value = false;
+    }
+  }
+
+  function loginProvider(provider: string): Promise<ProviderCliCommandResult> {
+    return runProviderAuthCommand('login', provider);
+  }
+
+  function logoutProvider(provider: string): Promise<ProviderCliCommandResult> {
+    return runProviderAuthCommand('logout', provider);
+  }
+
   async function inspectModels(candidates: CandidateModel[]): Promise<void> {
     if (candidates.length === 0) return;
     inspectionLoading.value = true;
@@ -260,9 +304,10 @@ export const useProvidersStore = defineStore('providers', () => {
 
   return {
     model, providers, loading, initialized, settingModel, addingCredential,
+    providerLoginLoading, providerLogoutLoading,
     inspectionLoading, balanceLoading, inspectionCheckedAt, error,
     currentModelId, currentProvider, activeCredentialLabel,
     inspectionFor, balanceFor,
-    load, setModel, addCredential, inspectModels, loadProviderBalance,
+    load, setModel, addCredential, loginProvider, logoutProvider, inspectModels, loadProviderBalance,
   };
 });

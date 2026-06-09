@@ -128,6 +128,39 @@ describe('providers.addCredential', () => {
   });
 });
 
+describe('providers login/logout commands', () => {
+  it('runs CLI-backed provider login and reloads credentials on success', async () => {
+    mockedBffFetch
+      .mockResolvedValueOnce({ ok: true, source: 'hermes login openai', stdout: 'login openai\n' })
+      .mockResolvedValueOnce({ model: null, providers: [] });
+    const store = useProvidersStore();
+
+    const r = await store.loginProvider('openai');
+
+    expect(r.ok).toBe(true);
+    expect(store.providerLoginLoading).toBe(false);
+    expect(mockedBffFetch).toHaveBeenCalledWith('/api/providers/login', {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'openai' }),
+    });
+    expect(mockedBffFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('runs CLI-backed provider logout and returns BFF errors', async () => {
+    mockedBffFetch.mockRejectedValueOnce(new BffApiError('BAD_PROVIDER', 'bad provider', 400));
+    const store = useProvidersStore();
+
+    const r = await store.logoutProvider('--all');
+
+    expect(r).toMatchObject({
+      ok: false,
+      source: 'hermes logout --all',
+      error: 'BAD_PROVIDER',
+    });
+    expect(store.providerLogoutLoading).toBe(false);
+  });
+});
+
 describe('providers model inspection', () => {
   it('loads candidate model inspection metadata from the BFF', async () => {
     mockedBffFetch.mockResolvedValueOnce({

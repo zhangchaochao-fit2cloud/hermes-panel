@@ -24,6 +24,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   delete process.env.OPENROUTER_API_KEY;
+  process.env.HERMES_BIN = 'does-not-exist-xxx';
   vi.restoreAllMocks();
 });
 
@@ -58,6 +59,35 @@ describe('provider model inspection routes', () => {
         outputPerMillion: 10,
         source: 'static',
       },
+    });
+  });
+
+  it('POST /api/providers/login runs the official CLI login command', async () => {
+    process.env.HERMES_BIN = '/bin/echo';
+
+    const res = await request
+      .post('/api/providers/login')
+      .set('X-Panel-Token', token)
+      .send({ provider: 'openai' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      ok: true,
+      source: 'hermes login openai',
+      stdout: 'login openai\n',
+    });
+  });
+
+  it('POST /api/providers/logout requires a safe provider and exposes CLI errors', async () => {
+    const bad = await request
+      .post('/api/providers/logout')
+      .set('X-Panel-Token', token)
+      .send({ provider: '--all' });
+
+    expect(bad.status).toBe(400);
+    expect(bad.body).toMatchObject({
+      ok: false,
+      error: 'BAD_PROVIDER',
     });
   });
 

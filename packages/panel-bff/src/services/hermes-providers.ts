@@ -43,6 +43,14 @@ export interface ProvidersState {
   error?: string;
 }
 
+export interface ProviderCliCommandResult {
+  ok: boolean;
+  source: string;
+  stdout: string;
+  stderr?: string;
+  error?: string;
+}
+
 /**
  * Read the model block from ~/.hermes/config.yaml. Returns null if the file
  * is missing or unparseable — callers should treat that as "no config yet".
@@ -238,4 +246,43 @@ export async function addCredential(input: AddCredentialInput): Promise<{ ok: bo
     if (err instanceof HermesCliError) return { ok: false, error: err.code };
     throw err;
   }
+}
+
+function normalizeProviderArg(provider: string): { ok: true; provider: string } | { ok: false; error: string } {
+  const value = provider.trim();
+  if (!value) return { ok: false, error: 'PROVIDER_REQUIRED' };
+  if (value.startsWith('-') || /\s|\0/.test(value) || value.length > 128) {
+    return { ok: false, error: 'BAD_PROVIDER' };
+  }
+  return { ok: true, provider: value };
+}
+
+async function runProviderAuthCommand(
+  action: 'login' | 'logout',
+  provider: string,
+): Promise<ProviderCliCommandResult> {
+  const normalized = normalizeProviderArg(provider);
+  const source = `hermes ${action} ${provider}`;
+  if (!normalized.ok) return { ok: false, source, stdout: '', error: normalized.error };
+
+  try {
+    const { stdout, stderr } = await runHermesCli([action, normalized.provider], { timeoutMs: 60_000 });
+    return {
+      ok: true,
+      source: `hermes ${action} ${normalized.provider}`,
+      stdout,
+      ...(stderr ? { stderr } : {}),
+    };
+  } catch (err) {
+    const code = err instanceof HermesCliError ? err.code : 'UNKNOWN';
+    return { ok: false, source: `hermes ${action} ${normalized.provider}`, stdout: '', error: code };
+  }
+}
+
+export function loginProvider(provider: string): Promise<ProviderCliCommandResult> {
+  return runProviderAuthCommand('login', provider);
+}
+
+export function logoutProvider(provider: string): Promise<ProviderCliCommandResult> {
+  return runProviderAuthCommand('logout', provider);
 }

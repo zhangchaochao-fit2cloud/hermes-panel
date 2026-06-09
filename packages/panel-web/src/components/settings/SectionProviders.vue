@@ -9,11 +9,18 @@ import {
 import { useProvidersStore, type ProviderInfo } from '@/stores/providers';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import ProviderAuthCommands from './ProviderAuthCommands.vue';
 
 const { t } = useI18n();
 const store = useProvidersStore();
 const message = useMessage();
-const { providers, model, loading, initialized, addingCredential } = storeToRefs(store);
+const {
+  providers,
+  model,
+  loading,
+  initialized,
+  addingCredential,
+} = storeToRefs(store);
 
 // Provider id whose "+" button is being used. null = modal closed.
 const addingFor = ref<string | null>(null);
@@ -45,7 +52,6 @@ const configExamples = computed(() => {
   if (current.baseUrl) examples.push(`hermes config set model.base_url ${current.baseUrl}`);
   return examples;
 });
-
 const selectedProvider = computed({
   get: () => addingFor.value,
   set: v => { addingFor.value = v; },
@@ -179,6 +185,8 @@ function isCurrentProvider(p: ProviderInfo): boolean {
           </div>
         </div>
       </section>
+
+      <ProviderAuthCommands class="mt-4" />
 
       <div v-if="providers.length === 0" class="mt-4 text-sm text-[var(--text-3)]">
         {{ t('settings.providers.empty') }}
