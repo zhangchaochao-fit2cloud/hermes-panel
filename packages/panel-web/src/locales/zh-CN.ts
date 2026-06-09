@@ -78,6 +78,15 @@ export default {
   tools: {
     title: '工具与技能',
     subtitle: '管理内置工具、MCP 服务和技能库',
+    taskBridge: {
+      eyebrow: '用于 Chat',
+      title: '让 Hermes 在任务中选择合适工具',
+      desc: '这个页面负责查看可用能力；当你希望 Hermes 判断工具、MCP、技能或插件是否需要参与时，直接带到 Chat。',
+      example: '示例：让 Chat 在改文件前先检查可用 MCP 服务。',
+      prompt: '请以 `hermes tools list` 作为 CLI 事实来源。检查当前任务应该使用哪些 Hermes 工具、MCP 服务、技能或插件，说明最短且安全的执行路径，然后等待我给出具体任务。',
+      action: '在 Chat 使用工具',
+      secondary: '查看 CLI 覆盖',
+    },
     searchPlaceholder: '搜索工具...',
     empty: '未找到匹配的工具',
     emptyHint: '尝试使用其他搜索词，或切换到 MCP、技能等选项卡',
@@ -1919,6 +1928,15 @@ export default {
   },
   memory: {
     searchPlaceholder: '搜索文件 / 内容...',
+    taskBridge: {
+      eyebrow: '用于 Chat',
+      title: '把记忆变成任务上下文',
+      desc: '这个页面负责查看和编辑长期记忆；当你希望 Hermes 判断哪些历史上下文要参与时，直接带到 Chat。',
+      example: '示例：让 Chat 在改代码前先总结相关项目偏好。',
+      prompt: '请以 `hermes memory` 作为 CLI 事实来源。判断我的下一个任务是否需要长期记忆或项目上下文，先总结相关上下文，然后询问我要做什么。',
+      action: '在 Chat 使用记忆',
+      secondary: '管理工具',
+    },
     noMatch: '没有匹配的文件',
     emptyTree: '还没有记忆文件',
     newFile: '新建文件',
@@ -2123,6 +2141,15 @@ export default {
   cost: {
     title: '💰 成本管控',
     subtitle: '统一管理多供应商成本，设置预算上限，自动告警',
+    taskBridge: {
+      eyebrow: '用于 Chat',
+      title: '先问最低成本且安全的执行路径',
+      desc: '成本信息最好在执行前参与决策。把成本约束带到 Chat，让 Hermes 判断何时本地、何时低价模型、何时升级。',
+      example: '示例：让 Chat 在消耗云额度前说明这个任务该用哪个模型。',
+      prompt: '请以 `hermes insights` 作为 CLI 事实来源。从成本角度评估我的下一个任务，建议最低成本且安全的模型路径，说明何时需要升级模型，并列出我要关注的 token 或预算信号。',
+      action: '在 Chat 做成本规划',
+      secondary: '配置模型',
+    },
     cliEyebrow: '官方 CLI 命令',
     cliDesc: '对应 `hermes insights` 的用量、预算和优化建议视图。',
     sourceUsage: '使用账本',

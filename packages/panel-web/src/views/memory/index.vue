@@ -14,6 +14,7 @@ import {
 import { useMemoryStore } from '@/stores/memory';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import FileTree from '@/components/memory/FileTree.vue';
 import FileEditor from '@/components/memory/FileEditor.vue';
@@ -224,6 +225,21 @@ watch(files, (next) => {
 
 <template>
   <div class="h-full w-full flex flex-col bg-[var(--bg-page)]">
+    <div class="flex-shrink-0 px-4 pt-4 sm:px-6">
+      <FeatureTaskBridge
+        icon="memory"
+        :eyebrow="t('memory.taskBridge.eyebrow')"
+        :title="t('memory.taskBridge.title')"
+        :description="t('memory.taskBridge.desc')"
+        :example="t('memory.taskBridge.example')"
+        :prompt="t('memory.taskBridge.prompt')"
+        :action-label="t('memory.taskBridge.action')"
+        :secondary-label="t('memory.taskBridge.secondary')"
+        secondary-to="/tools"
+        command="hermes memory"
+      />
+    </div>
+
     <ErrorBanner
       v-if="showErrorBanner"
       :message="listError ?? listErrorCode ?? t('common.unknownError')"

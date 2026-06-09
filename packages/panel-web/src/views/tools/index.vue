@@ -7,6 +7,7 @@ import { useToolsStore } from '@/stores/tools';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ToolCard from '@/components/tools/ToolCard.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 import SkillTable from '@/components/tools/SkillTable.vue';
 import SkillMarketplace from '@/components/tools/SkillMarketplace.vue';
 import McpServerList from '@/components/tools/McpServerList.vue';
@@ -66,6 +67,20 @@ async function onToggle(name: string, enabled: boolean): Promise<void> {
         <h1 class="text-xl font-semibold mb-1">{{ t('tools.title') }}</h1>
         <p class="text-sm text-[var(--text-3)]">{{ t('tools.subtitle') }}</p>
       </header>
+
+      <FeatureTaskBridge
+        class="mb-5"
+        icon="tools"
+        :eyebrow="t('tools.taskBridge.eyebrow')"
+        :title="t('tools.taskBridge.title')"
+        :description="t('tools.taskBridge.desc')"
+        :example="t('tools.taskBridge.example')"
+        :prompt="t('tools.taskBridge.prompt')"
+        :action-label="t('tools.taskBridge.action')"
+        :secondary-label="t('tools.taskBridge.secondary')"
+        secondary-to="/developer#cli-parity"
+        command="hermes tools list"
+      />
 
       <NTabs :value="tab" type="line" animated @update:value="onTabChange">
         <!-- 内置工具 -->

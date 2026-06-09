@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { NTag, NProgress, NSpin, NButton, useMessage } from 'naive-ui';
 import { bffFetch } from '@/api/bff';
+import ErrorBanner from '@/components/shared/ErrorBanner.vue';
+import FeatureTaskBridge from '@/components/shared/FeatureTaskBridge.vue';
 
 interface ProviderLimit {
   provider: string; hardLimit: number; softLimit: number; currentUsage: number;
@@ -29,16 +31,27 @@ const { t } = useI18n();
 const data = ref<CostOverview | null>(null);
 const loading = ref(true);
 const syncing = ref(false);
+const error = ref<string | null>(null);
 const optimizations = ref<Optimization[]>([]);
 
-onMounted(async () => {
+onMounted(() => {
+  void loadCostOverview();
+});
+
+async function loadCostOverview() {
+  loading.value = true;
+  error.value = null;
   try {
     data.value = await bffFetch<CostOverview>('/api/cost/overview');
     await loadOptimizations();
   }
-  catch { msg.error(t('cost.loadFailed')); }
+  catch (err) {
+    data.value = null;
+    error.value = err instanceof Error ? err.message : String(err);
+    msg.error(t('cost.loadFailed'));
+  }
   finally { loading.value = false; }
-});
+}
 
 async function syncBilling() {
   syncing.value = true;
@@ -83,6 +96,20 @@ function confidenceType(pct: number): 'success' | 'warning' | 'default' {
       </NButton>
     </div>
 
+    <FeatureTaskBridge
+      class="mb-5"
+      icon="cost"
+      :eyebrow="t('cost.taskBridge.eyebrow')"
+      :title="t('cost.taskBridge.title')"
+      :description="t('cost.taskBridge.desc')"
+      :example="t('cost.taskBridge.example')"
+      :prompt="t('cost.taskBridge.prompt')"
+      :action-label="t('cost.taskBridge.action')"
+      :secondary-label="t('cost.taskBridge.secondary')"
+      secondary-to="/settings#providers"
+      command="hermes insights"
+    />
+
     <section class="mb-6 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div class="min-w-0">
@@ -103,6 +130,12 @@ function confidenceType(pct: number): 'success' | 'warning' | 'default' {
     </section>
 
     <NSpin v-if="loading" size="small" class="flex justify-center py-20" />
+    <ErrorBanner
+      v-else-if="error"
+      :message="`${t('cost.loadFailed')}: ${error}`"
+      :retry-label="t('common.retry')"
+      @retry="loadCostOverview"
+    />
     <template v-else-if="data">
       <!-- Alerts -->
       <div v-if="data.alerts.length" class="mb-6 space-y-2">

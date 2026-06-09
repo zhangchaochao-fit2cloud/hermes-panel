@@ -19,8 +19,12 @@ describe('cost insights UX', () => {
   it('loads optimization suggestions on first render', () => {
     const source = readFileSync(costViewPath, 'utf8');
 
+    expect(source).toContain('function loadCostOverview');
     expect(source).toContain("await loadOptimizations()");
     expect(source).toContain("'/api/cost/optimizations'");
+    expect(source).toContain('const error = ref<string | null>(null)');
+    expect(source).toContain('v-else-if="error"');
+    expect(source).toContain('@retry="loadCostOverview"');
   });
 
   it('keeps dashboard cost intelligence failures inside the card', () => {

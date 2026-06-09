@@ -78,6 +78,15 @@ export default {
   tools: {
     title: 'Tools & Skills',
     subtitle: 'Manage built-in tools, MCP servers, and the skill library',
+    taskBridge: {
+      eyebrow: 'Use in Chat',
+      title: 'Let Hermes choose the right tool while you work',
+      desc: 'Use this page to inspect availability; send the task to Chat when you want Hermes to decide whether tools, MCP, skills, or plugins should participate.',
+      example: 'Example: ask Chat to inspect available MCP servers before touching files.',
+      prompt: 'Inspect which Hermes tools, MCP servers, skills, or plugins should participate in this task. Use `hermes tools list` as the CLI source of truth, explain the shortest safe path, then wait for my specific task.',
+      action: 'Use tools in Chat',
+      secondary: 'Check CLI coverage',
+    },
     searchPlaceholder: 'Search tools...',
     empty: 'No matching tools',
     emptyHint: 'Try a different search term, or switch to MCP, Skills, or Plugins tabs',
@@ -1934,6 +1943,15 @@ export default {
   },
   memory: {
     searchPlaceholder: 'Search files / content...',
+    taskBridge: {
+      eyebrow: 'Use in Chat',
+      title: 'Turn memory into task context',
+      desc: 'Use this page to inspect and edit durable memory; send the task to Chat when you want Hermes to decide which saved context should be referenced.',
+      example: 'Example: ask Chat to summarize relevant project preferences before changing code.',
+      prompt: 'Use `hermes memory` as the CLI source of truth. Check whether long-term memory or saved project context should be used for my next task, summarize the relevant context, then ask what I want to do.',
+      action: 'Use memory in Chat',
+      secondary: 'Manage tools',
+    },
     noMatch: 'No matching files',
     emptyTree: 'No memory files yet',
     newFile: 'New file',
@@ -2138,6 +2156,15 @@ export default {
   cost: {
     title: '💰 Cost Control',
     subtitle: 'Manage multi-provider costs, set budget limits, and get automatic alerts',
+    taskBridge: {
+      eyebrow: 'Use in Chat',
+      title: 'Ask for the cheapest safe execution path',
+      desc: 'Cost data is most useful before a run. Send a cost-aware prompt to Chat so Hermes can choose when to stay local, use a cheap model, or upgrade.',
+      example: 'Example: ask Chat to explain which model should handle a task before spending cloud credits.',
+      prompt: 'Use `hermes insights` as the CLI source of truth. Review my next task from a cost perspective, suggest the cheapest safe model path, explain when to upgrade, and list the token or budget signals I should watch.',
+      action: 'Plan with cost in Chat',
+      secondary: 'Configure models',
+    },
     cliEyebrow: 'Official CLI command',
     cliDesc: 'Mirrors the usage, budget, and optimization view behind `hermes insights`.',
     sourceUsage: 'Usage ledger',
