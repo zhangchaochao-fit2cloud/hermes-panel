@@ -53,6 +53,7 @@ async function runProviderLogout(): Promise<void> {
 </script>
 
 <template>
+  <div>
   <section class="rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div class="min-w-0">
@@ -143,4 +144,5 @@ async function runProviderLogout(): Promise<void> {
       </div>
     </div>
   </NModal>
+  </div>
 </template>

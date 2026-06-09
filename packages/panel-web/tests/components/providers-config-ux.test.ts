@@ -3,9 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const providersPath = join(process.cwd(), 'src/components/settings/SectionProviders.vue');
+const providerReadinessPath = join(process.cwd(), 'src/components/settings/ProviderReadinessSummary.vue');
 const providerSetupWizardPath = join(process.cwd(), 'src/components/settings/ProviderSetupWizard.vue');
 const providerAuthCommandsPath = join(process.cwd(), 'src/components/settings/ProviderAuthCommands.vue');
 const providerModelDiscoveryPath = join(process.cwd(), 'src/components/settings/ProviderModelDiscovery.vue');
+const enPath = join(process.cwd(), 'src/locales/en-US.ts');
+const zhPath = join(process.cwd(), 'src/locales/zh-CN.ts');
 
 describe('providers config UX', () => {
   it('makes hermes config set discoverable from provider settings', () => {
@@ -32,6 +35,8 @@ describe('providers config UX', () => {
     const source = readFileSync(providersPath, 'utf8');
     const wizard = readFileSync(providerSetupWizardPath, 'utf8');
 
+    expect(source).toContain('ProviderReadinessSummary');
+    expect(source.indexOf('ProviderReadinessSummary')).toBeLessThan(source.indexOf('ProviderSetupWizard'));
     expect(source).toContain('ProviderSetupWizard');
     expect(source).toContain('@add-credential="startAddFor"');
     expect(wizard).toContain("id: 'portal'");
@@ -46,6 +51,29 @@ describe('providers config UX', () => {
     expect(wizard).toContain('store.setModel');
     expect(wizard).toContain("emit('add-credential'");
     expect(wizard).toContain("router.push('/chat')");
+  });
+
+  it('summarizes active model readiness and free model next steps', () => {
+    const source = readFileSync(providersPath, 'utf8');
+    const readiness = readFileSync(providerReadinessPath, 'utf8');
+    const en = readFileSync(enPath, 'utf8');
+    const zh = readFileSync(zhPath, 'utf8');
+
+    expect(source).toContain('@add-credential="startAddFor"');
+    expect(readiness).toContain('settings.providers.readiness');
+    expect(readiness).toContain('store.discoverModels');
+    expect(readiness).toContain('store.setModel');
+    expect(readiness).toContain("baseUrl: 'http://localhost:11434/v1'");
+    expect(readiness).toContain("emit('add-credential', 'openrouter')");
+    expect(readiness).toContain('hermes config set model.default');
+    expect(readiness).toContain("localStorage.setItem('panel.chat.draft.new'");
+    expect(readiness).toContain("router.push({ path: '/chat'");
+    expect(en).toContain('Model readiness');
+    expect(en).toContain('Use Ollama free preset');
+    expect(en).toContain('Add free cloud key');
+    expect(zh).toContain('模型就绪');
+    expect(zh).toContain('使用 Ollama 免费预设');
+    expect(zh).toContain('添加免费云 Key');
   });
 
   it('surfaces active Hermes gateway model discovery in provider setup', () => {

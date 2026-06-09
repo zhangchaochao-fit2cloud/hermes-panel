@@ -11,6 +11,7 @@ import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
 import ErrorBanner from '@/components/shared/ErrorBanner.vue';
 import ProviderAuthCommands from './ProviderAuthCommands.vue';
 import ProviderModelDiscovery from './ProviderModelDiscovery.vue';
+import ProviderReadinessSummary from './ProviderReadinessSummary.vue';
 import ProviderSetupWizard from './ProviderSetupWizard.vue';
 
 const { t } = useI18n();
@@ -140,6 +141,7 @@ function isCurrentProvider(p: ProviderInfo): boolean {
     </div>
 
     <template v-else>
+      <ProviderReadinessSummary class="mt-4" @add-credential="startAddFor" />
       <ProviderSetupWizard class="mt-4" @add-credential="startAddFor" />
       <ProviderModelDiscovery class="mt-4" />
 
