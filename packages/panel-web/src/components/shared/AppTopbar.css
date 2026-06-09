@@ -1,0 +1,32 @@
+.topbar-command-button {
+  height: 32px;
+  max-width: 260px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevate);
+  color: var(--text-2);
+  padding: 0 9px;
+  font-size: 12px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.topbar-command-button:hover {
+  border-color: color-mix(in srgb, var(--brand-500) 42%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 6%, var(--bg-elevate));
+  color: var(--text-1);
+}
+
+.topbar-command-button kbd {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-3);
+  padding: 1px 5px;
+  font-size: 10px;
+  line-height: 1.4;
+}

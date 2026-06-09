@@ -110,6 +110,10 @@ function toggleLocale(): void {
 function showCheatsheet(): void {
   window.dispatchEvent(new Event('panel:show-cheatsheet'));
 }
+
+function openControlCenter(): void {
+  window.dispatchEvent(new Event('panel:open-control-center'));
+}
 </script>
 
 <template>
@@ -146,6 +150,50 @@ function showCheatsheet(): void {
       </div>
     </div>
     <div class="flex-1" />
+    <button
+      type="button"
+      class="topbar-command-button hidden lg:inline-flex"
+      :title="t('controlCenter.openHint')"
+      :aria-label="t('controlCenter.open')"
+      @click="openControlCenter"
+    >
+      <svg
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m21 21-4.3-4.3" />
+        <circle cx="11" cy="11" r="7" />
+      </svg>
+      <span class="truncate">{{ t('controlCenter.open') }}</span>
+      <kbd>⌘⇧P</kbd>
+    </button>
+    <button
+      type="button"
+      class="topbar-icon-button lg:hidden"
+      :title="t('controlCenter.openHint')"
+      :aria-label="t('controlCenter.open')"
+      @click="openControlCenter"
+    >
+      <svg
+        class="h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m21 21-4.3-4.3" />
+        <circle cx="11" cy="11" r="7" />
+      </svg>
+    </button>
     <ModelSwitcher />
     <StatusBadge :state="hermesState" :label="hermesLabel" />
     <NotificationBell />
@@ -217,3 +265,5 @@ function showCheatsheet(): void {
     <GlobalLoadingBar />
   </header>
 </template>
+
+<style scoped src="./AppTopbar.css"></style>
