@@ -23,6 +23,7 @@ import ToolsStatusBar from '@/components/chat/ToolsStatusBar.vue';
 import ChatSessionsDrawer from '@/components/chat/ChatSessionsDrawer.vue';
 import ChatReadinessCard from '@/components/chat/ChatReadinessCard.vue';
 import ChatModelContextBar from '@/components/chat/ChatModelContextBar.vue';
+import ChatModeRail from '@/components/chat/ChatModeRail.vue';
 import ViewErrorBoundary from '@/components/shared/ViewErrorBoundary.vue';
 import { useSessionsStore } from '@/stores/sessions';
 import { useAssistantOptions } from '@/composables/useAssistantOptions';
@@ -167,6 +168,19 @@ function onTemplatePick(content: string): void {
 
 function onReadinessPrompt(content: string): void {
   composerRef.value?.setText(content);
+}
+
+function onModeRailRoute(payload: { route: string; prompt?: string; storage?: 'cron' }): void {
+  if (payload.storage === 'cron' && payload.prompt) {
+    try {
+      sessionStorage.setItem('panel.pendingCronPrompt', payload.prompt);
+    } catch {
+      /* route still works when session storage is unavailable */
+    }
+  } else if (payload.prompt) {
+    composerRef.value?.setText(payload.prompt);
+  }
+  void router.push(payload.route);
 }
 
 // 会话分支 fork — 见 session.branchAt + onMessageBranch handler（行 391）
@@ -729,6 +743,10 @@ async function onExportSelect(key: string | number): Promise<void> {
           <ChatModelContextBar
             v-model:model="model"
             @pick-prompt="onReadinessPrompt"
+          />
+          <ChatModeRail
+            @pick-prompt="onReadinessPrompt"
+            @open-route="onModeRailRoute"
           />
           <div class="chat-context-bar">
             <div

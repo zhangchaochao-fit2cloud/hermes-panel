@@ -280,6 +280,32 @@ export default {
         missing: '需配置',
       },
     },
+    modeRail: {
+      ariaLabel: 'Chat 对话模式',
+      label: '对话路径',
+      desc: '发送前先选择工作入口。',
+      actions: {
+        direct: {
+          title: '直接对话',
+          desc: '单 Agent，当前模型。',
+          prompt: '使用 Hermes 直接对话。先总结当前模型、工具、权限模式和最安全的下一步，然后等待我的任务。',
+        },
+        room: {
+          title: '角色房间',
+          desc: '和多个 Agent 协作。',
+        },
+        cron: {
+          title: '定时运行',
+          desc: '把提示词变成任务。',
+          prompt: '用这条提示词创建 Hermes 定时任务。请包含目标、预期频率、失败处理方式，以及需要回报的结果。',
+        },
+        cli: {
+          title: 'CLI 覆盖',
+          desc: '检查官方映射。',
+          prompt: '检查这个任务的 Hermes CLI 覆盖情况。先找出官方 Hermes 命令或回退交接命令、对应的 UI 入口，以及缺失覆盖，再建议下一步。',
+        },
+      },
+    },
     readiness: {
       eyebrow: '发送前确认',
       title: '对话就绪状态',

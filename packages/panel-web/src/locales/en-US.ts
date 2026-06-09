@@ -280,6 +280,32 @@ export default {
         missing: 'Needs setup',
       },
     },
+    modeRail: {
+      ariaLabel: 'Chat conversation modes',
+      label: 'Conversation path',
+      desc: 'Pick the work surface before sending.',
+      actions: {
+        direct: {
+          title: 'Direct chat',
+          desc: 'One agent, current model.',
+          prompt: 'Use direct Hermes chat. First summarize the active model, tools, permission mode, and the safest next step, then wait for my task.',
+        },
+        room: {
+          title: 'Role room',
+          desc: 'Collaborate with agents.',
+        },
+        cron: {
+          title: 'Scheduled run',
+          desc: 'Turn prompt into a job.',
+          prompt: 'Create a scheduled Hermes run from this prompt. Include the goal, expected cadence, failure handling, and what result should be reported back.',
+        },
+        cli: {
+          title: 'CLI parity',
+          desc: 'Check official mapping.',
+          prompt: 'Check Hermes CLI parity for this task. Identify the official Hermes command or fallback handoff, the matching UI route if it exists, and any missing coverage before suggesting the next step.',
+        },
+      },
+    },
     readiness: {
       eyebrow: 'Before you send',
       title: 'Chat readiness',
