@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import type {
   CliCommandCoverage,
   CliCommandInventoryItem,
@@ -12,6 +13,7 @@ const props = defineProps<{ query: string }>();
 const emit = defineEmits<{ (e: 'pick', prompt: string): void }>();
 
 const { t } = useI18n();
+const router = useRouter();
 
 const commandIds = ['help', 'model', 'local', 'tools', 'review', 'plan'] as const;
 
@@ -23,6 +25,7 @@ interface SlashShortcutItem {
   prompt: string;
   coverage?: CliCommandCoverage;
   example?: string;
+  route?: string;
 }
 
 const cliCommands = ref<CliCommandInventoryItem[]>([]);
@@ -52,6 +55,7 @@ const cliShortcutCommands = computed<SlashShortcutItem[]>(() =>
     prompt: cliPrompt(cmd),
     coverage: cmd.coverage,
     example: cmd.example,
+    route: cmd.route,
   })),
 );
 
@@ -60,6 +64,7 @@ function matchesQuery(item: SlashShortcutItem, q: string): boolean {
     || item.command.toLowerCase().includes(q)
     || item.label.toLowerCase().includes(q)
     || item.desc.toLowerCase().includes(q)
+    || (item.route?.toLowerCase().includes(q) ?? false)
     || (item.example?.toLowerCase().includes(q) ?? false);
 }
 
@@ -97,6 +102,14 @@ async function loadCliCommands(): Promise<void> {
 onMounted(() => {
   void loadCliCommands();
 });
+
+function pickItem(item: SlashShortcutItem): void {
+  if (item.route) {
+    void router.push(item.route);
+    return;
+  }
+  emit('pick', item.prompt);
+}
 </script>
 
 <template>
@@ -130,7 +143,7 @@ onMounted(() => {
       :key="item.id"
       type="button"
       class="slash-shortcut-row"
-      @click="emit('pick', item.prompt)"
+      @click="pickItem(item)"
     >
       <code class="slash-command">{{ item.command }}</code>
       <span class="min-w-0 flex-1">
@@ -143,6 +156,9 @@ onMounted(() => {
         :data-coverage="item.coverage"
       >
         {{ t(`developer.cliParity.coverage.${item.coverage}`) }}
+      </span>
+      <span v-if="item.route" class="slash-route">
+        {{ t('developer.cliParity.open') }}
       </span>
     </button>
 
@@ -221,6 +237,16 @@ onMounted(() => {
   font-size: 10px;
 }
 
+.slash-route {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-card));
+  padding: 2px 6px;
+  color: var(--brand-600);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .slash-coverage[data-coverage='ready'] {
   color: var(--color-success);
 }
@@ -255,7 +281,8 @@ onMounted(() => {
     min-width: 0;
   }
 
-  .slash-coverage {
+  .slash-coverage,
+  .slash-route {
     display: none;
   }
 }
