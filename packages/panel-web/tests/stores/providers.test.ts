@@ -184,7 +184,7 @@ describe('providers model inspection', () => {
     const store = useProvidersStore();
 
     await store.inspectModels([
-      { id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter' },
+      { id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter', requiresCredential: false },
     ]);
 
     expect(store.inspectionLoading).toBe(false);
@@ -193,7 +193,7 @@ describe('providers model inspection', () => {
     expect(mockedBffFetch).toHaveBeenCalledWith('/api/models/inspect', {
       method: 'POST',
       body: JSON.stringify({
-        models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter' }],
+        models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini', provider: 'openrouter', requiresCredential: false }],
       }),
       silent: true,
     });

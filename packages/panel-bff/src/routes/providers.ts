@@ -25,7 +25,8 @@ providersRouter.post('/models/inspect', async ctx => {
         && typeof m.id === 'string'
         && typeof m.provider === 'string'
         && (!m.label || typeof m.label === 'string')
-        && (!m.baseUrl || typeof m.baseUrl === 'string'),
+        && (!m.baseUrl || typeof m.baseUrl === 'string')
+        && (m.requiresCredential === undefined || typeof m.requiresCredential === 'boolean'),
       )
     : [];
   if (candidates.length === 0) {

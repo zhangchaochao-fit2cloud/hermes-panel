@@ -21,7 +21,10 @@ const customInput = ref('');
 const search = ref('');
 
 const allCandidates = computed(() => KNOWN_MODEL_GROUPS.flatMap(group =>
-  group.models.map(m => ({ id: m.id, label: m.label, provider: m.provider, baseUrl: m.baseUrl })),
+  group.models.map(m => ({
+    id: m.id, label: m.label, provider: m.provider,
+    baseUrl: m.baseUrl, requiresCredential: m.requiresCredential,
+  })),
 ));
 
 onMounted(() => {
@@ -62,6 +65,7 @@ const filteredGroups = computed(() => {
       models: g.models.filter(m =>
         m.id.toLowerCase().includes(q)
         || m.label.toLowerCase().includes(q)
+        || m.tags?.some(tag => tag.includes(q))
         || g.label.toLowerCase().includes(q),
       ),
     }))
@@ -113,6 +117,7 @@ function statusClass(m: KnownModel): string {
 }
 
 function priceLabel(m: KnownModel): string {
+  if (m.requiresCredential === false) return t('model.switcher.freeLocal');
   const pricing = inspectionOf(m)?.pricing;
   if (!pricing) return t('model.switcher.priceUnknown');
   return t('model.switcher.pricePerMillion', {
@@ -260,6 +265,9 @@ function shortHost(url: string): string {
               <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <span class="model-health-chip inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold" :class="statusClass(m)">{{ statusLabel(m) }}</span>
                 <span class="model-price-pill inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--bg-elevate)] px-2 py-0.5 text-[10px] text-[var(--text-2)]">{{ priceLabel(m) }}</span>
+                <span v-for="tag in m.tags?.slice(0, 2) ?? []" :key="tag" class="model-tag-pill inline-flex items-center rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] text-[var(--text-3)]">
+                  {{ t(`model.switcher.tag.${tag}`) }}
+                </span>
                 <span v-if="search.trim() && inspectionOf(m)?.contextLength" class="inline-flex items-center rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] text-[var(--text-3)]">
                   {{ t('model.switcher.contextWindow', { value: inspectionOf(m)?.contextLength }) }}
                 </span>

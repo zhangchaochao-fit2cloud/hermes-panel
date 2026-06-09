@@ -49,6 +49,7 @@ export interface CandidateModel {
   label?: string;
   provider: string;
   baseUrl?: string;
+  requiresCredential?: boolean;
 }
 
 export interface ModelPricing {

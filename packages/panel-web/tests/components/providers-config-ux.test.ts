@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const providersPath = join(process.cwd(), 'src/components/settings/SectionProviders.vue');
+const providerSetupWizardPath = join(process.cwd(), 'src/components/settings/ProviderSetupWizard.vue');
 const providerAuthCommandsPath = join(process.cwd(), 'src/components/settings/ProviderAuthCommands.vue');
 
 describe('providers config UX', () => {
@@ -24,6 +25,21 @@ describe('providers config UX', () => {
     expect(source).toContain("t('settings.providers.configEmpty')");
     expect(source).toContain("t('settings.providers.configErrorPrefix')");
     expect(source).toContain('@retry="store.load()"');
+  });
+
+  it('offers a guided model setup path before raw provider rows', () => {
+    const source = readFileSync(providersPath, 'utf8');
+    const wizard = readFileSync(providerSetupWizardPath, 'utf8');
+
+    expect(source).toContain('ProviderSetupWizard');
+    expect(source).toContain('@add-credential="startAddFor"');
+    expect(wizard).toContain("id: 'local'");
+    expect(wizard).toContain("id: 'free-cloud'");
+    expect(wizard).toContain("id: 'api-key'");
+    expect(wizard).toContain("id: 'custom'");
+    expect(wizard).toContain('store.setModel');
+    expect(wizard).toContain("emit('add-credential'");
+    expect(wizard).toContain("router.push('/chat')");
   });
 
   it('makes official provider login and logout commands discoverable', () => {

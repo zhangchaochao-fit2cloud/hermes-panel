@@ -6,6 +6,7 @@ export interface CandidateModel {
   label?: string;
   provider: string;
   baseUrl?: string;
+  requiresCredential?: boolean;
 }
 
 export interface ModelPricing {
@@ -60,6 +61,7 @@ function sameProvider(candidateProvider: string, modelProvider: string): boolean
 }
 
 function hasConfiguredCredential(candidate: CandidateModel, providers: ProviderInfo[], model: ModelState | null): boolean {
+  if (candidate.requiresCredential === false) return true;
   if (providers.some(provider => provider.family === candidate.provider && provider.credentials.length > 0)) {
     return true;
   }

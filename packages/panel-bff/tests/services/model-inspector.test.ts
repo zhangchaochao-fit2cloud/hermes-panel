@@ -11,6 +11,7 @@ const candidates: CandidateModel[] = [
   { id: 'openai/gpt-5-mini', label: 'GPT-5 Mini (via OR)', provider: 'openrouter' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'custom', baseUrl: 'https://api.deepseek.com' },
+  { id: 'llama3.1', label: 'Llama 3.1', provider: 'custom', baseUrl: 'http://localhost:11434/v1', requiresCredential: false },
 ];
 
 describe('model-inspector', () => {
@@ -42,6 +43,11 @@ describe('model-inspector', () => {
       isCurrent: false,
       credentialStatus: 'missing',
       availability: 'missing_credentials',
+    });
+    expect(result.items.find(item => item.id === 'llama3.1')).toMatchObject({
+      provider: 'custom',
+      credentialStatus: 'configured',
+      availability: 'ready',
     });
   });
 

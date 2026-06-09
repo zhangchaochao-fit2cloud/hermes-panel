@@ -45,6 +45,7 @@ describe('provider model inspection routes', () => {
       .send({
         models: [
           { id: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
+          { id: 'llama3.1', label: 'Llama 3.1', provider: 'custom', baseUrl: 'http://localhost:11434/v1', requiresCredential: false },
         ],
       });
 
@@ -59,6 +60,12 @@ describe('provider model inspection routes', () => {
         outputPerMillion: 10,
         source: 'static',
       },
+    });
+    expect(res.body.items[1]).toMatchObject({
+      id: 'llama3.1',
+      provider: 'custom',
+      credentialStatus: 'configured',
+      availability: 'ready',
     });
   });
 

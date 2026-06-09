@@ -13,6 +13,8 @@ describe('model switcher experience', () => {
     expect(source).toContain('store.loadProviderBalance');
     expect(source).toContain('model-health-chip');
     expect(source).toContain('model-price-pill');
+    expect(source).toContain('model-tag-pill');
+    expect(source).toContain('requiresCredential: m.requiresCredential');
     expect(source).toContain('provider-balance-panel');
     expect(source).toContain("t('model.switcher.missingCredentialWarning')");
   });
