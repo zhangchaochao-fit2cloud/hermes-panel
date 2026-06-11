@@ -7,6 +7,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import ControlCenter from '@/components/shared/ControlCenter.vue';
 import HotkeysCheatsheet from '@/components/shared/HotkeysCheatsheet.vue';
 import AppErrorBoundary from '@/components/shared/AppErrorBoundary.vue';
+import OfflineIndicator from '@/components/shared/OfflineIndicator.vue';
 import { useAppearanceStore } from '@/stores/appearance';
 import { createPanelThemeOverrides } from '@/utils/naive-theme';
 
@@ -22,7 +23,6 @@ const themeOverrides = computed(() =>
   }),
 );
 
-// Public routes (login) render full-screen without the app chrome.
 const isChrome = computed(() => !route.meta.public);
 
 onMounted(() => appearance.init());
@@ -99,6 +99,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleNavShortcut)
           </template>
           <ControlCenter v-if="isChrome" />
           <HotkeysCheatsheet v-if="isChrome" />
+          <OfflineIndicator />
         </NNotificationProvider>
       </NDialogProvider>
     </NMessageProvider>
