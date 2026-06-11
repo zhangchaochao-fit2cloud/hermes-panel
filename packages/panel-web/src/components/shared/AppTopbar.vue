@@ -99,6 +99,7 @@ const pageSubtitle = computed(() => {
     '/tools': t('nav.subtitle.tools'),
     '/developer': t('nav.subtitle.developer'),
     '/settings': t('nav.subtitle.settings'),
+    '/github': t('nav.subtitle.github'),
   };
   return map[route.path] ?? t('nav.subtitle.console');
 });
