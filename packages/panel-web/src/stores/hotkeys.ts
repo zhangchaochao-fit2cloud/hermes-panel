@@ -9,7 +9,7 @@ import { ref } from 'vue';
  * decides where it installs the listener; the store is just the source of
  * truth for chord strings.
  */
-export type HotkeyId = 'newChat' | 'search' | 'refresh' | 'send' | 'newline';
+export type HotkeyId = 'newChat' | 'search' | 'refresh' | 'send' | 'newline' | 'toggleSidebar' | 'sendAlt';
 
 /**
  * Canonical chord format used everywhere in the app:
@@ -29,10 +29,12 @@ export type Chord = string;
 
 export const DEFAULT_BINDINGS: Record<HotkeyId, Chord> = {
   newChat: 'mod+n',
-  search: 'mod+shift+p',
+  search: 'mod+k',
   refresh: 'mod+r',
   send: 'enter',
   newline: 'shift+enter',
+  toggleSidebar: 'mod+/',
+  sendAlt: 'mod+enter',
 };
 
 /** Order in which actions are rendered in the settings table. */
@@ -42,6 +44,8 @@ export const HOTKEY_IDS: readonly HotkeyId[] = [
   'refresh',
   'send',
   'newline',
+  'toggleSidebar',
+  'sendAlt',
 ] as const;
 
 const STORAGE_KEY = 'panel.hotkeys';

@@ -66,7 +66,7 @@ function prev(): void {
 }
 
 function onKey(e: KeyboardEvent): void {
-  const isFind = (e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'f';
+  const isFind = (e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'k');
   if (isFind) {
     e.preventDefault();
     open.value = !open.value;

@@ -17,6 +17,7 @@ import ChatFindBar from '@/components/chat/ChatFindBar.vue';
 import Composer from '@/components/chat/Composer.vue';
 import type { ComposerTaskActionPayload } from '@/components/chat/ComposerTaskActions.vue';
 import TaskProgressPanel from '@/components/chat/TaskProgressPanel.vue';
+import ParallelTaskPanel from '@/components/chat/ParallelTaskPanel.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
 import RoleTeamBar from '@/components/chat/RoleTeamBar.vue';
 import PromptTemplatesBar from '@/components/chat/PromptTemplatesBar.vue';
@@ -31,6 +32,8 @@ import { useAssistantOptions } from '@/composables/useAssistantOptions';
 import { useCronAggregateView } from '@/composables/useCronAggregateView';
 import { useChatExport } from '@/composables/useChatExport';
 import { useTaskDraft } from '@/composables/useTaskDraft';
+import { useHotkeysStore } from '@/stores/hotkeys';
+import { useVirtualScroll } from '@/composables/useVirtualScroll';
 import { detectMention, type RoleDef } from '@/data/roles';
 import { useWorkspacesStore } from '@/stores/workspaces';
 import { getToolEditSummary } from '@/utils/tool-call-facts';
@@ -41,6 +44,7 @@ const session = useSessionStore();
 const stream = useChatStreamStore();
 const system = useSystemStore();
 const sessionsList = useSessionsStore();
+const hotkeysStore = useHotkeysStore();
 const message = useMessage();
 const route = useRoute();
 const router = useRouter();
@@ -74,6 +78,7 @@ function onScroll(): void {
   const el = scroller.value;
   if (!el) return;
   scrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > 120;
+  virtualScroll.onScroll();
 }
 function scrollToBottom(): void {
   const el = scroller.value;
@@ -83,6 +88,50 @@ function scrollToBottom(): void {
 }
 const composerRef = ref<InstanceType<typeof Composer> | null>(null);
 const taskPanelOpen = ref(false);
+const parallelTaskPanelOpen = ref(false);
+
+const sampleParallelTasks = ref([
+  {
+    id: 'task-1',
+    name: '数据处理任务',
+    status: 'completed',
+    progress: 100,
+    startTime: Date.now() - 5000,
+    endTime: Date.now() - 1000,
+    output: '任务完成，处理了 1000 条记录'
+  },
+  {
+    id: 'task-2',
+    name: '网络请求任务',
+    status: 'running',
+    progress: 65,
+    startTime: Date.now() - 3000
+  },
+  {
+    id: 'task-3',
+    name: '文件上传任务',
+    status: 'pending',
+    progress: 0,
+    startTime: Date.now()
+  },
+  {
+    id: 'task-4',
+    name: '数据库同步任务',
+    status: 'failed',
+    progress: 30,
+    startTime: Date.now() - 4000,
+    endTime: Date.now() - 2000,
+    error: '连接超时：无法连接到数据库服务器'
+  }
+]);
+
+function handleCancelParallelTask(taskId: string): void {
+  const task = sampleParallelTasks.value.find(t => t.id === taskId);
+  if (task) {
+    task.status = 'cancelled';
+    task.endTime = Date.now();
+  }
+}
 
 const workspaces = useWorkspacesStore();
 function summon(role: RoleDef): void {
@@ -358,6 +407,26 @@ watch(
   },
 );
 
+function onGlobalKeydown(e: KeyboardEvent): void {
+  if (e.isComposing) return;
+  if (hotkeysStore.matches(e, 'newChat')) {
+    e.preventDefault();
+    onNewChat();
+  } else if (hotkeysStore.matches(e, 'toggleSidebar')) {
+    e.preventDefault();
+    sidebarCollapsed.value = !sidebarCollapsed.value;
+  } else if (e.key === 'Escape') {
+    const editingEl = document.querySelector('.message-edit-card');
+    if (editingEl) {
+      const textarea = editingEl.querySelector('textarea');
+      if (textarea) textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    }
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown));
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown));
+
 watch(messages, async () => {
   await nextTick();
   if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight;
@@ -463,6 +532,14 @@ const flowItems = computed<FlowItem[]>(() => {
     prevTs = ts;
   }
   return out;
+});
+
+const virtualScroll = useVirtualScroll({
+  items: flowItems,
+  container: scroller,
+  threshold: 50,
+  buffer: 10,
+  estimatedHeight: 120,
 });
 
 function onMessageEditSave(payload: { id: string; content: string }): void {
@@ -589,6 +666,20 @@ async function onExportSelect(key: string | number): Promise<void> {
               <path d="m11.5 11.5 1.2 1.2 2-2.4" />
             </svg>
           </button>
+          <button
+            v-if="messages.length > 0"
+            type="button"
+            class="chat-header-icon-button"
+            :class="{ 'is-active': parallelTaskPanelOpen }"
+            :title="t('chat.parallelTasks.title')"
+            :aria-label="t('chat.parallelTasks.title')"
+            @click="parallelTaskPanelOpen = !parallelTaskPanelOpen"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 2v12M2 8h12" />
+              <circle cx="8" cy="8" r="3" />
+            </svg>
+          </button>
           <NDropdown
             v-if="messages.length > 0"
             :options="exportOptions"
@@ -680,25 +771,51 @@ async function onExportSelect(key: string | number): Promise<void> {
               </svg>
             </button>
           </div>
-          <template v-for="item in flowItems" :key="item.kind === 'divider' ? item.id : item.m.id">
-            <div
-              v-if="item.kind === 'divider'"
-              class="chat-time-divider my-3 flex items-center gap-2 text-[10px] text-[var(--text-3)] select-none"
-              :aria-hidden="true"
-            >
-              <div class="h-px flex-1 bg-[var(--border)]" />
-              <span>{{ item.label }}</span>
-              <div class="h-px flex-1 bg-[var(--border)]" />
-            </div>
-            <MessageBubble
-              v-else
-              :message="item.m"
-              :is-streaming="state === 'streaming' && item.m.id === lastStreamingMessageId"
-              @edit-save="onMessageEditSave"
-              @add-selection="onMessageAddSelection"
-              @branch="onMessageBranch"
-              @stop="onStop"
-            />
+          <template v-if="virtualScroll.shouldVirtualize.value">
+            <div :style="{ height: `${virtualScroll.spacerTop.value}px` }" />
+            <template v-for="item in virtualScroll.visibleItems.value" :key="item.kind === 'divider' ? item.id : (item.m as any)?.id ?? item.id">
+              <div
+                v-if="item.kind === 'divider'"
+                class="chat-time-divider my-3 flex items-center gap-2 text-[10px] text-[var(--text-3)] select-none"
+                :aria-hidden="true"
+              >
+                <div class="h-px flex-1 bg-[var(--border)]" />
+                <span>{{ (item as any).label }}</span>
+                <div class="h-px flex-1 bg-[var(--border)]" />
+              </div>
+              <MessageBubble
+                v-else
+                :message="(item.m as any)"
+                :is-streaming="state === 'streaming' && (item.m as any).id === lastStreamingMessageId"
+                @edit-save="onMessageEditSave"
+                @add-selection="onMessageAddSelection"
+                @branch="onMessageBranch"
+                @stop="onStop"
+              />
+            </template>
+            <div :style="{ height: `${virtualScroll.spacerBottom.value}px` }" />
+          </template>
+          <template v-else>
+            <template v-for="item in flowItems" :key="item.kind === 'divider' ? item.id : item.m.id">
+              <div
+                v-if="item.kind === 'divider'"
+                class="chat-time-divider my-3 flex items-center gap-2 text-[10px] text-[var(--text-3)] select-none"
+                :aria-hidden="true"
+              >
+                <div class="h-px flex-1 bg-[var(--border)]" />
+                <span>{{ item.label }}</span>
+                <div class="h-px flex-1 bg-[var(--border)]" />
+              </div>
+              <MessageBubble
+                v-else
+                :message="item.m"
+                :is-streaming="state === 'streaming' && item.m.id === lastStreamingMessageId"
+                @edit-save="onMessageEditSave"
+                @add-selection="onMessageAddSelection"
+                @branch="onMessageBranch"
+                @stop="onStop"
+              />
+            </template>
           </template>
         </div>
 
@@ -729,6 +846,12 @@ async function onExportSelect(key: string | number): Promise<void> {
         :stream-state="state"
         :open="taskPanelOpen"
       />
+      <div v-if="parallelTaskPanelOpen" class="parallel-task-panel-container">
+        <ParallelTaskPanel 
+          :tasks="sampleParallelTasks"
+          @cancel-task="handleCancelParallelTask"
+        />
+      </div>
       </div>
       <!-- 悬浮 composer：无 border-t，靠 padding 与 messages 拉开距离；
            Composer 自身已有 card 样式，外层用 transparent 让阴影自然外溢。 -->
@@ -1222,5 +1345,24 @@ async function onExportSelect(key: string | number): Promise<void> {
 }
 @media (prefers-reduced-motion: reduce) {
   .scroll-bottom-btn { transition: none; }
+}
+
+.parallel-task-panel-container {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  z-index: 30;
+  width: min(400px, calc(100vw - 32px));
+  height: calc(100% - 76px);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition: all 0.2s;
+}
+
+@media (max-width: 900px) {
+  .parallel-task-panel-container {
+    display: none;
+  }
 }
 </style>

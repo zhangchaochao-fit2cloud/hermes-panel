@@ -230,6 +230,10 @@ function onKeydown(e: KeyboardEvent): void {
     e.preventDefault();
     submit();
   }
+  if (hotkeys.matches(e, 'sendAlt')) {
+    e.preventDefault();
+    submit();
+  }
 }
 
 function submit(): void {

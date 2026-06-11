@@ -83,7 +83,7 @@ const selectionBubble = ref<{ text: string; left: number; top: number } | null>(
 const isUser = computed(() => props.message.role === 'user');
 const isAssistant = computed(() => props.message.role === 'assistant');
 
-type ActionIcon = 'copy' | 'edit' | 'regenerate' | 'branch';
+type ActionIcon = 'copy' | 'edit' | 'regenerate' | 'branch' | 'quote';
 
 const actionIcons: Record<ActionIcon, string[]> = {
   copy: [
@@ -105,6 +105,9 @@ const actionIcons: Record<ActionIcon, string[]> = {
     'M6 21v-5a4 4 0 0 1 4-4h1',
     'M11 8l4 4-4 4',
     'M6 5.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM6 23.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  ],
+  quote: [
+    'M3 5h3v6H3V5zm7 0h3v6h-3V5z',
   ],
 };
 
@@ -454,37 +457,44 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeCtx); });
         >{{ t('chat.message.edited') }}</div>
       </div>
       <!-- hover 显示相对时间，不抢戏 -->
-      <div
-        v-if="!isEditing"
-        class="user-message-meta"
-        :title="fmtAbsoluteTime(message.createdAt)"
-      >
-        <span class="user-message-time">{{ userRelativeTime }}</span>
-        <div class="user-message-actions">
-          <button type="button" class="user-message-action" :title="t('chat.message.copy')" :aria-label="t('chat.message.copy')" @click="copyContent">
-            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path v-for="path in actionIcons.copy" :key="path" :d="path" />
-            </svg>
-            <span>{{ t('chat.message.copy') }}</span>
-          </button>
-          <button type="button" class="user-message-action" :title="t('chat.message.edit')" :aria-label="t('chat.message.edit')" @click="startEdit">
-            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path v-for="path in actionIcons.edit" :key="path" :d="path" />
-            </svg>
-            <span>{{ t('chat.message.edit') }}</span>
-          </button>
-          <button type="button" class="user-message-action" :title="t('chat.message.branch')" :aria-label="t('chat.message.branch')" @click="onBranch">
-            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path v-for="path in actionIcons.branch" :key="path" :d="path" />
-            </svg>
-            <span>{{ t('chat.message.branch') }}</span>
-          </button>
-          <button type="button" class="user-message-action user-message-action--icon" :title="t('chat.message.scheduleCron')" :aria-label="t('chat.message.scheduleCron')" @click="scheduleAsCron">
-            <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="16" rx="2" />
-              <path d="M16 3v4M8 3v4M3 11h18" />
-            </svg>
-          </button>
+        <div
+          v-if="!isEditing"
+          class="user-message-meta"
+          :title="fmtAbsoluteTime(message.createdAt)"
+        >
+          <span class="user-message-time">{{ userRelativeTime }}</span>
+          <div class="user-message-actions">
+            <button type="button" class="user-message-action" :title="t('chat.message.copy')" :aria-label="t('chat.message.copy')" @click="copyContent">
+              <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path v-for="path in actionIcons.copy" :key="path" :d="path" />
+              </svg>
+              <span>{{ t('chat.message.copy') }}</span>
+            </button>
+            <button type="button" class="user-message-action" :title="t('chat.message.edit')" :aria-label="t('chat.message.edit')" @click="startEdit">
+              <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path v-for="path in actionIcons.edit" :key="path" :d="path" />
+              </svg>
+              <span>{{ t('chat.message.edit') }}</span>
+            </button>
+            <button type="button" class="user-message-action" :title="t('chat.message.quote')" :aria-label="t('chat.message.quote')" @click="ctxQuote">
+              <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path v-for="path in actionIcons.quote" :key="path" :d="path" />
+              </svg>
+              <span>{{ t('chat.message.quote') }}</span>
+            </button>
+            <button type="button" class="user-message-action" :title="t('chat.message.branch')" :aria-label="t('chat.message.branch')" @click="onBranch">
+              <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path v-for="path in actionIcons.branch" :key="path" :d="path" />
+              </svg>
+              <span>{{ t('chat.message.branch') }}</span>
+            </button>
+            <button type="button" class="user-message-action user-message-action--icon" :title="t('chat.message.scheduleCron')" :aria-label="t('chat.message.scheduleCron')" @click="scheduleAsCron">
+              <svg class="message-action-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 11h18" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
