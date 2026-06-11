@@ -8,10 +8,11 @@ import {
   toolUsage,
   orchestrationStats,
 } from '../services/sqlite-reader.js';
+import { cacheHeaders } from '../middleware/cache-headers.js';
 
 export const statsRouter = new Router();
 
-statsRouter.get('/stats/overall', ctx => {
+statsRouter.get('/stats/overall', cacheHeaders(60), ctx => {
   ctx.body = overallStats();
 });
 
@@ -25,7 +26,7 @@ statsRouter.get('/stats/models', ctx => {
   ctx.body = modelDistribution(days);
 });
 
-statsRouter.get('/stats/cache', ctx => {
+statsRouter.get('/stats/cache', cacheHeaders(60), ctx => {
   const days = Math.min(Math.max(1, Number(ctx.query.days ?? 30)), 365);
   ctx.body = cacheStats(days);
 });

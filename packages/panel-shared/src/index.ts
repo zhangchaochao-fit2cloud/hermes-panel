@@ -5,3 +5,5 @@ export * from './types/system.js';
 export * from './types/auth.js';
 export * from './types/license.js';
 export * from './types/channel.js';
+export * from './lru-cache.js';
+export * from './cache-stats.js';

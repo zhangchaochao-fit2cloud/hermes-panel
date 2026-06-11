@@ -4,6 +4,7 @@
  */
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/common';
+import { LRUCache } from '@hermes-panel/shared';
 import { sanitizeMarkdownImageSrc } from './markdown-images';
 import { escapeHtml } from './markdown-controls';
 
@@ -134,8 +135,7 @@ function renderCodeBlock(codeHtml: string, language?: string): string {
   </div>`;
 }
 
-const MARKDOWN_CACHE_MAX = 200;
-const markdownCache = new Map<string, string>();
+const markdownCache = new LRUCache<string, string>({ maxSize: 100, maxAge: 600000 });
 
 const FILE_PATH_RE = /(?:^|\s)(packages\/[\w/-]+\.\w{2,4})(?:\s|$)/gm;
 
@@ -166,8 +166,6 @@ export function renderMarkdown(text: string): string {
   if (!text) return '';
   const cached = markdownCache.get(text);
   if (cached !== undefined) {
-    markdownCache.delete(text);
-    markdownCache.set(text, cached);
     return cached;
   }
   let html: string;
@@ -176,7 +174,6 @@ export function renderMarkdown(text: string): string {
   } catch {
     html = `<p>${escapeHtml(text)}</p>`;
   }
-  // Post-process: linkify file paths (but not inside code blocks or links)
   const protected_ = new Map<string, string>();
   let id = 0;
   html = html.replace(/(<pre[^>]*>[\s\S]*?<\/pre>|<a[^>]*>[\s\S]*?<\/a>)/g, m => {
@@ -187,10 +184,6 @@ export function renderMarkdown(text: string): string {
   html = linkifyFilePaths(html);
   html = renderLinkCards(html);
   for (const [key, val] of protected_) { html = html.replace(key, val); }
-  if (markdownCache.size >= MARKDOWN_CACHE_MAX) {
-    const firstKey = markdownCache.keys().next().value;
-    if (firstKey !== undefined) markdownCache.delete(firstKey);
-  }
   markdownCache.set(text, html);
   return html;
 }

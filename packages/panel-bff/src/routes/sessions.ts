@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import type { SessionSummary, SessionSource } from '@hermes-panel/shared';
 import { runHermesCli, HermesCliError } from '../services/hermes-cli.js';
 import { exportOne, exportFiltered } from '../services/hermes-export.js';
-import { listSessions, getSession, getMessages, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
+import { listSessions, getSession, getMessages, invalidateSessionCache, type SessionRow, type MessageRow } from '../services/sqlite-reader.js';
 import { shouldCompress, compress, type CompressionResult } from '../services/context-compressor.js';
 import { logger } from '../lib/logger.js';
 import { emit } from '../services/sync-bus.js';
@@ -191,6 +191,7 @@ sessionsRouter.delete('/sessions/:id', async ctx => {
   try {
     const result = await runHermesCli(['sessions', 'delete', ctx.params.id, '--yes'], { timeoutMs: 5000 });
     emit('session.deleted', { sessionId: ctx.params.id });
+    invalidateSessionCache();
     ctx.body = { deleted: true, output: result.stdout.trim() };
   } catch (err) {
     if (err instanceof HermesCliError) {
@@ -215,6 +216,7 @@ sessionsRouter.patch('/sessions/:id', async ctx => {
       { timeoutMs: 5000 }
     );
     emit('session.updated', { sessionId: ctx.params.id, title: body.title });
+    invalidateSessionCache();
     ctx.body = { ok: true, output: result.stdout.trim() };
   } catch (err) {
     if (err instanceof HermesCliError) {

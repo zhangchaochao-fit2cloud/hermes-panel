@@ -1,11 +1,26 @@
 import Database from 'better-sqlite3';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { LRUCache } from '@hermes-panel/shared';
 import { getHermesHome } from './hermes-home.js';
 import { logger } from '../lib/logger.js';
 
 let dbInstance: Database.Database | null = null;
 let lastError: Error | null = null;
+
+const sessionCache = new LRUCache<string, SessionRow[]>({ maxSize: 50, maxAge: 10_000 });
+const overallCache = new LRUCache<string, OverallStats>({ maxSize: 10, maxAge: 60_000 });
+const cacheStatsCache = new LRUCache<string, CacheStats>({ maxSize: 10, maxAge: 60_000 });
+const dailyCache = new LRUCache<string, DailyTokenRow[]>({ maxSize: 10, maxAge: 60_000 });
+const modelCache = new LRUCache<string, ModelStatRow[]>({ maxSize: 10, maxAge: 60_000 });
+
+export function invalidateSessionCache(): void {
+  sessionCache.clear();
+  overallCache.clear();
+  cacheStatsCache.clear();
+  dailyCache.clear();
+  modelCache.clear();
+}
 
 function dbPath(): string {
   return join(getHermesHome(), 'state.db');
@@ -74,6 +89,9 @@ export interface MessageRow {
 }
 
 export function listSessions(opts: { limit?: number; search?: string; source?: string } = {}): SessionRow[] {
+  const key = JSON.stringify(opts);
+  const cached = sessionCache.get(key);
+  if (cached) return cached;
   const db = getDb();
   if (!db) return [];
   const limit = Math.min(Math.max(1, opts.limit ?? 50), 500);
@@ -109,7 +127,9 @@ export function listSessions(opts: { limit?: number; search?: string; source?: s
     ORDER BY started_at DESC
     LIMIT @limit
   `;
-  return db.prepare(sql).all({ ...params, limit }) as SessionRow[];
+  const result = db.prepare(sql).all({ ...params, limit }) as SessionRow[];
+  sessionCache.set(key, result);
+  return result;
 }
 
 export function getSession(id: string): SessionRow | null {
@@ -142,10 +162,13 @@ export interface DailyTokenRow {
 }
 
 export function dailyTokenUsage(days: number = 7): DailyTokenRow[] {
+  const key = `daily:${days}`;
+  const cached = dailyCache.get(key);
+  if (cached) return cached;
   const db = getDb();
   if (!db) return [];
   const cutoff = (Date.now() / 1000) - days * 86400;
-  return db.prepare(`
+  const result = db.prepare(`
     SELECT
       strftime('%Y-%m-%d', started_at, 'unixepoch', 'localtime') AS day,
       COALESCE(SUM(input_tokens), 0) AS input_tokens,
@@ -158,6 +181,8 @@ export function dailyTokenUsage(days: number = 7): DailyTokenRow[] {
     GROUP BY day
     ORDER BY day ASC
   `).all(cutoff) as DailyTokenRow[];
+  dailyCache.set(key, result);
+  return result;
 }
 
 export interface ModelStatRow {
@@ -167,10 +192,13 @@ export interface ModelStatRow {
 }
 
 export function modelDistribution(days: number = 30): ModelStatRow[] {
+  const key = `models:${days}`;
+  const cached = modelCache.get(key);
+  if (cached) return cached;
   const db = getDb();
   if (!db) return [];
   const cutoff = (Date.now() / 1000) - days * 86400;
-  return db.prepare(`
+  const result = db.prepare(`
     SELECT
       COALESCE(model, 'unknown') AS model,
       COUNT(*) AS session_count,
@@ -180,6 +208,8 @@ export function modelDistribution(days: number = 30): ModelStatRow[] {
     GROUP BY model
     ORDER BY total_tokens DESC
   `).all(cutoff) as ModelStatRow[];
+  modelCache.set(key, result);
+  return result;
 }
 
 export interface OverallStats {
@@ -209,6 +239,8 @@ export interface MonthlyPace {
 }
 
 export function overallStats(): OverallStats {
+  const cached = overallCache.get('overall');
+  if (cached) return cached;
   const db = getDb();
   if (!db) return { total_sessions: 0, total_messages: 0, total_tokens: 0, today_tokens: 0, today_cost_usd: 0 };
 
@@ -234,10 +266,15 @@ export function overallStats(): OverallStats {
     WHERE started_at >= ?
   `).get(startOfToday) as { today_tokens: number; today_cost_usd: number };
 
-  return { ...sessions, ...today };
+  const result = { ...sessions, ...today };
+  overallCache.set('overall', result);
+  return result;
 }
 
 export function cacheStats(days: number = 30): CacheStats {
+  const key = `cache:${days}`;
+  const cached = cacheStatsCache.get(key);
+  if (cached) return cached;
   const db = getDb();
   if (!db) return { total_input_tokens: 0, total_cache_read_tokens: 0, total_cache_write_tokens: 0, cache_hit_ratio: 0, estimated_saved_usd: 0 };
   const cutoff = (Date.now() / 1000) - days * 86400;
@@ -252,13 +289,15 @@ export function cacheStats(days: number = 30): CacheStats {
   const ratio = denom > 0 ? row.cache_read / denom : 0;
   // Rough Anthropic-style pricing: cache reads at ~10% of input cost; assume $3/M base
   const estimatedSavedUsd = (row.cache_read / 1_000_000) * 3 * 0.9;
-  return {
+  const result = {
     total_input_tokens: row.input,
     total_cache_read_tokens: row.cache_read,
     total_cache_write_tokens: row.cache_write,
     cache_hit_ratio: ratio,
     estimated_saved_usd: estimatedSavedUsd,
   };
+  cacheStatsCache.set(key, result);
+  return result;
 }
 
 export interface ToolUsageRow {
