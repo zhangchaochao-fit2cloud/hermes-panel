@@ -54,6 +54,9 @@ import { attachmentsRouter } from './routes/attachments.js';
 import { auditMiddleware } from './middleware/audit.js';
 import { auditRouter } from './routes/audit.js';
 import { cliRouter } from './routes/cli.js';
+import { githubRouter } from './routes/github.js';
+import { ciRouter } from './routes/ci.js';
+import { gitRouter } from './routes/git.js';
 
 // Origins allowed to call BFF. Tauri WebView serves the app from
 // tauri://localhost (and http://tauri.localhost on some platforms).
@@ -116,7 +119,10 @@ export function createApp(): Koa {
   router.use(proactiveRouter.routes(), proactiveRouter.allowedMethods());
   router.use(attachmentsRouter.routes(), attachmentsRouter.allowedMethods());
   router.use(cliRouter.routes(), cliRouter.allowedMethods());
+  router.use(gitRouter.routes(), gitRouter.allowedMethods());
   router.use(hermesProxyRouter.routes(), hermesProxyRouter.allowedMethods());
+  router.use(githubRouter.routes(), githubRouter.allowedMethods());
+  router.use(ciRouter.routes(), ciRouter.allowedMethods());
 
   app.use(errorMiddleware);
   app.use(cors({
