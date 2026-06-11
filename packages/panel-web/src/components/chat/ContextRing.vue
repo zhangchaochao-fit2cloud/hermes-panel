@@ -180,7 +180,7 @@ async function handleCompress(): Promise<void> {
         class="border-t border-[color-mix(in_srgb,var(--color-warning)_30%,var(--border))] pt-2 mt-1"
       >
         <p class="text-xs text-[var(--color-warning)] mb-2">
-          {{ pct >= 95 ? '上下文即将耗尽，建议立即压缩' : '上下文用量较高，建议压缩历史消息' }}
+          {{ pct >= 95 ? t('chat.context.compression.almostFull') : t('chat.context.compression.highUsage') }}
         </p>
         <NButton
           size="tiny"
@@ -190,7 +190,7 @@ async function handleCompress(): Promise<void> {
           block
           @click="handleCompress"
         >
-          {{ compacting ? '压缩中...' : '压缩历史消息' }}
+          {{ compacting ? t('chat.context.compression.compressing') : t('chat.context.compression.compress') }}
         </NButton>
       </div>
 

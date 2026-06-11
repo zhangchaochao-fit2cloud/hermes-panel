@@ -72,7 +72,7 @@ function parseMentions(text: string): Array<{ name: string; icon: string; prompt
       seen.add(name);
       const info = store.getAgentInfo(name, workspaces.activeId);
       const systemPrompt = info.promptPrefix
-        ? `${info.promptPrefix}\n\n用户问题: ${text}`
+        ? `${info.promptPrefix}\n\n${t('chatRoom.userQuestion')}: ${text}`
         : text;
       result.push({ name, icon: info.icon, prompt: systemPrompt, model: info.model });
     }

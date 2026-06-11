@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { bffFetch } from '@/api/bff';
 import ThemedSkeleton from '@/components/shared/ThemedSkeleton.vue';
+
+const { t } = useI18n();
 
 interface OrchestrationStats {
   totalOrchestrated: number;
@@ -20,9 +23,9 @@ const error = ref(false);
 const savingsLabel = computed(() => {
   if (!data.value) return '';
   const pct = data.value.orchestrationSavingsPct;
-  if (pct > 0) return `Orchestration saved ${pct}% tokens`;
-  if (pct < 0) return `Orchestration used ${Math.abs(pct)}% more tokens`;
-  return 'No difference in token usage';
+  if (pct > 0) return t('dashboard.orchestration.saved', { pct });
+  if (pct < 0) return t('dashboard.orchestration.usedMore', { pct: Math.abs(pct) });
+  return t('dashboard.orchestration.noDifference');
 });
 
 const savingsPositive = computed(() => (data.value?.orchestrationSavingsPct ?? 0) > 0);
@@ -49,12 +52,12 @@ onMounted(load);
 <template>
   <div class="rounded-xl bg-[var(--bg-card)] border border-[var(--border)] p-5 shadow-[var(--shadow-1)]">
     <div class="flex items-baseline justify-between mb-4">
-      <h3 class="text-sm font-semibold">Orchestration Results</h3>
-      <span class="text-xs text-[var(--text-3)]">Orchestrated vs Single Agent</span>
+      <h3 class="text-sm font-semibold">{{ t('dashboard.orchestration.title') }}</h3>
+      <span class="text-xs text-[var(--text-3)]">{{ t('dashboard.orchestration.subtitle') }}</span>
     </div>
 
     <div v-if="error" class="h-24 flex items-center justify-center">
-      <button class="text-sm text-[var(--brand-600)]" @click="load">Retry</button>
+      <button class="text-sm text-[var(--brand-600)]" @click="load">{{ t('common.retry') }}</button>
     </div>
 
     <div v-else-if="loading" class="space-y-3">
@@ -76,20 +79,20 @@ onMounted(load);
       <!-- Side-by-side comparison -->
       <div class="grid grid-cols-2 gap-4 text-center">
         <div>
-          <div class="text-xs text-[var(--text-3)] mb-1">Orchestrated</div>
+          <div class="text-xs text-[var(--text-3)] mb-1">{{ t('dashboard.orchestration.orchestrated') }}</div>
           <div class="text-lg font-bold text-[var(--brand-500)]">{{ fmt(data.avgTokensOrchestrated) }}</div>
-          <div class="text-xs text-[var(--text-3)]">avg tokens</div>
+          <div class="text-xs text-[var(--text-3)]">{{ t('dashboard.orchestration.avgTokens') }}</div>
           <div class="mt-2 text-sm font-medium">{{ data.avgMessagesOrchestrated }}</div>
-          <div class="text-xs text-[var(--text-3)]">avg messages</div>
-          <div class="mt-2 text-xs text-[var(--text-3)]">{{ data.totalOrchestrated }} sessions</div>
+          <div class="text-xs text-[var(--text-3)]">{{ t('dashboard.orchestration.avgMessages') }}</div>
+          <div class="mt-2 text-xs text-[var(--text-3)]">{{ data.totalOrchestrated }} {{ t('dashboard.orchestration.sessions') }}</div>
         </div>
         <div>
-          <div class="text-xs text-[var(--text-3)] mb-1">Single Agent</div>
+          <div class="text-xs text-[var(--text-3)] mb-1">{{ t('dashboard.orchestration.singleAgent') }}</div>
           <div class="text-lg font-bold text-[var(--text-2)]">{{ fmt(data.avgTokensSingle) }}</div>
-          <div class="text-xs text-[var(--text-3)]">avg tokens</div>
+          <div class="text-xs text-[var(--text-3)]">{{ t('dashboard.orchestration.avgTokens') }}</div>
           <div class="mt-2 text-sm font-medium">{{ data.avgMessagesSingle }}</div>
-          <div class="text-xs text-[var(--text-3)]">avg messages</div>
-          <div class="mt-2 text-xs text-[var(--text-3)]">{{ data.totalSingle }} sessions</div>
+          <div class="text-xs text-[var(--text-3)]">{{ t('dashboard.orchestration.avgMessages') }}</div>
+          <div class="mt-2 text-xs text-[var(--text-3)]">{{ data.totalSingle }} {{ t('dashboard.orchestration.sessions') }}</div>
         </div>
       </div>
     </template>
