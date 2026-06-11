@@ -37,6 +37,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/intent', name: 'intent', component: () => import('@/views/intent/index.vue') },
   { path: '/github', name: 'github', component: () => import('@/views/github/index.vue') },
   { path: '/templates', name: 'templates', component: () => import('@/views/templates/index.vue') },
+  { path: '/plugins', name: 'plugins', component: () => import('@/views/plugins/index.vue') },
 ];
 
 export const router = createRouter({
