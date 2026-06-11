@@ -6,7 +6,9 @@ import { NButton, NDrawer, NDrawerContent, useMessage } from 'naive-ui';
 import { useFilesStore } from '@/stores/files';
 import FileTabs from '@/components/files/FileTabs.vue';
 import MonacoEditor from '@/components/files/MonacoEditor.vue';
+import MonacoDiffEditor from '@/components/files/MonacoDiffEditor.vue';
 import FileTree from '@/components/files/FileTree.vue';
+import GitToolbar from '@/components/files/GitToolbar.vue';
 import EmptyState from '@/components/shared/EmptyState.vue';
 
 const { t } = useI18n();
@@ -28,6 +30,8 @@ const searchQuery = ref('');
 const showConsole = ref(false);
 const cursorLine = ref(1);
 const cursorCol = ref(1);
+const showDiff = ref(false);
+const diffOriginal = ref('');
 
 const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
 function onResize(): void {
@@ -77,6 +81,17 @@ async function doSave(): Promise<void> {
   }
 }
 
+async function onShowDiff(): Promise<void> {
+  if (!activeTab.value) return;
+  diffOriginal.value = activeTab.value.originalContent;
+  showDiff.value = true;
+}
+
+function onCloseDiff(): void {
+  showDiff.value = false;
+  diffOriginal.value = '';
+}
+
 function onGlobalKey(e: KeyboardEvent): void {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault();
@@ -124,6 +139,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey));
           @close="onCloseTab"
         />
 
+        <GitToolbar @show-diff="onShowDiff" />
+
         <!-- Editor area -->
         <div class="flex-1 min-h-0 relative">
           <!-- Empty state -->
@@ -135,6 +152,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKey));
               icon="📄"
               :title="t('files.emptyTitle')"
               :subtitle="t('files.emptySubtitle')"
+            />
+          </div>
+
+          <!-- Diff view -->
+          <div v-else-if="showDiff && activeTab" class="absolute inset-0">
+            <MonacoDiffEditor
+              :original="diffOriginal"
+              :modified="currentContent"
+              :language="currentLanguage"
+              @close="onCloseDiff"
             />
           </div>
 
