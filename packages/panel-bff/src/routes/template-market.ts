@@ -1,4 +1,6 @@
 import Router from '@koa/router';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 export const templateMarketRouter = new Router();
 
@@ -13,8 +15,17 @@ interface MarketTemplate {
   rating: number;
 }
 
-// Bundled catalog — v1 ships with curated templates.
-// Later: fetch from a real API like https://hermes-panel.dev/api/templates
+interface UserTemplate {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  source?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 const CATALOG: MarketTemplate[] = [
   {
     id: 'code-review',
@@ -98,20 +109,133 @@ const CATALOG: MarketTemplate[] = [
   },
 ];
 
-templateMarketRouter.get('/template-market', async ctx => {
-  const category = ctx.query.category as string | undefined;
+const USER_DATA_DIR = join(process.cwd(), '.hermes-panel', 'templates');
+
+function getUserTemplatesPath(): string {
+  return join(USER_DATA_DIR, 'user-templates.json');
+}
+
+function ensureDir(): void {
+  if (!existsSync(USER_DATA_DIR)) mkdirSync(USER_DATA_DIR, { recursive: true });
+}
+
+function loadUserTemplates(): UserTemplate[] {
+  try {
+    const p = getUserTemplatesPath();
+    if (!existsSync(p)) return [];
+    const raw = readFileSync(p, 'utf-8');
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUserTemplates(list: UserTemplate[]): void {
+  ensureDir();
+  writeFileSync(getUserTemplatesPath(), JSON.stringify(list, null, 2), 'utf-8');
+}
+
+function rid(): string {
+  return 'ut_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+templateMarketRouter.get('/templates', async ctx => {
   const search = (ctx.query.q as string | undefined)?.toLowerCase();
-  let results = CATALOG;
+  const category = ctx.query.category as string | undefined;
+  let results = CATALOG.map(t => ({ ...t, source: 'builtin' }));
   if (category) results = results.filter(t => t.category === category);
   if (search) results = results.filter(t =>
     t.title.toLowerCase().includes(search) ||
     t.tags.some(tag => tag.includes(search)) ||
-    t.content.toLowerCase().includes(search)
+    t.content.toLowerCase().includes(search),
   );
   ctx.body = results;
 });
 
-templateMarketRouter.get('/template-market/categories', async ctx => {
+templateMarketRouter.get('/templates/community', async ctx => {
+  const search = (ctx.query.q as string | undefined)?.toLowerCase();
+  const category = ctx.query.category as string | undefined;
+  let results = CATALOG.filter(t => t.author === 'community').map(t => ({ ...t, source: 'community' }));
+  if (category) results = results.filter(t => t.category === category);
+  if (search) results = results.filter(t =>
+    t.title.toLowerCase().includes(search) ||
+    t.tags.some(tag => tag.includes(search)),
+  );
+  ctx.body = results;
+});
+
+templateMarketRouter.get('/templates/user', async ctx => {
+  ctx.body = loadUserTemplates();
+});
+
+templateMarketRouter.post('/templates', async ctx => {
+  const body = ctx.request.body as { title?: string; content?: string; category?: string; tags?: string[] } | undefined;
+  if (!body?.title || !body?.content) {
+    ctx.status = 400;
+    ctx.body = { error: 'title and content required' };
+    return;
+  }
+  const tpl: UserTemplate = {
+    id: rid(),
+    title: body.title.trim(),
+    content: body.content,
+    category: body.category ?? 'custom',
+    tags: body.tags ?? [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  const list = loadUserTemplates();
+  list.unshift(tpl);
+  saveUserTemplates(list);
+  ctx.status = 201;
+  ctx.body = tpl;
+});
+
+templateMarketRouter.put('/templates/:id', async ctx => {
+  const body = ctx.request.body as { title?: string; content?: string; category?: string; tags?: string[] } | undefined;
+  if (!body) { ctx.status = 400; return; }
+  const list = loadUserTemplates();
+  const idx = list.findIndex(t => t.id === ctx.params.id);
+  if (idx === -1) { ctx.status = 404; return; }
+  if (body.title !== undefined) list[idx].title = body.title.trim();
+  if (body.content !== undefined) list[idx].content = body.content;
+  if (body.category !== undefined) list[idx].category = body.category;
+  if (body.tags !== undefined) list[idx].tags = body.tags;
+  list[idx].updatedAt = Date.now();
+  saveUserTemplates(list);
+  ctx.body = list[idx];
+});
+
+templateMarketRouter.delete('/templates/:id', async ctx => {
+  const list = loadUserTemplates();
+  const filtered = list.filter(t => t.id !== ctx.params.id);
+  if (filtered.length === list.length) { ctx.status = 404; return; }
+  saveUserTemplates(filtered);
+  ctx.body = { ok: true };
+});
+
+templateMarketRouter.post('/templates/:id/fork', async ctx => {
+  const source = CATALOG.find(t => t.id === ctx.params.id);
+  if (!source) { ctx.status = 404; ctx.body = { error: 'template not found' }; return; }
+  const tpl: UserTemplate = {
+    id: rid(),
+    title: source.title + ' (Copy)',
+    content: source.content,
+    category: source.category,
+    tags: [...source.tags],
+    source: source.id,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  const list = loadUserTemplates();
+  list.unshift(tpl);
+  saveUserTemplates(list);
+  ctx.status = 201;
+  ctx.body = tpl;
+});
+
+templateMarketRouter.get('/templates/categories', async ctx => {
   const cats = [...new Set(CATALOG.map(t => t.category))];
   ctx.body = cats;
 });
