@@ -1,13 +1,9 @@
-// 系统托盘/菜单栏入口。
-//
-// 目标是贴近 Codex 的菜单层级：Pinned、Recent、Usage、New Chat、
-// Open Hermes Panel、Quit。Tauri 原生菜单不能完全复刻 Electron 的自绘
-// 浮层样式，但这里保留相同的信息结构和跳转行为。
 use std::{
     env,
     fs,
     path::PathBuf,
     process::Command,
+    sync::atomic::{AtomicBool, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -17,8 +13,11 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Manager, Runtime,
 };
+use tauri_plugin_notification::NotificationExt;
 
 use crate::bff;
+
+static IS_ONLINE: AtomicBool = AtomicBool::new(true);
 
 const TRAY_ICON_BYTES: &[u8] = include_bytes!("../icons/tray-icon.png");
 const FIELD_SEP: char = '\x1f';
@@ -81,13 +80,26 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .filter(|session| !pinned_ids.iter().any(|id| id == &session.id))
         .collect::<Vec<_>>();
     let rest = recent.iter().skip(3).cloned().collect::<Vec<_>>();
+    let session_count = count_all_sessions();
+
+    let status = if IS_ONLINE.load(Ordering::Relaxed) {
+        "Online"
+    } else {
+        "Offline"
+    };
+    let status_item = MenuItem::with_id(app, "status:current", format!("Status: {status}"), false, None::<&str>)?;
+    let session_count_item = MenuItem::with_id(app, "session:count", format!("Active Sessions: {session_count}"), false, None::<&str>)?;
 
     let pinned_heading = section(app, "section:pinned", "Pinned")?;
     let recent_heading = section(app, "section:recent", "Recent")?;
     let usage_heading = section(app, "section:usage", "Usage")?;
     let usage_item = MenuItem::with_id(app, "usage:summary", usage_label(), false, None::<&str>)?;
 
-    let mut menu = MenuBuilder::new(app).item(&pinned_heading);
+    let mut menu = MenuBuilder::new(app)
+        .item(&status_item)
+        .item(&session_count_item)
+        .separator()
+        .item(&pinned_heading);
 
     let panel_item = MenuItem::with_id(app, "route:dashboard", "Panel\nhermes panel", true, None::<&str>)?;
     let chat_item = MenuItem::with_id(app, "route:chat", "对话\nChats", true, None::<&str>)?;
@@ -133,6 +145,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     }
 
     let new_chat = MenuItem::with_id(app, "new-chat", "New Chat", true, Some("CmdOrCtrl+N"))?;
+    let settings = MenuItem::with_id(app, "open-settings", "Settings", true, Some("CmdOrCtrl+,"))?;
     let open = MenuItem::with_id(app, "open", "Open Hermes Panel", true, Some("CmdOrCtrl+Shift+O"))?;
     let quit = MenuItem::with_id(app, "quit", "Quit Hermes Panel", true, Some("CmdOrCtrl+Q"))?;
 
@@ -141,6 +154,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&usage_item)
         .separator()
         .item(&new_chat)
+        .item(&settings)
         .separator()
         .item(&open)
         .separator()
@@ -160,6 +174,7 @@ fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
                 .unwrap_or_default();
             open_route(app, &format!("/chat?new={now}"));
         }
+        "open-settings" => open_route(app, "/settings"),
         "quit" => {
             bff::shutdown(app);
             app.exit(0);
@@ -435,4 +450,39 @@ fn compact_tokens(tokens: i64) -> String {
     } else {
         format!("{tokens} tokens")
     }
+}
+
+fn count_all_sessions() -> usize {
+    let Some(db_path) = hermes_db_path() else {
+        return 0;
+    };
+    if !db_path.exists() {
+        return 0;
+    }
+
+    let Ok(output) = Command::new("sqlite3")
+        .arg("-readonly")
+        .arg(db_path)
+        .arg("SELECT COUNT(*) FROM sessions;")
+        .output()
+    else {
+        return 0;
+    };
+    if !output.status.success() {
+        return 0;
+    }
+
+    let raw = String::from_utf8_lossy(&output.stdout);
+    raw.trim().parse::<usize>().unwrap_or(0)
+}
+
+pub fn set_online_status(online: bool) {
+    IS_ONLINE.store(online, Ordering::Relaxed);
+}
+
+pub fn send_notification(app: &AppHandle<impl Runtime>, title: &str, body: &str) {
+    let _ = app.notification().builder()
+        .title(title)
+        .body(body)
+        .show();
 }

@@ -24,11 +24,16 @@
         "resizable": true,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "saveState": true
       }
     ],
     "security": {
       "csp": null
+    },
+    "tray": {
+      "iconPath": "icons/tray-icon.png",
+      "iconAsTemplate": true
     }
   },
   "bundle": {
@@ -52,5 +57,8 @@
       "minimumSystemVersion": "10.15"
     }
   },
-  "plugins": {}
+  "plugins": {
+    "global-shortcut": {},
+    "notification": {}
+  }
 }
