@@ -12,6 +12,7 @@ export type ThemeMode =
   | 'glass-minimal';
 export type FontSize = 'small' | 'medium' | 'large';
 export type Density = 'comfortable' | 'compact';
+export type SidebarPosition = 'left' | 'right';
 
 /** Which color family each mode falls into (drives Naive UI dark vs light). */
 const MODE_IS_DARK: Record<ThemeMode, boolean | 'auto'> = {
@@ -30,11 +31,16 @@ const STORAGE_COLOR = 'panel.themeColor';
 const STORAGE_FONT = 'panel.fontSize';
 const STORAGE_ROUTE_TABS = 'panel.routeTabsEnabled';
 const STORAGE_DENSITY = 'panel.density';
+const STORAGE_REDUCE_MOTION = 'panel.reduceMotion';
+const STORAGE_SIDEBAR_POSITION = 'panel.sidebarPosition';
+const STORAGE_CUSTOM_COLOR = 'panel.customColor';
 
 const DEFAULT_MODE: ThemeMode = 'auto';
 const DEFAULT_COLOR = '#1677ff';
 const DEFAULT_FONT: FontSize = 'medium';
 const DEFAULT_ROUTE_TABS = true;
+const DEFAULT_REDUCE_MOTION = false;
+const DEFAULT_SIDEBAR_POSITION: SidebarPosition = 'left';
 
 const FONT_PX: Record<FontSize, string> = {
   small: '13px',
@@ -63,6 +69,8 @@ function readMode(): ThemeMode {
 }
 
 function readColor(): string {
+  const custom = localStorage.getItem(STORAGE_CUSTOM_COLOR);
+  if (custom && /^#[0-9a-fA-F]{6}$/.test(custom)) return custom;
   const v = localStorage.getItem(STORAGE_COLOR);
   return v && VALID_COLORS.has(v) ? v : DEFAULT_COLOR;
 }
@@ -82,6 +90,31 @@ function readRouteTabs(): boolean {
 function readDensity(): Density {
   const v = localStorage.getItem(STORAGE_DENSITY);
   return v === 'compact' ? 'compact' : 'comfortable';
+}
+
+function readReduceMotion(): boolean {
+  const v = localStorage.getItem(STORAGE_REDUCE_MOTION);
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  return DEFAULT_REDUCE_MOTION;
+}
+
+function readSidebarPosition(): SidebarPosition {
+  const v = localStorage.getItem(STORAGE_SIDEBAR_POSITION);
+  return v === 'right' ? 'right' : 'left';
+}
+
+function isValidHex(color: string): boolean {
+  return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(color);
+}
+
+function normalizeHex(color: string): string {
+  let c = color.trim();
+  if (!c.startsWith('#')) c = '#' + c;
+  if (c.length === 4) {
+    c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+  }
+  return c.toLowerCase();
 }
 
 function prefersDark(): boolean {
@@ -114,12 +147,25 @@ function applyFontSize(size: FontSize): void {
   document.documentElement.style.fontSize = FONT_PX[size];
 }
 
+function applyReduceMotion(reduce: boolean): void {
+  document.documentElement.setAttribute('data-reduce-motion', String(reduce));
+}
+
+function applySidebarPosition(pos: SidebarPosition): void {
+  document.documentElement.setAttribute('data-sidebar-position', pos);
+}
+
 export const useAppearanceStore = defineStore('appearance', () => {
   const mode = ref<ThemeMode>(readMode());
   const color = ref<string>(readColor());
   const fontSize = ref<FontSize>(readFont());
   const routeTabsEnabled = ref<boolean>(readRouteTabs());
   const density = ref<Density>(readDensity());
+  const reduceMotion = ref<boolean>(readReduceMotion());
+  const sidebarPosition = ref<SidebarPosition>(readSidebarPosition());
+
+  const previewMode = ref<ThemeMode | null>(null);
+  const previewColor = ref<string | null>(null);
 
   // Tracks the current OS color-scheme preference so `effectiveDark` is reactive
   // when the user picks "auto".
@@ -155,9 +201,14 @@ export const useAppearanceStore = defineStore('appearance', () => {
   }
 
   function setColor(v: string): void {
-    if (!VALID_COLORS.has(v)) return;
     color.value = v;
-    localStorage.setItem(STORAGE_COLOR, v);
+    if (VALID_COLORS.has(v)) {
+      localStorage.setItem(STORAGE_COLOR, v);
+      localStorage.removeItem(STORAGE_CUSTOM_COLOR);
+    } else if (isValidHex(v)) {
+      localStorage.setItem(STORAGE_CUSTOM_COLOR, normalizeHex(v));
+      localStorage.removeItem(STORAGE_COLOR);
+    }
     applyBrandColor(v);
   }
 
@@ -177,6 +228,26 @@ export const useAppearanceStore = defineStore('appearance', () => {
     document.documentElement.setAttribute('data-density', v);
   }
 
+  function setReduceMotion(v: boolean): void {
+    reduceMotion.value = v;
+    localStorage.setItem(STORAGE_REDUCE_MOTION, String(v));
+    applyReduceMotion(v);
+  }
+
+  function setSidebarPosition(v: SidebarPosition): void {
+    sidebarPosition.value = v;
+    localStorage.setItem(STORAGE_SIDEBAR_POSITION, v);
+    applySidebarPosition(v);
+  }
+
+  function setPreviewMode(v: ThemeMode | null): void {
+    previewMode.value = v;
+  }
+
+  function setPreviewColor(v: string | null): void {
+    previewColor.value = v;
+  }
+
   /**
    * Initialise: read from localStorage, apply to DOM, bind OS listener.
    * Safe to call multiple times.
@@ -186,6 +257,8 @@ export const useAppearanceStore = defineStore('appearance', () => {
     applyBrandColor(color.value);
     applyFontSize(fontSize.value);
     document.documentElement.setAttribute('data-density', density.value);
+    applyReduceMotion(reduceMotion.value);
+    applySidebarPosition(sidebarPosition.value);
     bindOsListener();
   }
 
@@ -193,6 +266,8 @@ export const useAppearanceStore = defineStore('appearance', () => {
   watch(mode, (v) => applyThemeAttr(v));
   watch(color, (v) => applyBrandColor(v));
   watch(fontSize, (v) => applyFontSize(v));
+  watch(reduceMotion, (v) => applyReduceMotion(v));
+  watch(sidebarPosition, (v) => applySidebarPosition(v));
 
   return {
     mode,
@@ -200,12 +275,20 @@ export const useAppearanceStore = defineStore('appearance', () => {
     fontSize,
     routeTabsEnabled,
     density,
+    reduceMotion,
+    sidebarPosition,
+    previewMode,
+    previewColor,
     effectiveDark,
     isGlass,
     setMode,
     setColor,
     setFontSize,
     setDensity,
+    setReduceMotion,
+    setSidebarPosition,
+    setPreviewMode,
+    setPreviewColor,
     setRouteTabsEnabled,
     init,
   };

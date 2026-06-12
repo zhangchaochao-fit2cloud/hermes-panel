@@ -1,37 +1,47 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { NButton, NPopconfirm } from 'naive-ui';
+import { NButton, NPopconfirm, NInput } from 'naive-ui';
 import {
   chordFromEvent,
   chordToDisplayTokens,
   HOTKEY_IDS,
   useHotkeysStore,
   type HotkeyId,
+  DEFAULT_BINDINGS,
 } from '@/stores/hotkeys';
+import { triggerDownload } from '@/utils/download';
 
 const { t } = useI18n();
 const store = useHotkeysStore();
 
-// On mac, show ⌘. Anywhere else, show Ctrl.
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 const modLabel = computed(() => (isMac ? '⌘' : 'Ctrl'));
 
-/** ID of the row currently in capture mode (only one cell records at a time). */
 const recording = ref<HotkeyId | null>(null);
-/** Live chord shown in the recording cell as the user presses keys. */
 const livePreview = ref<string>('');
 const cellRefs = ref<Record<string, HTMLElement | null>>({});
 
+const searchQuery = ref('');
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
 interface Row { id: HotkeyId; descKey: string }
 
-const rows: Row[] = HOTKEY_IDS.map((id) => ({
+const allRows: Row[] = HOTKEY_IDS.map((id) => ({
   id,
   descKey: `settings.hotkeys.${humanKeyForId(id)}`,
 }));
 
-// The existing i18n keys (preserved per the FORBIDDEN list) use snake_case
-// for `new_chat` but camelCase elsewhere — keep the mapping here.
+const rows = computed(() => {
+  if (!searchQuery.value.trim()) return allRows;
+  const q = searchQuery.value.toLowerCase();
+  return allRows.filter((r) => {
+    const label = t(r.descKey).toLowerCase();
+    const chord = store.bindings[r.id]?.toLowerCase() ?? '';
+    return label.includes(q) || chord.includes(q);
+  });
+});
+
 function humanKeyForId(id: HotkeyId): string {
   if (id === 'newChat') return 'new_chat';
   return id;
@@ -40,7 +50,6 @@ function humanKeyForId(id: HotkeyId): string {
 function startRecording(id: HotkeyId): void {
   recording.value = id;
   livePreview.value = '';
-  // Focus the cell so the keydown handler fires.
   void nextTick(() => {
     cellRefs.value[id]?.focus();
   });
@@ -53,8 +62,6 @@ function stopRecording(): void {
 
 function onCellKeydown(e: KeyboardEvent, id: HotkeyId): void {
   if (recording.value !== id) return;
-  // Always preempt browser default during capture — otherwise mod+r reloads
-  // the page mid-recording, mod+n opens a new window, etc.
   e.preventDefault();
   e.stopPropagation();
 
@@ -65,7 +72,6 @@ function onCellKeydown(e: KeyboardEvent, id: HotkeyId): void {
 
   const chord = chordFromEvent(e);
   if (!chord) {
-    // Modifier-only press — show what's held so the user has feedback.
     const pieces: string[] = [];
     if (isMac ? e.metaKey : e.ctrlKey) pieces.push('mod');
     if (isMac && e.ctrlKey) pieces.push('ctrl');
@@ -76,13 +82,11 @@ function onCellKeydown(e: KeyboardEvent, id: HotkeyId): void {
     return;
   }
 
-  // Commit the chord and exit recording mode.
   store.setBinding(id, chord);
   stopRecording();
 }
 
 function onCellBlur(id: HotkeyId): void {
-  // If the user clicked away mid-record, cancel without committing.
   if (recording.value === id) stopRecording();
 }
 
@@ -104,6 +108,39 @@ function conflictLabel(id: HotkeyId): string {
   const labels = others.map((o) => t(`settings.hotkeys.${humanKeyForId(o)}`));
   return t('settings.hotkeys.editor.conflictWith', { actions: labels.join(', ') });
 }
+
+function onExport(): void {
+  const data = {
+    version: 1,
+    bindings: { ...store.bindings },
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, `hermes-hotkeys-${new Date().toISOString().slice(0, 10)}.json`);
+}
+
+function onImportClick(): void {
+  fileInputRef.value?.click();
+}
+
+async function onImportFile(e: Event): Promise<void> {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed.bindings || typeof parsed.bindings !== 'object') return;
+    for (const id of HOTKEY_IDS) {
+      if (typeof parsed.bindings[id] === 'string') {
+        store.setBinding(id, parsed.bindings[id]);
+      }
+    }
+  } catch {
+    // invalid file
+  }
+}
 </script>
 
 <template>
@@ -111,18 +148,46 @@ function conflictLabel(id: HotkeyId): string {
     <h3 class="text-lg font-semibold mb-1">{{ t('settings.hotkeys.title') }}</h3>
     <p class="text-sm opacity-60 mb-4">{{ t('settings.hotkeys.desc') }}</p>
 
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
       <p class="text-xs opacity-60">
         {{ t('settings.hotkeys.editor.modHint', { mod: modLabel }) }}
       </p>
-      <NPopconfirm @positive-click="store.resetAll()">
-        <template #trigger>
-          <NButton size="small" tertiary>
-            {{ t('settings.hotkeys.editor.resetAll') }}
-          </NButton>
+      <div class="flex items-center gap-2">
+        <NPopconfirm @positive-click="store.resetAll()">
+          <template #trigger>
+            <NButton size="small" tertiary>
+              {{ t('settings.hotkeys.editor.resetAll') }}
+            </NButton>
+          </template>
+          {{ t('settings.hotkeys.editor.resetAllConfirm') }}
+        </NPopconfirm>
+        <NButton size="small" tertiary @click="onExport">
+          {{ t('settings.hotkeys.editor.export') }}
+        </NButton>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json,application/json"
+          class="hidden"
+          @change="onImportFile"
+        >
+        <NButton size="small" tertiary @click="onImportClick">
+          {{ t('settings.hotkeys.editor.import') }}
+        </NButton>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <NInput
+        v-model:value="searchQuery"
+        :placeholder="t('settings.hotkeys.editor.search')"
+        size="small"
+        clearable
+      >
+        <template #prefix>
+          <span class="opacity-50">🔍</span>
         </template>
-        {{ t('settings.hotkeys.editor.resetAllConfirm') }}
-      </NPopconfirm>
+      </NInput>
     </div>
 
     <div class="border border-[var(--border)] rounded-md overflow-hidden">
@@ -201,6 +266,11 @@ function conflictLabel(id: HotkeyId): string {
               >
                 {{ t('settings.hotkeys.editor.reset') }}
               </NButton>
+            </td>
+          </tr>
+          <tr v-if="rows.length === 0">
+            <td colspan="3" class="px-4 py-8 text-center text-sm opacity-50">
+              {{ t('settings.hotkeys.editor.noResults') }}
             </td>
           </tr>
         </tbody>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { NTabs, NTab } from 'naive-ui';
+import { NInput, NSelect, NButton, NPopconfirm } from 'naive-ui';
 import SectionAppearance from '@/components/settings/SectionAppearance.vue';
 import SectionProviders from '@/components/settings/SectionProviders.vue';
 import SectionHermesEndpoints from '@/components/settings/SectionHermesEndpoints.vue';
@@ -17,29 +17,76 @@ import SectionLicense from '@/components/settings/SectionLicense.vue';
 import { useBreakpoint } from '@/composables/use-breakpoint';
 
 const { t } = useI18n();
-const { isMobile } = useBreakpoint();
+const { isMobile, isTablet } = useBreakpoint();
 const route = useRoute();
 const router = useRouter();
 
-interface AnchorItem { key: string; label: string }
+interface AnchorItem { key: string; labelKey: string }
 
 const anchors: AnchorItem[] = [
-  { key: 'license', label: 'settings.anchor.license' },
-  { key: 'access', label: 'settings.anchor.access' },
-  { key: 'system-health', label: 'settings.anchor.systemHealth' },
-  { key: 'appearance', label: 'settings.anchor.appearance' },
-  { key: 'providers', label: 'settings.anchor.providers' },
-  { key: 'hermes-endpoints', label: 'settings.anchor.hermesEndpoints' },
-  { key: 'language', label: 'settings.anchor.language' },
-  { key: 'hotkeys', label: 'settings.anchor.hotkeys' },
-  { key: 'advanced', label: 'settings.anchor.advanced' },
-  { key: 'backup', label: 'settings.anchor.backup' },
-  { key: 'about', label: 'settings.anchor.about' },
+  { key: 'license', labelKey: 'settings.anchor.license' },
+  { key: 'access', labelKey: 'settings.anchor.access' },
+  { key: 'system-health', labelKey: 'settings.anchor.systemHealth' },
+  { key: 'appearance', labelKey: 'settings.anchor.appearance' },
+  { key: 'providers', labelKey: 'settings.anchor.providers' },
+  { key: 'hermes-endpoints', labelKey: 'settings.anchor.hermesEndpoints' },
+  { key: 'language', labelKey: 'settings.anchor.language' },
+  { key: 'hotkeys', labelKey: 'settings.anchor.hotkeys' },
+  { key: 'backup', labelKey: 'settings.anchor.backup' },
+  { key: 'advanced', labelKey: 'settings.anchor.advanced' },
+  { key: 'about', labelKey: 'settings.anchor.about' },
+];
+
+interface NavGroup { key: string; labelKey: string; items: string[] }
+
+const navGroups: NavGroup[] = [
+  { key: 'account', labelKey: 'settings.groups.account', items: ['license', 'access'] },
+  { key: 'system', labelKey: 'settings.groups.system', items: ['system-health', 'providers', 'hermes-endpoints'] },
+  { key: 'appearance', labelKey: 'settings.groups.appearance', items: ['appearance', 'language', 'hotkeys'] },
+  { key: 'data', labelKey: 'settings.groups.data', items: ['backup', 'advanced'] },
+  { key: 'other', labelKey: 'settings.groups.other', items: ['about'] },
 ];
 
 const activeKey = ref<string>('system-health');
 const focusedKey = ref<string | null>(null);
 const scrollerRef = ref<HTMLElement | null>(null);
+const searchText = ref('');
+const expandedGroups = ref<string[]>(['account', 'system', 'appearance', 'data', 'other']);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+const query = computed(() => searchText.value.trim().toLowerCase());
+
+const visibleGroups = computed(() => {
+  if (!query.value) return navGroups;
+  return navGroups
+    .map(g => ({
+      ...g,
+      items: g.items.filter(key => {
+        const a = anchors.find(x => x.key === key);
+        return a && t(a.labelKey).toLowerCase().includes(query.value);
+      }),
+    }))
+    .filter(g => g.items.length > 0);
+});
+
+const mobileOptions = computed(() =>
+  anchors.map(a => ({ label: t(a.labelKey), value: a.key }))
+);
+
+function getAnchor(key: string): AnchorItem | undefined {
+  return anchors.find(a => a.key === key);
+}
+
+function isGroupExpanded(key: string): boolean {
+  if (query.value) return true;
+  return expandedGroups.value.includes(key);
+}
+
+function toggleGroup(key: string): void {
+  const idx = expandedGroups.value.indexOf(key);
+  if (idx >= 0) expandedGroups.value.splice(idx, 1);
+  else expandedGroups.value.push(key);
+}
 
 let observer: IntersectionObserver | null = null;
 let focusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -68,6 +115,23 @@ function goTo(key: string, syncHash = true): void {
   }
 }
 
+function onSearchKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter') {
+    const first = visibleGroups.value.flatMap(g => g.items)[0];
+    if (first) goTo(first);
+  }
+}
+
+function highlightText(text: string): string {
+  if (!query.value) return text;
+  const idx = text.toLowerCase().indexOf(query.value);
+  if (idx < 0) return text;
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + query.value.length);
+  const after = text.slice(idx + query.value.length);
+  return `${before}<mark class="bg-[var(--brand-500)]/20 text-[var(--text-1)] rounded-sm px-0.5">${match}</mark>${after}`;
+}
+
 function sectionClass(key: string): Array<string | Record<string, boolean>> {
   return [
     'settings-section scroll-mt-24',
@@ -75,11 +139,51 @@ function sectionClass(key: string): Array<string | Record<string, boolean>> {
   ];
 }
 
+function exportSettings(): void {
+  const data: Record<string, string | null> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k) data[k] = localStorage.getItem(k);
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hermes-settings-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerImport(): void {
+  fileInputRef.value?.click();
+}
+
+function importSettings(e: Event): void {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result as string) as Record<string, string>;
+      for (const [k, v] of Object.entries(data)) {
+        if (typeof v === 'string') localStorage.setItem(k, v);
+      }
+      window.location.reload();
+    } catch { /* ignore */ }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function resetSettings(): void {
+  localStorage.clear();
+  window.location.reload();
+}
+
 onMounted(() => {
   const root = scrollerRef.value;
   if (!root) return;
-  // Top 96px sentinel keeps the *next* section visible enough to win over the
-  // one above the viewport when scrolling down.
   observer = new IntersectionObserver(
     (entries) => {
       const visible = entries
@@ -103,7 +207,6 @@ onMounted(() => {
     if (el) observer.observe(el);
   }
 
-  // Jump to anchor if route hash points at a known section, e.g. /settings#providers
   const hash = route.hash.replace(/^#/, '');
   if (hash && isAnchorKey(hash)) {
     void nextTick(() => goTo(hash, false));
@@ -130,59 +233,104 @@ onBeforeUnmount(() => {
     class="flex h-full w-full bg-[var(--bg-page)]"
     :class="isMobile ? 'flex-col' : 'flex-row'"
   >
-    <!-- Mobile: horizontal scrollable tab bar at top. NTabs handles overflow. -->
     <div
       v-if="isMobile"
-      class="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-2"
+      class="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-4 py-3"
     >
-      <NTabs
+      <NSelect
         :value="activeKey"
-        type="line"
-        size="medium"
-        animated
+        :options="mobileOptions"
+        :placeholder="t('settings.title')"
+        size="small"
         @update:value="(k: string) => goTo(k)"
-      >
-        <NTab
-          v-for="a in anchors"
-          :key="a.key"
-          :name="a.key"
-          :tab="t(a.label)"
-        />
-      </NTabs>
+      />
     </div>
 
-    <!-- Desktop: left anchor nav -->
     <aside
       v-else
-      class="w-[220px] flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-card)] py-6 px-3 overflow-y-auto"
+      class="flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-card)] py-6 px-3 overflow-y-auto"
+      :class="isTablet ? 'w-[180px]' : 'w-[220px]'"
     >
       <h2 class="px-3 pb-3 text-xs uppercase tracking-wide opacity-60">
         {{ t('settings.title') }}
       </h2>
+      <div class="px-2 mb-4">
+        <NInput
+          v-model:value="searchText"
+          :placeholder="t('settings.searchPlaceholder')"
+          size="small"
+          clearable
+          @keydown="onSearchKeydown"
+        />
+      </div>
       <nav class="flex flex-col gap-0.5">
-        <button
-          v-for="a in anchors"
-          :key="a.key"
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors border-l-2"
-          :class="
-            activeKey === a.key
-              ? 'bg-[var(--brand-500)]/10 text-[var(--brand-600)] border-[var(--brand-500)] font-medium'
-              : 'border-transparent text-[var(--text-2)] hover:bg-[var(--bg-elevate)] hover:text-[var(--text-1)]'
-          "
-          @click="goTo(a.key)"
-        >
-          {{ t(a.label) }}
-        </button>
+        <div v-for="group in visibleGroups" :key="group.key" class="mb-1">
+          <button
+            class="flex items-center justify-between w-full px-3 py-1.5 text-[11px] uppercase tracking-wider font-medium text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors"
+            @click="toggleGroup(group.key)"
+          >
+            <span>{{ t(group.labelKey) }}</span>
+            <span
+              class="text-[9px] transition-transform duration-150"
+              :class="isGroupExpanded(group.key) ? 'rotate-90' : ''"
+            >&#9654;</span>
+          </button>
+          <div
+            v-show="isGroupExpanded(group.key)"
+            class="flex flex-col gap-0.5 overflow-hidden"
+          >
+            <button
+              v-for="key in group.items"
+              :key="key"
+              class="text-left px-3 py-2 rounded-md text-sm transition-colors border-l-2 truncate"
+              :class="
+                activeKey === key
+                  ? 'bg-[var(--brand-500)]/10 text-[var(--brand-600)] border-[var(--brand-500)] font-medium'
+                  : 'border-transparent text-[var(--text-2)] hover:bg-[var(--bg-elevate)] hover:text-[var(--text-1)]'
+              "
+              @click="goTo(key)"
+            >
+              <span v-html="highlightText(t(getAnchor(key)!.labelKey))" />
+            </button>
+          </div>
+        </div>
       </nav>
     </aside>
 
-    <!-- Scrollable content -->
     <div
       ref="scrollerRef"
       class="flex-1 min-w-0 overflow-y-auto"
     >
       <div
-        class="mx-auto space-y-8"
+        class="sticky top-0 z-10 flex items-center justify-end gap-2 px-6 py-2.5 border-b border-[var(--border)] bg-[var(--bg-page)]"
+      >
+        <NButton size="tiny" quaternary @click="exportSettings">
+          {{ t('settings.quickActions.export') }}
+        </NButton>
+        <NButton size="tiny" quaternary @click="triggerImport">
+          {{ t('settings.quickActions.import') }}
+        </NButton>
+        <NPopconfirm
+          @positive-click="resetSettings"
+        >
+          <template #trigger>
+            <NButton size="tiny" quaternary type="warning">
+              {{ t('settings.quickActions.reset') }}
+            </NButton>
+          </template>
+          {{ t('settings.quickActions.resetConfirm') }}
+        </NPopconfirm>
+      </div>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept=".json"
+        class="hidden"
+        @change="importSettings"
+      />
+
+      <div
+        class="mx-auto space-y-8 min-w-0"
         :class="isMobile ? 'max-w-full px-4 py-6' : 'max-w-[800px] px-8 py-8'"
       >
         <section id="settings-section-license" :class="sectionClass('license')">
@@ -218,7 +366,6 @@ onBeforeUnmount(() => {
         <section id="settings-section-about" :class="sectionClass('about')">
           <SectionAbout />
         </section>
-        <!-- bottom padding so the last section can scroll to the top -->
         <div class="h-[40vh]" />
       </div>
     </div>

@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { NSwitch, NButton } from 'naive-ui';
-import { useAppearanceStore, type FontSize, type ThemeMode } from '@/stores/appearance';
+import { NSwitch, NButton, NInput } from 'naive-ui';
+import { useAppearanceStore, type FontSize, type ThemeMode, type SidebarPosition } from '@/stores/appearance';
 import { useDesktopNotify } from '@/composables/useDesktopNotify';
 
 const { t } = useI18n();
 const store = useAppearanceStore();
-const { mode, color, fontSize, routeTabsEnabled } = storeToRefs(store);
+const { mode, color, fontSize, routeTabsEnabled, reduceMotion, sidebarPosition } = storeToRefs(store);
 const { request: requestNotify, granted: notifyGranted } = useDesktopNotify();
+
+const customColorInput = ref('');
+const showCustomColor = ref(false);
 
 interface ModeOption {
   value: ThemeMode;
@@ -16,7 +20,6 @@ interface ModeOption {
   descKey: string;
   bestForKey: string;
   icon: string;
-  /** Inline mini-preview CSS so the user sees the look without applying */
   previewStyle?: Record<string, string>;
 }
 const modeOptions: ModeOption[] = [
@@ -64,6 +67,39 @@ const fontOptions: FontOption[] = [
   { value: 'medium', labelKey: 'settings.appearance.font.medium', px: 14 },
   { value: 'large', labelKey: 'settings.appearance.font.large', px: 15 },
 ];
+
+const sidebarOptions: { value: SidebarPosition; labelKey: string; icon: string }[] = [
+  { value: 'left', labelKey: 'settings.appearance.sidebarPosition.left', icon: '◧' },
+  { value: 'right', labelKey: 'settings.appearance.sidebarPosition.right', icon: '◨' },
+];
+
+function isValidHex(c: string): boolean {
+  return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(c);
+}
+
+function normalizeHex(c: string): string {
+  let v = c.trim();
+  if (!v.startsWith('#')) v = '#' + v;
+  if (v.length === 4) {
+    v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+  }
+  return v.toLowerCase();
+}
+
+function onCustomColorInput(): void {
+  const normalized = normalizeHex(customColorInput.value);
+  if (isValidHex(normalized)) {
+    store.setColor(normalized);
+  }
+}
+
+const previewBgStyle = computed(() => {
+  const m = store.previewMode ?? mode.value;
+  const opt = modeOptions.find((o) => o.value === m);
+  return opt?.previewStyle ?? {};
+});
+
+const previewBrandColor = computed(() => store.previewColor ?? color.value);
 </script>
 
 <template>
@@ -87,6 +123,8 @@ const fontOptions: FontOption[] = [
               ? 'border-[var(--brand-500)] shadow-[var(--shadow-2)]'
               : 'border-[var(--border)] hover:border-[var(--text-3)]'
           "
+          @mouseenter="store.setPreviewMode(opt.value)"
+          @mouseleave="store.setPreviewMode(null)"
           @click="store.setMode(opt.value)"
         >
           <div
@@ -109,9 +147,29 @@ const fontOptions: FontOption[] = [
       </div>
     </div>
 
+    <!-- Live preview bar -->
+    <div class="mb-8 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div class="text-sm font-medium mb-3">{{ t('settings.appearance.livePreview') }}</div>
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-lg flex items-center justify-center text-white text-xl font-bold" :style="{ backgroundColor: previewBrandColor }">
+          Aa
+        </div>
+        <div class="flex-1">
+          <div class="h-3 rounded-full mb-2" :style="{ width: '60%', backgroundColor: previewBrandColor, opacity: 0.7 }" />
+          <div class="h-2 rounded-full mb-1 bg-[var(--text-3)]" :style="{ width: '80%' }" />
+          <div class="h-2 rounded-full bg-[var(--text-3)]" :style="{ width: '40%' }" />
+        </div>
+      </div>
+    </div>
+
     <!-- Brand color -->
     <div class="mb-8">
-      <div class="text-sm font-medium mb-3">{{ t('settings.appearance.color.label') }}</div>
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-sm font-medium">{{ t('settings.appearance.color.label') }}</div>
+        <NButton size="tiny" quaternary @click="showCustomColor = !showCustomColor">
+          {{ showCustomColor ? t('settings.appearance.color.hideCustom') : t('settings.appearance.color.custom') }}
+        </NButton>
+      </div>
       <div class="flex flex-wrap gap-3">
         <button
           v-for="c in colors"
@@ -124,15 +182,34 @@ const fontOptions: FontOption[] = [
           "
           :style="{
             backgroundColor: c.value,
-            // eslint-disable-next-line vue/v-bind-style
             ['--tw-ring-color' as string]: c.value,
           }"
           :title="c.name"
           :aria-label="c.name"
+          @mouseenter="store.setPreviewColor(c.value)"
+          @mouseleave="store.setPreviewColor(null)"
           @click="store.setColor(c.value)"
         >
           <span v-if="color === c.value" class="text-white text-sm">✓</span>
         </button>
+      </div>
+      <div v-if="showCustomColor" class="mt-3 flex items-center gap-2">
+        <input
+          type="color"
+          :value="color"
+          class="w-9 h-9 rounded cursor-pointer border-0 p-0"
+          @input="(e) => { const v = (e.target as HTMLInputElement).value; customColorInput = v; store.setColor(v); }"
+        >
+        <NInput
+          v-model:value="customColorInput"
+          :placeholder="t('settings.appearance.color.hexPlaceholder')"
+          size="small"
+          class="max-w-[160px]"
+          @keyup.enter="onCustomColorInput"
+        />
+        <NButton size="small" :disabled="!isValidHex(normalizeHex(customColorInput))" @click="onCustomColorInput">
+          {{ t('settings.appearance.color.apply') }}
+        </NButton>
       </div>
     </div>
 
@@ -166,7 +243,7 @@ const fontOptions: FontOption[] = [
     </div>
 
     <!-- Route tabs toggle -->
-    <div>
+    <div class="mb-6">
       <div class="text-sm font-medium mb-1">{{ t('settings.appearance.routeTabs.label') }}</div>
       <div class="flex items-center gap-3">
         <NSwitch
@@ -180,7 +257,7 @@ const fontOptions: FontOption[] = [
     </div>
 
     <!-- Density toggle -->
-    <div>
+    <div class="mb-6">
       <div class="text-sm font-medium mb-1">{{ t('settings.appearance.density.label') }}</div>
       <div class="flex items-center gap-3">
         <NSwitch
@@ -188,6 +265,39 @@ const fontOptions: FontOption[] = [
           @update:value="(v: boolean) => store.setDensity(v ? 'compact' : 'comfortable')"
         />
         <span class="text-xs text-[var(--text-3)]">{{ t('settings.appearance.density.hint') }}</span>
+      </div>
+    </div>
+
+    <!-- Reduce motion -->
+    <div class="mb-6">
+      <div class="text-sm font-medium mb-1">{{ t('settings.appearance.reduceMotion.label') }}</div>
+      <div class="flex items-center gap-3">
+        <NSwitch
+          :value="reduceMotion"
+          @update:value="(v: boolean) => store.setReduceMotion(v)"
+        />
+        <span class="text-xs text-[var(--text-3)]">{{ t('settings.appearance.reduceMotion.hint') }}</span>
+      </div>
+    </div>
+
+    <!-- Sidebar position -->
+    <div class="mb-6">
+      <div class="text-sm font-medium mb-3">{{ t('settings.appearance.sidebarPosition.label') }}</div>
+      <div class="flex gap-3">
+        <button
+          v-for="opt in sidebarOptions"
+          :key="opt.value"
+          class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all text-sm"
+          :class="
+            sidebarPosition === opt.value
+              ? 'border-[var(--brand-500)] bg-[var(--brand-500)]/5 shadow-[var(--shadow-1)]'
+              : 'border-[var(--border)] hover:border-[var(--text-3)] hover:bg-[var(--bg-elevate)]'
+          "
+          @click="store.setSidebarPosition(opt.value)"
+        >
+          <span class="text-lg">{{ opt.icon }}</span>
+          <span :class="sidebarPosition === opt.value ? 'text-[var(--brand-600)] font-medium' : 'text-[var(--text-1)]'">{{ t(opt.labelKey) }}</span>
+        </button>
       </div>
     </div>
 
