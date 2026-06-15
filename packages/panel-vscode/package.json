@@ -96,10 +96,10 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "20.14.10",
-    "@types/vscode": "1.85.0",
-    "@vscode/vsce": "3.2.1",
-    "esbuild": "0.24.0",
+    "@types/node": "20.19.43",
+    "@types/vscode": "1.120.0",
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "0.28.1",
     "typescript": "5.4.5"
   }
 }
