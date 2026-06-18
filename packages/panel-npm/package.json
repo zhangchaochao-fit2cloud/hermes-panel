@@ -24,7 +24,7 @@
     "@koa/router": "13.1.0",
     "better-sqlite3": "11.3.0",
     "keytar": "7.9.0",
-    "koa": "2.15.3",
+    "koa": "3.2.1",
     "koa-bodyparser": "4.4.1",
     "open": "10.1.0",
     "pino": "9.4.0",
